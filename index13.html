@@ -1,0 +1,2090 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Classroom</title>
+<meta name="theme-color" content="#6c63ff">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Classroom">
+<meta name="mobile-web-app-capable" content="yes">
+<link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%236c63ff'/><text y='.9em' font-size='75' x='10'>🏫</text></svg>">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏫</text></svg>">
+<link rel="shortcut icon" href="data:image/x-icon;base64,AAABAAEAEBAQAAEABAAoAQAAFgAAACgAAAAQAAAAIAAAAAEABAAAAAAAgAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAA////AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0a0a0f;--bg2:#111118;--card:#16161f;--card2:#1e1e2a;--border:#2a2a3a;--border2:#3a3a50;
+  --primary:#6c63ff;--primary-dim:rgba(108,99,255,.15);--primary-glow:rgba(108,99,255,.3);
+  --success:#00d68f;--success-dim:rgba(0,214,143,.1);
+  --danger:#ff4d6d;--danger-dim:rgba(255,77,109,.12);
+  --warning:#ffaa00;--warning-dim:rgba(255,170,0,.12);
+  --accent:#00d4ff;--accent-dim:rgba(0,212,255,.1);
+  --text:#f0f0f8;--dim:rgba(240,240,248,.45);--dim2:rgba(240,240,248,.18);
+}
+body.light-mode{
+  --bg:#f0f2f8;--bg2:#e4e7f0;--card:#ffffff;--card2:#f5f6fc;--border:#d0d5e8;--border2:#b0b8d8;
+  --text:#1a1a2e;--dim:rgba(26,26,46,.5);--dim2:rgba(26,26,46,.25);
+  --primary-dim:rgba(108,99,255,.1);--success-dim:rgba(0,214,143,.08);
+  --danger-dim:rgba(255,77,109,.08);--warning-dim:rgba(255,170,0,.08);--accent-dim:rgba(0,212,255,.08);
+}
+body.light-mode::before{background:radial-gradient(ellipse at 10% 5%,rgba(108,99,255,.04),transparent 50%),radial-gradient(ellipse at 90% 95%,rgba(0,212,255,.03),transparent 50%)}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{width:100%;min-height:100vh;background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;font-size:15px;overflow-x:hidden}
+body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellipse at 10% 5%,rgba(108,99,255,.05),transparent 50%),radial-gradient(ellipse at 90% 95%,rgba(0,212,255,.04),transparent 50%);pointer-events:none;z-index:0}
+
+/* ── TYPE ── */
+.font-title{font-family:'Syne',sans-serif}
+.text-dim{color:var(--dim)}.text-dim2{color:var(--dim2)}
+.text-primary{color:var(--primary)}.text-success{color:var(--success)}
+.text-danger{color:var(--danger)}.text-warning{color:var(--warning)}.text-accent{color:var(--accent)}
+
+/* ── SCREENS ── */
+.screen{display:none;position:relative;z-index:1;min-height:100vh;padding:24px}
+.screen.active{display:flex;flex-direction:column}
+.container{max-width:1200px;width:100%;margin:0 auto}
+
+/* ── CARDS ── */
+.card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:24px}
+.card-sm{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px}
+.card-hover{transition:all .2s}
+.card-hover:hover{border-color:var(--border2);transform:translateY(-2px);box-shadow:0 8px 30px rgba(0,0,0,.4)}
+
+/* ── BUTTONS ── */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:10px 20px;border:none;border-radius:10px;font-family:'DM Sans',sans-serif;font-weight:600;font-size:.88rem;cursor:pointer;transition:all .2s;letter-spacing:.02em}
+.btn:hover{transform:translateY(-2px)}.btn:active{transform:translateY(0)}.btn:disabled{opacity:.4;cursor:not-allowed;transform:none}
+.btn-primary{background:var(--primary);color:#fff;box-shadow:0 4px 15px var(--primary-glow)}
+.btn-success{background:var(--success);color:#000}
+.btn-danger{background:var(--danger-dim);color:var(--danger);border:1px solid rgba(255,77,109,.3)}
+.btn-warning{background:var(--warning-dim);color:var(--warning);border:1px solid rgba(255,170,0,.3)}
+.btn-ghost{background:rgba(255,255,255,.04);color:var(--dim);border:1px solid var(--border)}
+.btn-accent{background:var(--accent-dim);color:var(--accent);border:1px solid rgba(0,212,255,.25)}
+.btn-lg{padding:13px 28px;font-size:.95rem;border-radius:12px}
+.btn-block{width:100%}.btn-icon{width:36px;height:36px;padding:0;border-radius:8px;font-size:.9rem}
+
+/* ── INPUTS ── */
+.input{width:100%;padding:11px 14px;background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:10px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:.9rem;outline:none;transition:border-color .2s,box-shadow .2s}
+.input:focus{border-color:var(--primary);box-shadow:0 0 0 3px var(--primary-dim)}
+.input::placeholder{color:var(--dim2)}
+select.input option{background:var(--card2);color:var(--text)}
+.label{display:block;font-size:.72rem;font-family:'Syne',sans-serif;letter-spacing:.08em;color:var(--dim);margin-bottom:6px}
+.form-group{margin-bottom:16px}
+textarea.input{resize:vertical;min-height:80px}
+
+/* ── BADGES ── */
+.badge{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:6px;font-size:.7rem;font-weight:600;letter-spacing:.04em}
+.badge-primary{background:var(--primary-dim);color:var(--primary);border:1px solid rgba(108,99,255,.3)}
+.badge-success{background:var(--success-dim);color:var(--success);border:1px solid rgba(0,214,143,.25)}
+.badge-danger{background:var(--danger-dim);color:var(--danger);border:1px solid rgba(255,77,109,.25)}
+.badge-warning{background:var(--warning-dim);color:var(--warning);border:1px solid rgba(255,170,0,.25)}
+.badge-accent{background:var(--accent-dim);color:var(--accent);border:1px solid rgba(0,212,255,.2)}
+.badge-purple{background:rgba(167,139,250,.1);color:#a78bfa;border:1px solid rgba(167,139,250,.25)}
+
+/* ── XP BAR ── */
+.xp-bar-bg{height:6px;background:rgba(255,255,255,.06);border-radius:10px;overflow:hidden}
+.xp-bar-fill{height:100%;background:linear-gradient(90deg,var(--primary),var(--accent));transition:width .7s cubic-bezier(.4,0,.2,1)}
+
+/* ── TABS ── */
+.tabs{display:flex;gap:4px;background:rgba(255,255,255,.03);padding:4px;border-radius:12px;margin-bottom:24px}
+.tab{flex:1;text-align:center;padding:9px;border-radius:9px;cursor:pointer;font-weight:600;font-size:.82rem;color:var(--dim);transition:all .2s}
+.tab.active{background:var(--card2);color:var(--text);box-shadow:0 2px 8px rgba(0,0,0,.3)}
+
+/* ── TOAST ── */
+#toast-root{position:fixed;top:20px;right:20px;z-index:9999;display:flex;flex-direction:column;gap:8px;pointer-events:none}
+.toast{background:var(--card2);border:1px solid var(--border2);border-radius:12px;padding:12px 18px;font-size:.85rem;min-width:240px;max-width:320px;box-shadow:0 10px 30px rgba(0,0,0,.6);animation:slideIn .35s ease,fadeOut .35s ease 2.7s forwards;display:flex;align-items:center;gap:10px}
+.toast.s{border-left:4px solid var(--success)}.toast.w{border-left:4px solid var(--warning)}.toast.d{border-left:4px solid var(--danger)}.toast.i{border-left:4px solid var(--primary)}
+
+/* ── MODAL ── */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:8888;display:flex;align-items:center;justify-content:center;animation:fadeIn .2s ease;padding:20px}
+.modal{background:var(--card);border:1px solid var(--border2);border-radius:20px;padding:32px;max-width:520px;width:100%;animation:popIn .35s cubic-bezier(.175,.885,.32,1.275);max-height:90vh;overflow-y:auto}
+.modal-title{font-family:'Syne',sans-serif;font-size:1.1rem;font-weight:700;margin-bottom:20px;display:flex;align-items:center;gap:10px}
+
+/* ── DIVIDER ── */
+.divider{height:1px;background:var(--border);margin:20px 0}
+
+/* ── GRID ── */
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
+.flex{display:flex}.flex-col{flex-direction:column}.items-center{align-items:center}
+.justify-between{justify-content:space-between}.gap-2{gap:8px}.gap-3{gap:12px}.gap-4{gap:16px}
+.mt-2{margin-top:8px}.mt-3{margin-top:12px}.mt-4{margin-top:16px}
+.mb-2{margin-bottom:8px}.mb-3{margin-bottom:12px}.mb-4{margin-bottom:16px}
+.text-center{text-align:center}.w-full{width:100%}
+.truncate{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+/* ── TABLE ── */
+.table{width:100%;border-collapse:collapse}
+.table th{font-family:'Syne',sans-serif;font-size:.65rem;letter-spacing:.1em;color:var(--dim);text-align:left;padding:10px 14px;border-bottom:1px solid var(--border)}
+.table td{padding:10px 14px;border-bottom:1px solid rgba(255,255,255,.04);font-size:.88rem;vertical-align:middle}
+.table tr:last-child td{border-bottom:none}
+.table tr:hover td{background:rgba(255,255,255,.02)}
+
+/* ── SCROLL ── */
+.scroll-y{overflow-y:auto;scrollbar-width:thin;scrollbar-color:var(--border) transparent}
+.scroll-y::-webkit-scrollbar{width:4px}.scroll-y::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+
+/* ── LOADING ── */
+#loading-overlay{position:fixed;inset:0;background:var(--bg);z-index:99999;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:16px}
+.spinner{width:44px;height:44px;border:3px solid rgba(108,99,255,.2);border-top-color:var(--primary);border-radius:50%;animation:spin .8s linear infinite}
+
+/* ── AUTH ── */
+#screen-auth{align-items:center;justify-content:center}
+.auth-wrap{width:100%;max-width:440px}
+.auth-logo{font-family:'Syne',sans-serif;font-size:2.4rem;font-weight:800;background:linear-gradient(135deg,var(--primary),var(--accent));-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:4px}
+.auth-box{background:var(--card);border:1px solid var(--border2);border-radius:24px;padding:36px;box-shadow:0 20px 60px rgba(0,0,0,.5);margin-top:24px}
+.auth-tabs{display:flex;gap:4px;background:rgba(255,255,255,.04);padding:4px;border-radius:10px;margin-bottom:24px}
+.auth-tab{flex:1;text-align:center;padding:8px;border-radius:7px;cursor:pointer;font-weight:600;font-size:.83rem;color:var(--dim);transition:all .2s}
+.auth-tab.active{background:var(--card2);color:var(--text)}
+.role-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:20px}
+.role-btn{padding:10px 6px;border-radius:10px;border:2px solid var(--border);background:transparent;color:var(--dim);cursor:pointer;font-family:'DM Sans',sans-serif;font-weight:600;font-size:.78rem;transition:all .2s;text-align:center;line-height:1.4}
+.role-btn:hover{border-color:var(--border2)}
+.role-btn.sel-ind{border-color:var(--primary);color:var(--primary);background:var(--primary-dim)}
+.role-btn.sel-teacher{border-color:var(--warning);color:var(--warning);background:var(--warning-dim)}
+.role-btn.sel-student{border-color:var(--accent);color:var(--accent);background:var(--accent-dim)}
+.err-msg{background:var(--danger-dim);border:1px solid rgba(255,77,109,.3);border-radius:8px;padding:10px 14px;font-size:.83rem;color:var(--danger);margin-bottom:14px;display:none}
+
+/* ── SIDEBAR LAYOUT ── */
+.app-layout{display:grid;grid-template-columns:240px 1fr;gap:0;min-height:100vh}
+.sidebar{background:var(--bg2);border-right:1px solid var(--border);padding:20px 16px;display:flex;flex-direction:column;gap:4px;position:sticky;top:0;height:100vh;overflow-y:auto}
+.sidebar-logo{font-family:'Syne',sans-serif;font-size:1.4rem;font-weight:800;background:linear-gradient(135deg,var(--primary),var(--accent));-webkit-background-clip:text;-webkit-text-fill-color:transparent;padding:8px 12px;margin-bottom:8px}
+.sidebar-section{font-size:.65rem;font-family:'Syne',sans-serif;letter-spacing:.12em;color:var(--dim2);padding:12px 12px 6px;margin-top:8px}
+.nav-item{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:10px;cursor:pointer;transition:all .2s;font-size:.88rem;font-weight:500;color:var(--dim)}
+.nav-item:hover{background:rgba(255,255,255,.05);color:var(--text)}
+.nav-item.active{background:var(--primary-dim);color:var(--primary);font-weight:600}
+.nav-item .nav-icon{font-size:1rem;width:20px;text-align:center}
+.nav-badge{margin-left:auto;background:var(--danger);color:#fff;font-size:.6rem;padding:2px 6px;border-radius:10px;font-weight:700}
+.main-content{padding:24px;overflow-y:auto}
+
+/* ── SUBJECT COLORS ── */
+.subj-math{--sc:#6c63ff}.subj-physics{--sc:#00d4ff}.subj-chem{--sc:#00d68f}.subj-bio{--sc:#22d3a0}
+.subj-tr{--sc:#f97316}.subj-lit{--sc:#e879f9}.subj-hist{--sc:#facc15}.subj-geo{--sc:#84cc16}
+.subj-eng{--sc:#38bdf8}.subj-lang{--sc:#818cf8}.subj-music{--sc:#f43f5e}.subj-art{--sc:#fb923c}
+.subj-pe{--sc:#4ade80}.subj-siyer{--sc:#fbbf24}.subj-tinkercad{--sc:#00d4ff}
+.subject-chip{display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border-radius:20px;font-size:.75rem;font-weight:600;background:rgba(var(--sc-r,108),var(--sc-g,99),var(--sc-b,255),.1);border:1px solid rgba(var(--sc-r,108),var(--sc-g,99),var(--sc-b,255),.25);color:var(--sc,var(--primary))}
+.subject-dot{width:8px;height:8px;border-radius:50%;background:var(--sc,var(--primary))}
+
+/* ── HOMEWORK CARD ── */
+.hw-card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:18px;margin-bottom:12px;transition:all .2s}
+.hw-card:hover{border-color:var(--border2);transform:translateY(-1px)}
+.hw-card.urgent{border-left:4px solid var(--danger)}
+.hw-card.soon{border-left:4px solid var(--warning)}
+.hw-card.normal{border-left:4px solid var(--primary)}
+.hw-card.done{border-left:4px solid var(--success);opacity:.7}
+.deadline-bar{height:4px;border-radius:2px;background:rgba(255,255,255,.06);overflow:hidden;margin:8px 0}
+.deadline-fill{height:100%;border-radius:2px;transition:width .5s}
+
+/* ── NOTE CARD ── */
+.note-card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:18px;margin-bottom:12px;transition:all .2s}
+.note-card:hover{border-color:var(--border2)}
+
+/* ── STATS ── */
+.stat-card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:20px;text-align:center}
+.stat-card .val{font-family:'Syne',sans-serif;font-size:1.8rem;font-weight:700;margin:6px 0 4px}
+.stat-card .lbl{font-size:.68rem;color:var(--dim);font-family:'Syne',sans-serif;letter-spacing:.1em}
+
+/* ── TINKERCAD PANEL ── */
+.wheel-wrapper{position:relative;width:220px;height:220px;margin:0 auto 20px}
+.wheel-wrapper canvas{border-radius:50%}
+.wheel-needle{position:absolute;top:-12px;left:50%;transform:translateX(-50%);width:0;height:0;border-left:7px solid transparent;border-right:7px solid transparent;border-top:20px solid var(--warning);filter:drop-shadow(0 0 6px var(--warning))}
+
+/* ── ANIMATIONS ── */
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes slideIn{from{transform:translateX(50px);opacity:0}to{transform:translateX(0);opacity:1}}
+@keyframes fadeOut{from{opacity:1}to{opacity:0}}
+@keyframes popIn{from{transform:scale(.6);opacity:0}to{transform:scale(1);opacity:1}}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+@keyframes particleFly{0%{transform:translateY(0) scale(1);opacity:1}100%{transform:translateY(-120px) scale(0);opacity:0}}
+.float{animation:float 3s ease-in-out infinite}
+.particle{position:fixed;pointer-events:none;z-index:9997;font-size:1.2rem;animation:particleFly 1.2s ease forwards}
+
+@media(max-width:768px){
+  .app-layout{grid-template-columns:1fr}
+  .sidebar{display:none}
+  .grid-2,.grid-3{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<div id="loading-overlay">
+  <div class="spinner"></div>
+  <div style="font-family:'Syne',sans-serif;font-size:.75rem;letter-spacing:.2em;color:var(--dim)">YÜKLENIYOR...</div>
+</div>
+
+<div id="toast-root"></div>
+
+<!-- Tema butonu — sağ üst sabit -->
+<button id="global-theme-btn" onclick="toggleTheme()" title="Tema Değiştir" style="position:fixed;top:16px;right:16px;z-index:9998;width:42px;height:42px;border-radius:50%;border:1px solid var(--border2);background:var(--card2);color:var(--text);cursor:pointer;font-size:1.1rem;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 12px rgba(0,0,0,.3);transition:all .2s" onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'">🌙</button>
+<script>
+// Tema module yüklenmeden önce de çalışsın
+(function(){
+  if(localStorage.getItem('classroom_theme')==='light'){
+    document.body.classList.add('light-mode');
+    var btn=document.getElementById('global-theme-btn');
+    if(btn)btn.textContent='☀️';
+  }
+})();
+// toggleTheme module yüklenince window'a eklenir,
+// ama onclick için stub gerekiyor
+if(!window.toggleTheme){
+  window.toggleTheme=function(){
+    var isLight=document.body.classList.toggle('light-mode');
+    localStorage.setItem('classroom_theme',isLight?'light':'dark');
+    var gb=document.getElementById('global-theme-btn');
+    if(gb)gb.textContent=isLight?'☀️':'🌙';
+    var tl=document.getElementById('theme-label');
+    var ti=document.getElementById('theme-toggle');
+    if(tl)tl.textContent=isLight?'Karanlık Mod':'Aydınlık Mod';
+    if(ti&&ti.querySelector('.nav-icon'))ti.querySelector('.nav-icon').textContent=isLight?'☀️':'🌙';
+  }
+}
+</script>
+
+<!-- ══════════════════════════════════
+     AUTH
+══════════════════════════════════ -->
+<div id="screen-auth" class="screen">
+  <div class="auth-wrap">
+    <div class="text-center float">
+      <div class="auth-logo">classroom</div>
+      <div style="font-size:.8rem;color:var(--dim)">Akıllı Sınıf Yönetim Platformu</div>
+    </div>
+    <div class="auth-box">
+      <div class="auth-tabs">
+        <div class="auth-tab active" id="tab-login" onclick="switchAuthTab('login')">Giriş Yap</div>
+        <div class="auth-tab" id="tab-register" onclick="switchAuthTab('register')">Kayıt Ol</div>
+      </div>
+      <div id="auth-error" class="err-msg"></div>
+
+      <!-- LOGIN -->
+      <div id="form-login">
+        <div class="form-group"><label class="label">E-POSTA</label><input type="email" class="input" id="login-email" placeholder="ornek@mail.com"></div>
+        <div class="form-group"><label class="label">ŞİFRE</label><input type="password" class="input" id="login-pass" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()"></div>
+        <button class="btn btn-primary btn-block btn-lg mt-3" onclick="doLogin()" id="login-btn">Giriş Yap →</button>
+        <div class="text-center mt-3" style="font-size:.8rem;color:var(--dim)">Hesabın yok mu? <span style="color:var(--primary);cursor:pointer" onclick="switchAuthTab('register')">Kayıt ol</span></div>
+      </div>
+
+      <!-- REGISTER -->
+      <div id="form-register" style="display:none">
+        <div class="form-group"><label class="label">AD SOYAD</label><input type="text" class="input" id="reg-name" placeholder="Adın ve soyadın" maxlength="40"></div>
+        <div class="form-group">
+          <label class="label">ROL</label>
+          <div class="role-grid" style="grid-template-columns:1fr 1fr">
+            <button class="role-btn sel-teacher" id="role-teacher" onclick="selectRole('teacher')">👨‍🏫<br>Öğretmen</button>
+            <button class="role-btn" id="role-student" onclick="selectRole('student')">🎓<br>Öğrenci</button>
+          </div>
+        </div>
+        <div id="reg-class-group" style="display:none" class="form-group"><label class="label">SINIF KODU</label><input type="text" class="input" id="reg-class-code" placeholder="Örn: CL-A3B7" maxlength="10" style="font-family:'Syne',sans-serif;letter-spacing:.15em;text-transform:uppercase"></div>
+        <div class="form-group"><label class="label">E-POSTA</label><input type="email" class="input" id="reg-email" placeholder="ornek@mail.com"></div>
+        <div class="form-group"><label class="label">ŞİFRE (en az 6 karakter)</label><input type="password" class="input" id="reg-pass" placeholder="••••••••" onkeydown="if(event.key==='Enter')doRegister()"></div>
+        <button class="btn btn-success btn-block btn-lg mt-3" onclick="doRegister()" id="register-btn">Hesap Oluştur →</button>
+        <div class="text-center mt-3" style="font-size:.8rem;color:var(--dim)">Hesabın var mı? <span style="color:var(--primary);cursor:pointer" onclick="switchAuthTab('login')">Giriş yap</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── TEST GİRİŞİ — sağ alt sabit ── -->
+  <div style="position:fixed;bottom:24px;right:24px;z-index:999;display:flex;flex-direction:column;align-items:flex-end;gap:10px">
+
+    <!-- Şifre ekranı -->
+    <div id="test-password-screen" style="display:none;background:var(--card);border:1px solid rgba(0,212,255,.4);border-radius:16px;padding:20px;width:260px;box-shadow:0 8px 40px rgba(0,0,0,.6)">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+        <span style="font-family:'Syne',sans-serif;font-size:.75rem;letter-spacing:.12em;color:var(--accent)">🔐 TEST ŞİFRESİ</span>
+        <span onclick="closeTest()" style="cursor:pointer;color:var(--dim);font-size:1rem;line-height:1">✕</span>
+      </div>
+      <input type="password" id="test-pass-input" class="input" placeholder="Şifre gir..." style="padding:9px 12px;font-size:.85rem;margin-bottom:10px" onkeydown="if(event.key==='Enter')checkTestPass()">
+      <div id="test-pass-error" style="display:none;font-size:.75rem;color:var(--danger);margin-bottom:8px">❌ Yanlış şifre!</div>
+      <button class="btn btn-accent btn-block" onclick="checkTestPass()" style="font-size:.85rem">Giriş →</button>
+    </div>
+
+    <div id="test-expanded" style="display:none;background:var(--card);border:1px solid rgba(0,212,255,.4);border-radius:16px;padding:20px;width:290px;box-shadow:0 8px 40px rgba(0,0,0,.6)">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+        <span style="font-family:'Syne',sans-serif;font-size:.75rem;letter-spacing:.12em;color:var(--accent)">🧪 TEST GİRİŞİ</span>
+        <span onclick="closeTest()" style="cursor:pointer;color:var(--dim);font-size:1rem;line-height:1">✕</span>
+      </div>
+      <div style="font-size:.75rem;color:var(--dim);margin-bottom:14px;line-height:1.5">Ad soyad gir, rol seç. Firebase hesabı gerekmez — veriler ayrı saklanır.</div>
+      <div style="margin-bottom:10px">
+        <label style="font-size:.65rem;font-family:'Syne',sans-serif;letter-spacing:.1em;color:var(--dim);display:block;margin-bottom:5px">AD SOYAD</label>
+        <input type="text" id="test-name" class="input" placeholder="Adın ve soyadın" maxlength="40" style="padding:9px 12px;font-size:.85rem" onkeydown="if(event.key==='Enter')doTestLogin()">
+      </div>
+      <div style="margin-bottom:14px">
+        <label style="font-size:.65rem;font-family:'Syne',sans-serif;letter-spacing:.1em;color:var(--dim);display:block;margin-bottom:6px">ROL</label>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+          <button class="role-btn sel-teacher" id="test-role-teacher" onclick="selectTestRole('teacher')" style="font-size:.7rem;padding:8px 4px">👨‍🏫<br>Öğretmen</button>
+          <button class="role-btn" id="test-role-student" onclick="selectTestRole('student')" style="font-size:.7rem;padding:8px 4px">🎓<br>Öğrenci</button>
+        </div>
+      </div>
+      <div id="test-class-group" style="display:none;margin-bottom:12px">
+        <label style="font-size:.65rem;font-family:'Syne',sans-serif;letter-spacing:.1em;color:var(--dim);display:block;margin-bottom:5px">SINIF KODU (isteğe bağlı)</label>
+        <input type="text" id="test-class-code" class="input" placeholder="Örn: CL-A3B7" maxlength="10" style="padding:9px 12px;font-size:.85rem;text-transform:uppercase;letter-spacing:.1em">
+      </div>
+      <button class="btn btn-accent btn-block" onclick="doTestLogin()" style="font-size:.85rem">⚡ Test Olarak Gir</button>
+    </div>
+    <button onclick="toggleTest()" style="background:var(--card2);border:1px solid rgba(0,212,255,.35);border-radius:12px;padding:10px 18px;cursor:pointer;display:flex;align-items:center;gap:8px;color:var(--accent);font-family:'Syne',sans-serif;font-size:.75rem;letter-spacing:.1em;box-shadow:0 4px 20px rgba(0,0,0,.4);transition:all .2s" onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='rgba(0,212,255,.35)'">
+      🧪 TEST GİRİŞİ
+    </button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════
+     MAIN APP (sidebar layout)
+══════════════════════════════════ -->
+<div id="screen-app" class="screen" style="padding:0">
+  <div class="app-layout">
+    <!-- Sidebar -->
+    <div class="sidebar">
+      <div class="sidebar-logo">classroom</div>
+      <div id="user-info" style="padding:8px 12px;margin-bottom:8px;background:rgba(255,255,255,.03);border-radius:10px;border:1px solid var(--border)">
+        <div id="sb-name" style="font-weight:600;font-size:.9rem"></div>
+        <div id="sb-role" style="font-size:.72rem;color:var(--dim);margin-top:2px"></div>
+        <div id="sb-xp-bar" class="xp-bar-bg mt-2" style="display:none"><div class="xp-bar-fill" id="sb-xp-fill" style="width:0%"></div></div>
+        <div id="sb-xp-text" style="font-size:.65rem;color:var(--dim2);margin-top:4px;display:none"></div>
+      </div>
+
+      <div class="sidebar-section">ANA MENÜ</div>
+      <div class="nav-item active" id="nav-dashboard" onclick="navTo('dashboard')"><span class="nav-icon">🏠</span> Dashboard</div>
+      <div class="nav-item" id="nav-homework" onclick="navTo('homework')"><span class="nav-icon">📋</span> Ödevler <span class="nav-badge" id="hw-badge" style="display:none">0</span></div>
+      <div class="nav-item" id="nav-notes" onclick="navTo('notes')"><span class="nav-icon">📝</span> Ders Notları</div>
+      <div class="nav-item" id="nav-announcements" onclick="navTo('announcements')"><span class="nav-icon">📢</span> Duyurular <span class="nav-badge" id="ann-badge" style="display:none">!</span></div>
+      <div class="nav-item" id="nav-chat" onclick="navTo('chat')"><span class="nav-icon">💬</span> Sınıf Sohbeti</div>
+      <div class="nav-item" id="nav-quiz" onclick="navTo('quiz')"><span class="nav-icon">📝</span> Quiz</div>
+      <div class="nav-item" id="nav-classes" onclick="navTo('classes')"><span class="nav-icon">🏫</span> Sınıflarım</div>
+
+      <div class="sidebar-section">ARAÇLAR</div>
+      <div class="nav-item" id="nav-store" onclick="navTo('store')"><span class="nav-icon">🛒</span> Mağaza</div>
+      <div class="nav-item" id="nav-leaderboard" onclick="navTo('leaderboard')"><span class="nav-icon">🏆</span> Liderboard</div>
+
+      <div id="teacher-nav" style="display:none">
+        <div class="sidebar-section">ÖĞRETMEN</div>
+        <div class="nav-item" id="nav-assign" onclick="navTo('assign')"><span class="nav-icon">✏️</span> Ödev Ver</div>
+        <div class="nav-item" id="nav-quiz-create" onclick="navTo('quiz-create')"><span class="nav-icon">📝</span> Quiz Oluştur</div>
+        <div class="nav-item" id="nav-students" onclick="navTo('students')"><span class="nav-icon">👥</span> Öğrencilerim <span class="nav-badge" id="pending-badge" style="display:none">0</span></div>
+        <div class="nav-item" id="nav-analytics" onclick="navTo('analytics')"><span class="nav-icon">📊</span> Analitik</div>
+        <div class="nav-item" id="nav-newclass" onclick="showModal('modal-create-class')"><span class="nav-icon">➕</span> Yeni Sınıf</div>
+      </div>
+
+      <div style="margin-top:auto;padding-top:20px;border-top:1px solid var(--border);margin-top:16px">
+        <div class="nav-item" onclick="toggleTheme()" id="theme-toggle"><span class="nav-icon">🌙</span> <span id="theme-label">Aydınlık Mod</span></div>
+        <div class="nav-item" id="pwa-install-btn" onclick="installPWA()" style="display:none;color:var(--accent)"><span class="nav-icon">📱</span> Uygulamayı Yükle</div>
+        <div class="nav-item" onclick="doLogout()" style="color:var(--danger)"><span class="nav-icon">🚪</span> Çıkış Yap</div>
+      </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content" id="main-content">
+      <!-- Panels injected by JS -->
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════
+     MODALS
+══════════════════════════════════ -->
+
+<!-- Create Announcement -->
+<div id="modal-create-ann" class="modal-overlay" style="display:none">
+  <div class="modal">
+    <div class="modal-title">📢 Duyuru Oluştur</div>
+    <div class="form-group"><label class="label">BAŞLIK</label><input type="text" class="input" id="ann-title" placeholder="Duyuru başlığı" maxlength="80"></div>
+    <div class="form-group"><label class="label">İÇERİK</label><textarea class="input" id="ann-content" placeholder="Duyuru içeriği..." style="min-height:100px"></textarea></div>
+    <div class="grid-2">
+      <div class="form-group"><label class="label">TÜR</label>
+        <select class="input" id="ann-type">
+          <option value="normal">Normal</option>
+          <option value="important">Önemli</option>
+          <option value="pinned">Sabitlenmiş</option>
+        </select>
+      </div>
+      <div class="form-group"><label class="label">SINIF</label><select class="input" id="ann-class-sel"><option value="">— Seç —</option></select></div>
+    </div>
+    <div class="flex gap-2 mt-4"><button class="btn btn-ghost" style="flex:1" onclick="hideModal('modal-create-ann')">İptal</button><button class="btn btn-primary" style="flex:2" onclick="createAnnouncement()">📢 Yayınla</button></div>
+  </div>
+</div>
+
+<!-- Create Quiz -->
+<div id="modal-create-quiz" class="modal-overlay" style="display:none">
+  <div class="modal" style="max-width:600px">
+    <div class="modal-title">📝 Quiz Oluştur</div>
+    <div class="grid-2">
+      <div class="form-group"><label class="label">QUIZ ADI</label><input type="text" class="input" id="quiz-title" placeholder="Quiz başlığı" maxlength="60"></div>
+      <div class="form-group"><label class="label">SINIF</label><select class="input" id="quiz-class-sel"><option value="">— Seç —</option></select></div>
+    </div>
+    <div class="grid-2">
+      <div class="form-group"><label class="label">DERS</label><select class="input" id="quiz-subject-sel"><option value="">— Seç —</option></select></div>
+      <div class="form-group"><label class="label">SORU BAŞINA XP</label><input type="number" class="input" id="quiz-xp-per-q" value="10" min="5" max="50"></div>
+    </div>
+    <div class="divider"></div>
+    <div style="font-family:'Syne',sans-serif;font-size:.75rem;letter-spacing:.1em;color:var(--dim);margin-bottom:12px">SORULAR</div>
+    <div id="quiz-questions-list"></div>
+    <button class="btn btn-ghost btn-block mt-2" onclick="addQuizQuestion()" style="font-size:.82rem">+ Soru Ekle</button>
+    <div class="flex gap-2 mt-4"><button class="btn btn-ghost" style="flex:1" onclick="hideModal('modal-create-quiz')">İptal</button><button class="btn btn-primary" style="flex:2" onclick="publishQuiz()">🚀 Quiz Yayınla</button></div>
+  </div>
+</div>
+
+<!-- Create Class -->
+<div id="modal-create-class" class="modal-overlay" style="display:none">
+  <div class="modal">
+    <div class="modal-title">🏫 Yeni Sınıf Oluştur</div>
+    <div class="form-group"><label class="label">SINIF ADI</label><input type="text" class="input" id="cls-name" placeholder="Örn: 11-A Fen Grubu" maxlength="50"></div>
+    <div class="form-group"><label class="label">AÇIKLAMA</label><input type="text" class="input" id="cls-desc" placeholder="İsteğe bağlı" maxlength="100"></div>
+    <div class="flex gap-2 mt-4"><button class="btn btn-ghost" style="flex:1" onclick="hideModal('modal-create-class')">İptal</button><button class="btn btn-primary" style="flex:2" onclick="createClass()">Oluştur</button></div>
+  </div>
+</div>
+
+<!-- Assign Homework -->
+<div id="modal-assign-hw" class="modal-overlay" style="display:none">
+  <div class="modal">
+    <div class="modal-title">📋 Ödev Ver</div>
+    <div class="form-group"><label class="label">SINIF</label><select class="input" id="hw-class-sel" onchange="loadClassStudentsForHw()"><option value="">— Seç —</option></select></div>
+    <div class="form-group"><label class="label">DERS</label><select class="input" id="hw-subject-sel"><option value="">— Seç —</option></select></div>
+    <div class="form-group"><label class="label">BAŞLIK</label><input type="text" class="input" id="hw-title" placeholder="Ödev başlığı" maxlength="80"></div>
+    <div class="form-group"><label class="label">AÇIKLAMA</label><textarea class="input" id="hw-desc" placeholder="Ödev detayları..."></textarea></div>
+    <div class="grid-2">
+      <div class="form-group"><label class="label">TESLİM TARİHİ</label><input type="date" class="input" id="hw-due"></div>
+      <div class="form-group"><label class="label">XP ÖDÜLÜ</label><input type="number" class="input" id="hw-xp" value="50" min="10" max="300"></div>
+    </div>
+    <div class="form-group"><label class="label">CEZA XP (geç teslim)</label><input type="number" class="input" id="hw-penalty" value="20" min="0" max="100"></div>
+    <div class="flex gap-2 mt-4"><button class="btn btn-ghost" style="flex:1" onclick="hideModal('modal-assign-hw')">İptal</button><button class="btn btn-primary" style="flex:2" onclick="assignHomework()">📤 Ödevi Gönder</button></div>
+  </div>
+</div>
+
+<!-- Share Note -->
+<div id="modal-share-note" class="modal-overlay" style="display:none">
+  <div class="modal">
+    <div class="modal-title">📝 Not Paylaş</div>
+    <div class="form-group"><label class="label">DERS</label><select class="input" id="note-subject-sel"><option value="">— Seç —</option></select></div>
+    <div class="form-group"><label class="label">BAŞLIK</label><input type="text" class="input" id="note-title" placeholder="Not başlığı" maxlength="80"></div>
+    <div class="form-group"><label class="label">İÇERİK</label><textarea class="input" id="note-content" placeholder="Ders notun..." style="min-height:120px"></textarea></div>
+    <div class="form-group"><label class="label">DOSYA LİNKİ (Google Drive, vb.)</label><input type="url" class="input" id="note-link" placeholder="https://drive.google.com/..."></div>
+    <div class="flex gap-2 mt-4"><button class="btn btn-ghost" style="flex:1" onclick="hideModal('modal-share-note')">İptal</button><button class="btn btn-success" style="flex:2" onclick="shareNote()">📤 Paylaş</button></div>
+  </div>
+</div>
+
+<!-- Submit Homework -->
+<div id="modal-submit-hw" class="modal-overlay" style="display:none">
+  <div class="modal">
+    <div class="modal-title">✅ Ödev Teslim Et</div>
+    <div id="submit-hw-info" style="background:var(--bg2);border-radius:10px;padding:14px;margin-bottom:16px;font-size:.88rem"></div>
+    <div class="form-group"><label class="label">AÇIKLAMA / NOT</label><textarea class="input" id="submit-note" placeholder="Ödev hakkında not..."></textarea></div>
+    <div class="form-group"><label class="label">DOSYA / LİNK (Google Drive vb.)</label><input type="url" class="input" id="submit-link" placeholder="https://drive.google.com/..."></div>
+    <div class="flex gap-2 mt-4"><button class="btn btn-ghost" style="flex:1" onclick="hideModal('modal-submit-hw')">İptal</button><button class="btn btn-success" style="flex:2" onclick="submitHomework()">✅ Teslim Et</button></div>
+  </div>
+</div>
+
+<!-- Level Up -->
+<div id="modal-levelup" class="modal-overlay" style="display:none">
+  <div class="modal text-center">
+    <div style="font-size:4rem;margin-bottom:10px">⭐</div>
+    <div style="font-family:'Syne',sans-serif;font-size:1.8rem;font-weight:800;background:linear-gradient(135deg,var(--warning),var(--primary));-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:8px">SEVİYE ATLADI!</div>
+    <div id="lvlup-info" class="text-dim" style="margin-bottom:24px"></div>
+    <button class="btn btn-primary btn-lg" onclick="hideModal('modal-levelup')">Devam Et →</button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════
+     FIREBASE + APP SCRIPT
+══════════════════════════════════ -->
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getDatabase, ref, set, get, update, onValue, off, push } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged, browserLocalPersistence, setPersistence } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+
+const firebaseConfig={apiKey:"AIzaSyCrgMFwGiGYgDb9F_xREKruMFpjB5DJFdQ",authDomain:"tinkercad-rpg.firebaseapp.com",databaseURL:"https://tinkercad-rpg-default-rtdb.firebaseio.com",projectId:"tinkercad-rpg",storageBucket:"tinkercad-rpg.firebasestorage.app",messagingSenderId:"466890460146",appId:"1:466890460146:web:c1856f7a1e04152694796b"};
+const app=initializeApp(firebaseConfig);
+const db=getDatabase(app);
+const auth=getAuth(app);
+setPersistence(auth,browserLocalPersistence);
+
+// ═══════════ CONSTANTS ═══════════
+const SUBJECTS=[
+  {id:'math',name:'Matematik',icon:'📐',color:'#6c63ff',cat:'Fen'},
+  {id:'physics',name:'Fizik',icon:'⚛️',color:'#00d4ff',cat:'Fen'},
+  {id:'chem',name:'Kimya',icon:'🧪',color:'#00d68f',cat:'Fen'},
+  {id:'bio',name:'Biyoloji',icon:'🧬',color:'#22d3a0',cat:'Fen'},
+  {id:'tr',name:'Türkçe',icon:'📖',color:'#f97316',cat:'Sözel'},
+  {id:'lit',name:'Edebiyat',icon:'✍️',color:'#e879f9',cat:'Sözel'},
+  {id:'hist',name:'Tarih',icon:'🏛️',color:'#facc15',cat:'Sözel'},
+  {id:'geo',name:'Coğrafya',icon:'🌍',color:'#84cc16',cat:'Sözel'},
+  {id:'eng',name:'İngilizce',icon:'🇬🇧',color:'#38bdf8',cat:'Dil'},
+  {id:'lang',name:'Yabancı Dil',icon:'🌐',color:'#818cf8',cat:'Dil'},
+  {id:'music',name:'Müzik',icon:'🎵',color:'#f43f5e',cat:'Sanat'},
+  {id:'art',name:'Görsel Sanatlar',icon:'🎨',color:'#fb923c',cat:'Sanat'},
+  {id:'pe',name:'Beden Eğitimi',icon:'⚽',color:'#4ade80',cat:'Sanat'},
+  {id:'siyer',name:'Siyer',icon:'📿',color:'#fbbf24',cat:'Din'},
+  {id:'tinkercad',name:'Tinkercad',icon:'🖨️',color:'#00d4ff',cat:'Teknoloji'},
+];
+const RANKS=['Acemi','Geliştirici','Tasarımcı','Mühendis','Mimar','Efsane'];
+const BADGES_DEF=[
+  {id:'first',icon:'🌟',name:'İlk Adım',check:s=>s.totalCompleted>=1},
+  {id:'str3',icon:'🔥',name:'3 Seri',check:s=>s.streak>=3},
+  {id:'five',icon:'🎯',name:'Pro',check:s=>s.totalCompleted>=5},
+  {id:'ten',icon:'💎',name:'Usta',check:s=>s.totalCompleted>=10},
+  {id:'lvl5',icon:'🚀',name:'Sev.5',check:s=>s.lvl>=5},
+  {id:'nodrop',icon:'🛡️',name:'Disiplin',check:s=>s.skipped===0&&s.totalCompleted>=3},
+  {id:'noter',icon:'📝',name:'Not Kahraman',check:s=>s.totalNotes>=5},
+];
+const TINKERCAD_QUESTS=[
+  {name:'Akıllı Telefon Standı',diff:1},{name:'Masa Lambası Gövdesi',diff:2},
+  {name:'Vidalı Saklama Kutusu',diff:2},{name:'Drone Gövde Tasarımı',diff:4},
+  {name:'Satranç Taşı (At)',diff:3},{name:'Robotik El Pençesi',diff:5},
+  {name:'Geometrik Çiçek Saksısı',diff:2},{name:'Mini Köprü Maketi',diff:3},
+  {name:'Uzay Roketi Modeli',diff:3},{name:'Dişli Çark Mekanizması',diff:5},
+];
+const DIFF_LABELS=['','Kolay','Orta','Zor','Çok Zor','Efsane'];
+const WHEEL_COLORS=['#6c63ff','#00d4ff','#00d68f','#f97316','#e879f9','#facc15','#38bdf8','#f43f5e','#4ade80','#fbbf24'];
+
+// ═══════════ STATE ═══════════
+let session={uid:null,role:null,name:null,classCode:null,email:null};
+let selectedRole='teacher';
+let currentNav='dashboard';
+let activeListeners=[];
+let timerIntervals={};
+let indWheelAngle=0,indSpinning=false;
+let pendingSubmitHwId=null;
+
+// ═══════════ DB HELPERS ═══════════
+const dbRef=p=>ref(db,p);
+async function dbGet(p){const s=await get(dbRef(p));return s.exists()?s.val():null}
+async function dbSet(p,v){await set(dbRef(p),v)}
+async function dbUpdate(p,v){await update(dbRef(p),v)}
+function dbListen(p,cb){const r=dbRef(p);onValue(r,sn=>cb(sn.exists()?sn.val():null));activeListeners.push(r)}
+function clearListeners(){activeListeners.forEach(r=>off(r));activeListeners=[]}
+function safeKey(s){return s.replace(/[.#$[\]/\s@]/g,'_')}
+
+// ═══════════ UI HELPERS ═══════════
+function showScreen(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));document.getElementById(id).classList.add('active')}
+function showModal(id){document.getElementById(id).style.display='flex'}
+function hideModal(id){document.getElementById(id).style.display='none'}
+function hideLoading(){document.getElementById('loading-overlay').style.display='none'}
+function toast(msg,type='i'){const c=document.getElementById('toast-root');const t=document.createElement('div');t.className=`toast ${type}`;t.textContent=msg;c.appendChild(t);setTimeout(()=>t.remove(),3500)}
+function particles(){const e=['⭐','✨','🎉','🏆','💎','🚀'];for(let i=0;i<10;i++){setTimeout(()=>{const p=document.createElement('div');p.className='particle';p.textContent=e[Math.floor(Math.random()*e.length)];p.style.left=Math.random()*window.innerWidth+'px';p.style.top=(window.innerHeight*.5+Math.random()*100)+'px';document.body.appendChild(p);setTimeout(()=>p.remove(),1300)},i*70)}}
+function xpFor(lvl){return lvl*150}
+function addXP(s,amt){s.xp=(s.xp||0)+amt;s.totalXp=(s.totalXp||0)+amt;let up=false;while(s.xp>=xpFor(s.lvl)){s.xp-=xpFor(s.lvl);s.lvl++;up=true}return up}
+function getRank(lvl){return RANKS[Math.min(lvl-1,5)]}
+function getSubject(id){return SUBJECTS.find(s=>s.id===id)||{name:id,icon:'📚',color:'#888'}}
+function showErr(msg){const el=document.getElementById('auth-error');el.textContent=msg;el.style.display='block'}
+function hideErr(){document.getElementById('auth-error').style.display='none'}
+function defaultState(){return{xp:0,lvl:1,streak:0,bestStreak:0,totalCompleted:0,totalXp:0,skipped:0,penalties:0,totalNotes:0,earnedBadges:[],history:{},activeQuest:null,activeDiff:1}}
+function daysUntil(dateStr){const d=new Date(dateStr);const n=new Date();n.setHours(0,0,0,0);d.setHours(0,0,0,0);return Math.round((d-n)/(1000*60*60*24))}
+function fmtDate(dateStr){return new Date(dateStr).toLocaleDateString('tr-TR',{day:'numeric',month:'long',year:'numeric'})}
+
+// populate subject selects
+function populateSubjectSelects(){
+  ['hw-subject-sel','note-subject-sel'].forEach(id=>{
+    const sel=document.getElementById(id);if(!sel)return;
+    sel.innerHTML='<option value="">— Ders seç —</option>';
+    const cats={};
+    SUBJECTS.forEach(s=>{if(!cats[s.cat])cats[s.cat]=[];cats[s.cat].push(s)});
+    Object.entries(cats).forEach(([cat,subs])=>{
+      const og=document.createElement('optgroup');og.label=cat;
+      subs.forEach(s=>og.innerHTML+=`<option value="${s.id}">${s.icon} ${s.name}</option>`);
+      sel.appendChild(og);
+    });
+  });
+}
+
+// ═══════════ AUTH STATE ═══════════
+onAuthStateChanged(auth, async user=>{
+  if(user){
+    const profile=await dbGet(`users/${user.uid}/profile`);
+    if(profile){
+      session={uid:user.uid,role:profile.role,name:profile.name,classCode:profile.classCode||null,email:user.email};
+      // Öğrenci onay kontrolü
+      if(profile.role==='student'&&profile.classCode){
+        const pending=await dbGet(`pendingStudents/${safeKey(profile.classCode)}/${safeKey(user.uid)}`);
+        if(pending&&pending.status==='pending'){
+          hideLoading();
+          showPendingScreen(profile.name,profile.classCode);
+          return;
+        }
+        if(pending&&pending.status==='rejected'){
+          hideLoading();
+          showScreen('screen-auth');
+          showErr('Başvurun öğretmen tarafından reddedildi.');
+          return;
+        }
+      }
+      hideLoading();
+      enterApp();
+    } else {hideLoading();showScreen('screen-auth')}
+  } else {hideLoading();showScreen('screen-auth')}
+});
+
+function showPendingScreen(name,classCode){
+  // Onay bekleyen öğrenci için bekleme ekranı
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  const s=document.getElementById('screen-auth');
+  s.classList.add('active');
+  s.innerHTML=`<div class="auth-wrap text-center">
+    <div style="font-size:4rem;margin-bottom:16px">⏳</div>
+    <div class="auth-logo">classroom</div>
+    <div class="auth-box mt-4">
+      <div style="font-size:1.1rem;font-weight:700;margin-bottom:10px">Merhaba, ${name}!</div>
+      <div class="text-dim" style="font-size:.9rem;line-height:1.6;margin-bottom:20px">
+        Sınıf başvurun öğretmene iletildi.<br>
+        Öğretmen seni onaylayana kadar beklemen gerekiyor.
+      </div>
+      <div class="badge badge-warning" style="justify-content:center;padding:10px 20px;font-size:.85rem;width:100%;margin-bottom:20px">⏳ Onay Bekleniyor</div>
+      <button class="btn btn-ghost btn-block" onclick="doLogout()">🚪 Çıkış Yap</button>
+    </div>
+  </div>`;
+  // Gerçek zamanlı onay takibi
+  dbListen(`pendingStudents/${safeKey(classCode)}/${safeKey(session.uid)}`,data=>{
+    if(data&&data.status==='approved'){
+      clearListeners();
+      toast('🎉 Öğretmen seni onayladı! Giriş yapılıyor...','s');
+      setTimeout(()=>location.reload(),1500);
+    }
+    if(data&&data.status==='rejected'){
+      clearListeners();
+      toast('❌ Başvurun reddedildi.','d');
+      setTimeout(()=>doLogout(),2000);
+    }
+  });
+}
+
+// ═══════════ AUTH FORMS ═══════════
+window.switchAuthTab=function(tab){
+  document.getElementById('form-login').style.display=tab==='login'?'block':'none';
+  document.getElementById('form-register').style.display=tab==='register'?'block':'none';
+  document.getElementById('tab-login').classList.toggle('active',tab==='login');
+  document.getElementById('tab-register').classList.toggle('active',tab==='register');
+  hideErr();
+}
+window.selectRole=function(role){
+  selectedRole=role;
+  document.getElementById('role-teacher').className='role-btn'+(role==='teacher'?' sel-teacher':'');
+  document.getElementById('role-student').className='role-btn'+(role==='student'?' sel-student':'');
+  document.getElementById('reg-class-group').style.display=role==='student'?'block':'none';
+}
+window.doLogin=async function(){
+  const email=document.getElementById('login-email').value.trim();
+  const pass=document.getElementById('login-pass').value;
+  if(!email||!pass){showErr('E-posta ve şifre gir!');return}
+  const btn=document.getElementById('login-btn');btn.disabled=true;btn.textContent='Giriş yapılıyor...';hideErr();
+  try{await signInWithEmailAndPassword(auth,email,pass)}
+  catch(e){
+    const m={'auth/user-not-found':'Bu e-posta kayıtlı değil.','auth/wrong-password':'Şifre hatalı.','auth/invalid-credential':'E-posta veya şifre hatalı.','auth/too-many-requests':'Çok deneme. Biraz bekle.'};
+    showErr(m[e.code]||'Hata: '+e.message);btn.disabled=false;btn.textContent='Giriş Yap →';
+  }
+}
+window.doRegister=async function(){
+  const name=document.getElementById('reg-name').value.trim();
+  const email=document.getElementById('reg-email').value.trim();
+  const pass=document.getElementById('reg-pass').value;
+  const code=document.getElementById('reg-class-code').value.trim().toUpperCase();
+  if(!name||!email||!pass){showErr('Tüm alanları doldur!');return}
+  if(pass.length<6){showErr('Şifre en az 6 karakter!');return}
+  if(selectedRole==='student'){
+    if(!code){showErr('Sınıf kodu gir!');return}
+    const cls=await dbGet(`classes/${code}`);
+    if(!cls){showErr('Geçersiz sınıf kodu!');return}
+  }
+  const btn=document.getElementById('register-btn');btn.disabled=true;btn.textContent='Oluşturuluyor...';hideErr();
+  try{
+    const cred=await createUserWithEmailAndPassword(auth,email,pass);
+    const uid=cred.user.uid;
+    await dbSet(`users/${uid}/profile`,{name,role:selectedRole,classCode:code||null,email,createdAt:Date.now(),approved:selectedRole!=='student'});
+    if(selectedRole==='student'){
+      // Direkt üye değil — onay bekleniyor
+      await dbSet(`pendingStudents/${safeKey(code)}/${safeKey(uid)}`,{name,uid,email,classCode:code,requestedAt:Date.now(),status:'pending'});
+    }
+  }catch(e){
+    const m={'auth/email-already-in-use':'Bu e-posta zaten kullanımda.','auth/invalid-email':'Geçersiz e-posta.','auth/weak-password':'Şifre çok zayıf.'};
+    showErr(m[e.code]||'Hata: '+e.message);btn.disabled=false;btn.textContent='Hesap Oluştur →';
+  }
+}
+window.doLogout=async function(){
+  if(!confirm('Çıkış yapmak istiyor musun?'))return;
+  clearListeners();clearAllTimers();
+  await signOut(auth);
+  showScreen('screen-auth');
+  toast('Çıkış yapıldı.','i');
+}
+
+// ═══════════ APP ENTRY ═══════════
+function enterApp(){
+  showScreen('screen-app');
+  // Sidebar setup
+  document.getElementById('sb-name').textContent=session.name;
+  const roleLabels={teacher:'Öğretmen',student:'Öğrenci'};
+  document.getElementById('sb-role').textContent=roleLabels[session.role]||'';
+  if(session.role==='student'){
+    document.getElementById('sb-xp-bar').style.display='block';
+    document.getElementById('sb-xp-text').style.display='block';
+  }
+  if(session.role==='teacher'){
+    document.getElementById('teacher-nav').style.display='block';
+    // Bekleyen öğrenci bildirimi
+    dbListen('pendingStudents',allPending=>{
+      if(!allPending)return;
+      let count=0;
+      Object.entries(allPending).forEach(([code,students])=>{
+        Object.values(students).forEach(s=>{
+          if(s.status==='pending')count++;
+        });
+      });
+      const badge=document.getElementById('pending-badge');
+      if(badge){badge.textContent=count;badge.style.display=count>0?'inline':'none';}
+    });
+  }
+  populateSubjectSelects();
+  // Listen to game state
+  dbListen(`users/${session.uid}/gameState`,s=>{
+    const state=s||defaultState();
+    updateSidebarXP(state);
+    checkBadges(state);
+    checkEmailReminders(state);
+  });
+  // Listen to hw badge count
+  if(session.role==='student'){
+    dbListen('homeworks',hws=>{
+      updateHwBadge(hws||{});
+    });
+    // Announcement badge
+    dbListen('announcements',anns=>{
+      const newAnns=Object.values(anns||{}).filter(a=>a.classCode===session.classCode&&a.createdAt>(parseInt(localStorage.getItem('ann_seen')||0)));
+      const badge=document.getElementById('ann-badge');
+      if(badge){badge.style.display=newAnns.length>0?'inline':'none';}
+    });
+  }
+  navTo('dashboard');
+}
+
+function updateSidebarXP(s){
+  const xpNext=xpFor(s.lvl||1);
+  document.getElementById('sb-xp-fill').style.width=((s.xp||0)/xpNext*100)+'%';
+  document.getElementById('sb-xp-text').textContent=`Sev.${s.lvl||1} · ${s.xp||0}/${xpNext} XP · ${getRank(s.lvl||1)}`;
+}
+
+function updateHwBadge(hws){
+  const myHws=Object.values(hws).filter(h=>
+    h.classCode===session.classCode&&
+    Array.isArray(h.assignedTo)&&h.assignedTo.includes(session.uid)&&
+    !h.submittedBy?.includes(session.uid)&&
+    new Date(h.dueDate)>=new Date()
+  );
+  const badge=document.getElementById('hw-badge');
+  if(myHws.length>0){badge.textContent=myHws.length;badge.style.display='inline'}
+  else badge.style.display='none';
+}
+
+async function checkBadges(s){
+  const prevBadges=[...(s.earnedBadges||[])];
+  let changed=false;
+  BADGES_DEF.forEach(b=>{
+    if(!prevBadges.includes(b.id)&&b.check(s)){
+      s.earnedBadges=s.earnedBadges||[];s.earnedBadges.push(b.id);changed=true;
+      setTimeout(()=>toast(`🏆 Rozet: ${b.name} ${b.icon}`,'w'),600);
+    }
+  });
+  if(changed)await dbUpdate(`users/${session.uid}/gameState`,{earnedBadges:s.earnedBadges});
+}
+
+// ═══════════ EMAIL REMINDERS (EmailJS) ═══════════
+// EmailJS public key — kullanıcı kendi key'ini koymalı (ücretsiz)
+// Şimdilik console log ile simüle ediyoruz, kullanıcı EmailJS kurarsa aktif olur
+async function checkEmailReminders(){
+  if(session.role!=='student')return;
+  const hws=await dbGet('homeworks')||{};
+  const myHws=Object.values(hws).filter(h=>
+    h.classCode===session.classCode&&
+    Array.isArray(h.assignedTo)&&h.assignedTo.includes(session.uid)&&
+    !h.submittedBy?.includes(session.uid)
+  );
+  const reminded=await dbGet(`users/${session.uid}/reminded`)||{};
+  for(const hw of myHws){
+    const days=daysUntil(hw.dueDate);
+    const key3=`${hw.id}_3`;const key1=`${hw.id}_1`;
+    if(days===3&&!reminded[key3]){
+      await sendReminderEmail(hw,3);
+      await dbUpdate(`users/${session.uid}/reminded`,{[key3]:true});
+    }
+    if(days===1&&!reminded[key1]){
+      await sendReminderEmail(hw,1);
+      await dbUpdate(`users/${session.uid}/reminded`,{[key1]:true});
+    }
+  }
+}
+async function sendReminderEmail(hw,days){
+  // EmailJS entegrasyonu — aşağıya kendi EmailJS bilgilerini gir
+  const EMAILJS_SERVICE_ID='YOUR_SERVICE_ID';
+  const EMAILJS_TEMPLATE_ID='YOUR_TEMPLATE_ID';
+  const EMAILJS_PUBLIC_KEY='YOUR_PUBLIC_KEY';
+  const subject=getSubject(hw.subjectId);
+  const params={
+    to_email:session.email,
+    to_name:session.name,
+    hw_title:hw.title,
+    subject_name:subject.name,
+    due_date:fmtDate(hw.dueDate),
+    days_left:days,
+  };
+  // EmailJS yüklüyse gönder
+  if(window.emailjs){
+    try{
+      await window.emailjs.send(EMAILJS_SERVICE_ID,EMAILJS_TEMPLATE_ID,params,EMAILJS_PUBLIC_KEY);
+      toast(`📧 Hatırlatma maili gönderildi: ${hw.title} (${days} gün kaldı)`,'i');
+    }catch(e){console.warn('Email gönderilemedi:',e)}
+  } else {
+    // EmailJS yoksa toast ile göster
+    toast(`📧 Hatırlatma: "${hw.title}" — ${days} gün kaldı!`,'w');
+  }
+}
+
+// ═══════════ NAVIGATION ═══════════
+window.navTo=function(page){
+  currentNav=page;
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  const navEl=document.getElementById('nav-'+page);
+  if(navEl)navEl.classList.add('active');
+  const mc=document.getElementById('main-content');
+  switch(page){
+    case 'dashboard': renderDashboard();break;
+    case 'homework': renderHomework();break;
+    case 'notes': renderNotes();break;
+    case 'announcements': renderAnnouncements();break;
+    case 'chat': renderChat();break;
+    case 'quiz': renderQuiz();break;
+    case 'quiz-create': showModal('modal-create-quiz');loadTeacherClassesForQuiz();break;
+    case 'classes': renderClasses();break;
+    case 'store': renderStore();break;
+    case 'leaderboard': renderLeaderboard();break;
+    case 'assign': renderAssign();break;
+    case 'students': renderStudents();break;
+    case 'analytics': renderAnalytics();break;
+    default: renderDashboard();
+  }
+}
+
+// ═══════════ DASHBOARD ═══════════
+async function renderDashboard(){
+  const mc=document.getElementById('main-content');
+  const state=await dbGet(`users/${session.uid}/gameState`)||defaultState();
+  const hws=await dbGet('homeworks')||{};
+  const myHws=session.role==='student'
+    ?Object.values(hws).filter(h=>h.classCode===session.classCode&&Array.isArray(h.assignedTo)&&h.assignedTo.includes(session.uid))
+    :session.role==='teacher'?Object.values(hws).filter(h=>h.teacherUid===session.uid):[];
+  const pendingHws=myHws.filter(h=>!h.submittedBy?.includes(session.uid)&&new Date(h.dueDate)>=new Date());
+  const notes=await dbGet('notes')||{};
+  const recentNotes=Object.values(notes).filter(n=>n.classCode===(session.classCode||'_ind')).slice(0,3);
+
+  mc.innerHTML=`
+    <div style="margin-bottom:24px">
+      <div style="font-family:'Syne',sans-serif;font-size:1.5rem;font-weight:700">Merhaba, ${session.name}! 👋</div>
+      <div class="text-dim" style="font-size:.9rem;margin-top:4px">${new Date().toLocaleDateString('tr-TR',{weekday:'long',day:'numeric',month:'long'})}</div>
+    </div>
+
+    <div class="grid-3 mb-4" style="margin-bottom:20px">
+      <div class="stat-card"><div class="lbl">SEVİYE</div><div class="val text-primary">${state.lvl||1}</div><div style="font-size:.72rem;color:var(--dim)">${getRank(state.lvl||1)}</div></div>
+      <div class="stat-card"><div class="lbl">TOPLAM XP</div><div class="val text-accent">${state.totalXp||0}</div></div>
+      <div class="stat-card"><div class="lbl">SERİ</div><div class="val text-warning">${state.streak||0} 🔥</div></div>
+    </div>
+
+    <div class="grid-2" style="margin-bottom:20px">
+      <div>
+        <div style="font-family:'Syne',sans-serif;font-size:.85rem;font-weight:700;margin-bottom:12px;color:var(--dim)">📋 YAKIN ÖDEVLER</div>
+        ${pendingHws.length===0
+          ?'<div class="card text-center text-dim" style="padding:30px">Bekleyen ödev yok ✓</div>'
+          :pendingHws.sort((a,b)=>new Date(a.dueDate)-new Date(b.dueDate)).slice(0,4).map(h=>miniHwCard(h)).join('')
+        }
+      </div>
+      <div>
+        <div style="font-family:'Syne',sans-serif;font-size:.85rem;font-weight:700;margin-bottom:12px;color:var(--dim)">📝 SON NOTLAR</div>
+        ${recentNotes.length===0
+          ?'<div class="card text-center text-dim" style="padding:30px">Henüz not yok</div>'
+          :recentNotes.map(n=>miniNoteCard(n)).join('')
+        }
+      </div>
+    </div>
+
+    <div>
+      <div style="font-family:'Syne',sans-serif;font-size:.85rem;font-weight:700;margin-bottom:12px;color:var(--dim)">🏆 ROZETLER</div>
+      <div class="card"><div style="display:grid;grid-template-columns:repeat(7,1fr);gap:10px">${renderBadgesHTML(state)}</div></div>
+    </div>
+  `;
+  if(session.role==='student'){
+    const btn=document.createElement('button');
+    btn.className='btn btn-primary';btn.style.cssText='position:fixed;bottom:24px;right:24px;border-radius:50%;width:56px;height:56px;font-size:1.4rem;box-shadow:0 4px 20px var(--primary-glow)';
+    btn.textContent='📝';btn.title='Not Paylaş';btn.onclick=()=>showModal('modal-share-note');
+    mc.appendChild(btn);
+  }
+}
+
+function miniHwCard(hw){
+  const days=daysUntil(hw.dueDate);
+  const subj=getSubject(hw.subjectId);
+  const urgency=days<0?'done':days<=1?'urgent':days<=3?'soon':'normal';
+  const urgencyLabel=days<0?'Geçti':days===0?'Bugün':days===1?'Yarın':`${days} gün`;
+  return `<div class="hw-card ${urgency}" style="cursor:pointer" onclick="navTo('homework')">
+    <div class="flex items-center justify-between mb-2">
+      <span style="font-weight:600;font-size:.88rem">${hw.title}</span>
+      <span class="badge ${days<=1?'badge-danger':days<=3?'badge-warning':'badge-primary'}">${urgencyLabel}</span>
+    </div>
+    <div class="flex items-center gap-2">
+      <span style="color:${subj.color};font-size:.8rem">${subj.icon} ${subj.name}</span>
+      <span class="text-dim" style="font-size:.75rem">· ${fmtDate(hw.dueDate)}</span>
+    </div>
+  </div>`;
+}
+
+function miniNoteCard(n){
+  const subj=getSubject(n.subjectId);
+  return `<div class="note-card" style="cursor:pointer" onclick="navTo('notes')">
+    <div class="flex items-center justify-between mb-1">
+      <span style="font-weight:600;font-size:.88rem">${n.title}</span>
+      <span style="color:${subj.color};font-size:.75rem">${subj.icon} ${subj.name}</span>
+    </div>
+    <div class="text-dim" style="font-size:.8rem">${(n.content||'').substring(0,80)}${(n.content||'').length>80?'...':''}</div>
+    <div class="text-dim2" style="font-size:.72rem;margin-top:6px">${n.authorName} · ${new Date(n.createdAt).toLocaleDateString('tr-TR')}</div>
+  </div>`;
+}
+
+function renderBadgesHTML(state){
+  return BADGES_DEF.map(b=>{
+    const earned=(state.earnedBadges||[]).includes(b.id)||b.check(state);
+    return `<div title="${b.name}" style="text-align:center;padding:10px 4px;border-radius:10px;background:${earned?'rgba(255,184,0,.08)':'rgba(255,255,255,.02)'};border:1px solid ${earned?'rgba(255,184,0,.3)':'rgba(255,255,255,.06)'}">
+      <div style="font-size:1.3rem">${earned?b.icon:'🔒'}</div>
+      <div style="font-size:.55rem;color:${earned?'var(--warning)':'var(--dim2)'};margin-top:4px">${b.name}</div>
+    </div>`;
+  }).join('');
+}
+
+// ═══════════ HOMEWORK ═══════════
+async function renderHomework(){
+  const mc=document.getElementById('main-content');
+  mc.innerHTML=`<div class="flex items-center justify-between mb-4">
+    <div style="font-family:'Syne',sans-serif;font-size:1.3rem;font-weight:700">📋 Ödevler</div>
+    ${session.role==='teacher'?`<button class="btn btn-primary" onclick="showModal('modal-assign-hw');loadTeacherClassesForHw()">+ Ödev Ver</button>`
+    :`<button class="btn btn-success" onclick="showModal('modal-share-note')">+ Not Paylaş</button>`}
+  </div>
+  <div class="tabs">
+    <div class="tab active" id="hw-tab-pending" onclick="hwTab('pending')">Bekleyen</div>
+    <div class="tab" id="hw-tab-done" onclick="hwTab('done')">Tamamlanan</div>
+    <div class="tab" id="hw-tab-overdue" onclick="hwTab('overdue')">Geçmiş</div>
+    ${session.role==='teacher'?`
+      <div class="tab" id="hw-tab-given" onclick="hwTab('given')">Verdiğim</div>
+      <div class="tab" id="hw-tab-cancelled" onclick="hwTab('cancelled')">🚫 İptal</div>
+    `:'<div class="tab" id="hw-tab-cancelled" onclick="hwTab(\'cancelled\')">🚫 İptal</div>'}
+  </div>
+  <div id="hw-list"></div>`;
+  await loadHwTab('pending');
+  if(session.role==='teacher')await loadTeacherClassesForHw();
+}
+
+window.hwTab=async function(tab){
+  document.querySelectorAll('[id^="hw-tab-"]').forEach(t=>t.classList.remove('active'));
+  document.getElementById('hw-tab-'+tab)?.classList.add('active');
+  await loadHwTab(tab);
+}
+
+async function loadHwTab(tab){
+  const hws=await dbGet('homeworks')||{};
+  const list=document.getElementById('hw-list');if(!list)return;
+  let filtered=[];
+  if(session.role==='student'){
+    const all=Object.values(hws).filter(h=>h.classCode===session.classCode&&Array.isArray(h.assignedTo)&&h.assignedTo.includes(session.uid));
+    const today=new Date();today.setHours(0,0,0,0);
+    if(tab==='pending')filtered=all.filter(h=>!h.submittedBy?.includes(session.uid)&&new Date(h.dueDate)>=today&&h.status!=='cancelled');
+    else if(tab==='done')filtered=all.filter(h=>h.submittedBy?.includes(session.uid)&&h.status!=='cancelled');
+    else if(tab==='overdue')filtered=all.filter(h=>!h.submittedBy?.includes(session.uid)&&new Date(h.dueDate)<today&&h.status!=='cancelled');
+    else if(tab==='cancelled')filtered=all.filter(h=>h.status==='cancelled');
+  } else if(session.role==='teacher'){
+    const all=Object.values(hws).filter(h=>h.teacherUid===session.uid);
+    if(tab==='given')filtered=all.filter(h=>h.status!=='cancelled');
+    else if(tab==='cancelled')filtered=all.filter(h=>h.status==='cancelled');
+    else filtered=all.filter(h=>h.status!=='cancelled');
+  }
+  filtered.sort((a,b)=>new Date(a.dueDate)-new Date(b.dueDate));
+  if(filtered.length===0){list.innerHTML=`<div class="card text-center text-dim" style="padding:50px"><div style="font-size:3rem;margin-bottom:10px">📭</div><div>${tab==='cancelled'?'İptal edilmiş ödev yok.':'Burada ödev yok.'}</div></div>`;return}
+  list.innerHTML=filtered.map(h=>hwCard(h,tab)).join('');
+}
+
+function hwCard(hw,tab){
+  const days=daysUntil(hw.dueDate);
+  const subj=getSubject(hw.subjectId);
+  const isDone=hw.submittedBy?.includes(session.uid);
+  const isCancelled=hw.status==='cancelled';
+  const urgency=isCancelled?'done':isDone?'done':days<0?'done':days<=1?'urgent':days<=3?'soon':'normal';
+  const totalDays=Math.round((new Date(hw.dueDate)-new Date(hw.createdAt||hw.dueDate))/(1000*60*60*24))||7;
+  const elapsed=totalDays-Math.max(0,days);
+  const pct=Math.min(100,Math.max(0,(elapsed/totalDays)*100));
+  const barColor=isCancelled?'var(--danger)':days<=1?'var(--danger)':days<=3?'var(--warning)':'var(--primary)';
+  const submittedCount=Array.isArray(hw.submittedBy)?hw.submittedBy.length:0;
+  const assignedCount=Array.isArray(hw.assignedTo)?hw.assignedTo.length:0;
+  return `<div class="hw-card ${urgency}" style="${isCancelled?'opacity:.65;border-left-color:var(--danger)':''}">
+    <div class="flex items-center justify-between mb-2">
+      <div>
+        <div style="font-weight:700;font-size:.95rem;margin-bottom:4px">${hw.title}${isCancelled?` <span class="badge badge-danger">🚫 İptal</span>`:''}</div>
+        <div class="flex items-center gap-2">
+          <span style="color:${subj.color};font-size:.8rem">${subj.icon} ${subj.name}</span>
+          <span class="text-dim" style="font-size:.75rem">· ${fmtDate(hw.dueDate)}</span>
+          ${session.role==='teacher'?`<span class="badge badge-accent">${submittedCount}/${assignedCount} teslim</span>`:''}
+        </div>
+      </div>
+      <div class="flex items-center gap-2">
+        ${isCancelled
+          ?`<span class="badge badge-danger">🚫 İptal Edildi</span>`
+          :isDone?`<span class="badge badge-success">✓ Teslim</span>`
+          :days<0?`<span class="badge badge-danger">Geçti</span>`
+          :days===0?`<span class="badge badge-danger">Bugün!</span>`
+          :days<=3?`<span class="badge badge-warning">${days} gün</span>`
+          :`<span class="badge badge-primary">${days} gün</span>`
+        }
+        ${!isCancelled&&!isDone&&days>=0&&session.role==='student'?`<button class="btn btn-success" style="padding:6px 14px;font-size:.78rem" onclick="openSubmitHw('${hw.id}')">Teslim Et</button>`:''}
+        ${session.role==='teacher'&&!isCancelled?`<button class="btn btn-danger" style="padding:6px 12px;font-size:.75rem" onclick="cancelHomework('${hw.id}','${hw.title.replace(/'/g,"\\'")}')">🚫 İptal</button>`:''}
+        ${session.role==='teacher'&&isCancelled?`<button class="btn btn-ghost" style="padding:6px 12px;font-size:.75rem" onclick="restoreHomework('${hw.id}','${hw.title.replace(/'/g,"\\'")}')">↩ Geri Al</button>`:''}
+      </div>
+    </div>
+    ${hw.description?`<div class="text-dim" style="font-size:.82rem;margin-bottom:8px">${hw.description}</div>`:''}
+    <div class="deadline-bar"><div class="deadline-fill" style="width:${pct}%;background:${barColor}"></div></div>
+    <div class="flex items-center justify-between">
+      <span class="text-dim2" style="font-size:.72rem">+${hw.xp||50} XP ödül · −${hw.penalty||20} XP ceza</span>
+      ${isCancelled&&hw.cancelledAt?`<span class="text-dim2" style="font-size:.72rem">İptal: ${new Date(hw.cancelledAt).toLocaleDateString('tr-TR')}</span>`:''}
+    </div>
+  </div>`;
+}
+
+window.openSubmitHw=async function(hwId){
+  pendingSubmitHwId=hwId;
+  const hw=await dbGet(`homeworks/${hwId}`);
+  if(!hw)return;
+  const subj=getSubject(hw.subjectId);
+  document.getElementById('submit-hw-info').innerHTML=`<div style="font-weight:600;margin-bottom:4px">${hw.title}</div><div style="color:${subj.color};font-size:.82rem">${subj.icon} ${subj.name}</div><div class="text-dim" style="font-size:.8rem;margin-top:4px">Teslim: ${fmtDate(hw.dueDate)} · +${hw.xp} XP</div>`;
+  document.getElementById('submit-note').value='';
+  document.getElementById('submit-link').value='';
+  showModal('modal-submit-hw');
+}
+
+window.submitHomework=async function(){
+  if(!pendingSubmitHwId)return;
+  const note=document.getElementById('submit-note').value.trim();
+  const link=document.getElementById('submit-link').value.trim();
+  const hw=await dbGet(`homeworks/${pendingSubmitHwId}`);
+  if(!hw){toast('Ödev bulunamadı.','d');return}
+  if(hw.submittedBy?.includes(session.uid)){toast('Zaten teslim edildi.','w');return}
+  const submittedBy=[...(hw.submittedBy||[]),session.uid];
+  const submissions={...(hw.submissions||{}),[session.uid]:{note,link,submittedAt:Date.now(),studentName:session.name}};
+  await dbUpdate(`homeworks/${pendingSubmitHwId}`,{submittedBy,submissions});
+  // XP ver
+  const path=`users/${session.uid}/gameState`;
+  const s=await dbGet(path)||defaultState();
+  const isLate=new Date(hw.dueDate)<new Date();
+  const xpGain=isLate?Math.max(0,hw.xp-hw.penalty):hw.xp;
+  s.totalCompleted=(s.totalCompleted||0)+1;
+  s.streak=(s.streak||0)+1;
+  if(s.streak>(s.bestStreak||0))s.bestStreak=s.streak;
+  const leveled=addXP(s,xpGain);
+  await dbSet(path,s);
+  hideModal('modal-submit-hw');
+  particles();
+  toast(`✅ Ödev teslim edildi! +${xpGain} XP`,'s');
+  if(isLate)toast('⚠️ Geç teslim — ceza uygulandı.','w');
+  if(leveled){setTimeout(()=>{document.getElementById('lvlup-info').textContent=`Yeni rütben: ${getRank(s.lvl)}`;showModal('modal-levelup')},600)}
+  renderHomework();
+}
+
+window.cancelHomework=async function(hwId,title){
+  if(!confirm(`"${title}" ödevini iptal etmek istiyor musun?\nÖğrenciler bu ödevi artık göremeyecek.`))return;
+  await dbUpdate(`homeworks/${hwId}`,{status:'cancelled',cancelledAt:Date.now(),cancelledBy:session.name});
+  toast(`🚫 "${title}" ödevi iptal edildi.`,'w');
+  loadHwTab(document.querySelector('[id^="hw-tab-"].active')?.id.replace('hw-tab-','')||'given');
+}
+
+window.restoreHomework=async function(hwId,title){
+  if(!confirm(`"${title}" ödevini geri almak istiyor musun?`))return;
+  await dbUpdate(`homeworks/${hwId}`,{status:'active',cancelledAt:null,cancelledBy:null});
+  toast(`↩ "${title}" ödevi geri alındı.`,'s');
+  loadHwTab('cancelled');
+}
+async function renderNotes(){
+  const mc=document.getElementById('main-content');
+  mc.innerHTML=`<div class="flex items-center justify-between mb-4">
+    <div style="font-family:'Syne',sans-serif;font-size:1.3rem;font-weight:700">📝 Ders Notları</div>
+    <button class="btn btn-success" onclick="showModal('modal-share-note')">+ Not Paylaş</button>
+  </div>
+  <div class="flex gap-2 mb-4" style="flex-wrap:wrap">
+    <button class="btn btn-ghost" style="font-size:.8rem" id="note-filter-all" onclick="filterNotes('all')">Tümü</button>
+    ${['Fen','Sözel','Dil','Sanat','Din','Teknoloji'].map(cat=>`<button class="btn btn-ghost" style="font-size:.8rem" id="note-filter-${cat}" onclick="filterNotes('${cat}')">${cat}</button>`).join('')}
+  </div>
+  <div id="notes-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:14px"></div>`;
+  await loadNotes('all');
+}
+
+window.filterNotes=async function(cat){
+  document.querySelectorAll('[id^="note-filter-"]').forEach(b=>b.classList.remove('btn-primary'));
+  document.getElementById('note-filter-'+cat)?.classList.add('btn-primary');
+  await loadNotes(cat);
+}
+
+async function loadNotes(cat){
+  const notes=await dbGet('notes')||{};
+  const grid=document.getElementById('notes-grid');if(!grid)return;
+  let filtered=Object.values(notes).filter(n=>n.classCode===(session.classCode||'_ind'));
+  if(cat!=='all'){
+    const ids=SUBJECTS.filter(s=>s.cat===cat).map(s=>s.id);
+    filtered=filtered.filter(n=>ids.includes(n.subjectId));
+  }
+  filtered.sort((a,b)=>b.createdAt-a.createdAt);
+  if(filtered.length===0){grid.innerHTML='<div class="card text-center text-dim" style="padding:50px;grid-column:1/-1"><div style="font-size:3rem;margin-bottom:10px">📭</div><div>Henüz not paylaşılmadı.</div></div>';return}
+  grid.innerHTML=filtered.map(n=>noteCardFull(n)).join('');
+}
+
+function noteCardFull(n){
+  const subj=getSubject(n.subjectId);
+  return `<div class="note-card">
+    <div class="flex items-center justify-between mb-2">
+      <div style="font-weight:700;font-size:.92rem">${n.title}</div>
+      <span style="color:${subj.color};font-size:.82rem">${subj.icon} ${subj.name}</span>
+    </div>
+    <div class="text-dim" style="font-size:.83rem;line-height:1.5;margin-bottom:10px">${(n.content||'').substring(0,200)}${(n.content||'').length>200?'...':''}</div>
+    ${n.link?`<a href="${n.link}" target="_blank" class="btn btn-accent" style="font-size:.75rem;padding:5px 12px;text-decoration:none;display:inline-flex">📎 Dosyayı Aç</a>`:''}
+    <div class="flex items-center justify-between mt-2">
+      <div class="text-dim2" style="font-size:.72rem">👤 ${n.authorName}</div>
+      <div class="text-dim2" style="font-size:.72rem">${new Date(n.createdAt).toLocaleDateString('tr-TR')}</div>
+    </div>
+  </div>`;
+}
+
+window.shareNote=async function(){
+  const subjectId=document.getElementById('note-subject-sel').value;
+  const title=document.getElementById('note-title').value.trim();
+  const content=document.getElementById('note-content').value.trim();
+  const link=document.getElementById('note-link').value.trim();
+  if(!subjectId||!title||!content){toast('Ders, başlık ve içerik zorunlu!','w');return}
+  const noteId='note_'+Date.now();
+  await dbSet(`notes/${noteId}`,{id:noteId,subjectId,title,content,link,authorName:session.name,authorUid:session.uid,classCode:session.classCode||'_ind',createdAt:Date.now()});
+  // XP ver
+  const path=`users/${session.uid}/gameState`;
+  const s=await dbGet(path)||defaultState();
+  s.totalNotes=(s.totalNotes||0)+1;
+  addXP(s,20);
+  await dbSet(path,s);
+  hideModal('modal-share-note');
+  document.getElementById('note-subject-sel').value='';
+  document.getElementById('note-title').value='';
+  document.getElementById('note-content').value='';
+  document.getElementById('note-link').value='';
+  toast('📝 Not paylaşıldı! +20 XP','s');
+  if(currentNav==='notes')renderNotes();
+}
+
+// ═══════════ CLASSES ═══════════
+async function renderClasses(){
+  const mc=document.getElementById('main-content');
+  mc.innerHTML=`<div class="flex items-center justify-between mb-4">
+    <div style="font-family:'Syne',sans-serif;font-size:1.3rem;font-weight:700">🏫 Sınıflarım</div>
+    ${session.role==='teacher'?`<button class="btn btn-primary" onclick="showModal('modal-create-class')">+ Yeni Sınıf</button>`:''}
+  </div><div id="classes-list"></div>`;
+  const classes=await dbGet('classes')||{};
+  const el=document.getElementById('classes-list');
+  let myClasses=[];
+  if(session.role==='teacher')myClasses=Object.values(classes).filter(c=>c.teacherUid===session.uid);
+  else if(session.role==='student'&&session.classCode)myClasses=Object.values(classes).filter(c=>c.code===session.classCode);
+  if(myClasses.length===0){el.innerHTML=`<div class="card text-center text-dim" style="padding:60px"><div style="font-size:3rem;margin-bottom:12px">🏫</div><div>${session.role==='teacher'?'Henüz sınıf yok. Sağ üstten oluştur.':'Henüz bir sınıfa kayıtlı değilsin.'}</div></div>`;return}
+  el.innerHTML='';
+  for(const cls of myClasses){
+    const members=await dbGet(`classMembers/${safeKey(cls.code)}`)||{};
+    const memberCount=Object.keys(members).length;
+    const hws=await dbGet('homeworks')||{};
+    const clsHws=Object.values(hws).filter(h=>h.classCode===cls.code);
+    const div=document.createElement('div');div.className='card card-hover mb-3';div.style.marginBottom='14px';
+    div.innerHTML=`<div class="flex items-center justify-between mb-3">
+      <div><div style="font-family:'Syne',sans-serif;font-size:1.05rem;font-weight:700">${cls.name}</div><div class="text-dim" style="font-size:.82rem;margin-top:2px">${cls.desc||''}</div></div>
+      <div class="flex items-center gap-2">
+        <div style="font-family:'Syne',sans-serif;font-size:.9rem;font-weight:700;background:var(--primary-dim);color:var(--primary);padding:6px 14px;border-radius:8px;border:1px solid rgba(108,99,255,.3);letter-spacing:.1em">${cls.code}</div>
+        <button class="btn btn-ghost btn-icon" onclick="navigator.clipboard.writeText('${cls.code}').then(()=>toast('Kod kopyalandı!','i'))" title="Kopyala">📋</button>
+      </div>
+    </div>
+    <div class="flex gap-3">
+      <span class="badge badge-success">👥 ${memberCount} öğrenci</span>
+      <span class="badge badge-primary">📋 ${clsHws.length} ödev</span>
+      <span class="badge badge-warning">🏫 ${session.role==='teacher'?cls.teacherName||session.name:'Öğretmen: '+cls.teacherName}</span>
+    </div>`;
+    el.appendChild(div);
+  }
+}
+
+window.createClass=async function(){
+  const name=document.getElementById('cls-name').value.trim();
+  if(!name){toast('Sınıf adı gir!','w');return}
+  const desc=document.getElementById('cls-desc').value.trim();
+  let code=genCode();
+  while(await dbGet(`classes/${code}`))code=genCode();
+  await dbSet(`classes/${code}`,{code,name,desc,teacherName:session.name,teacherUid:session.uid,created:Date.now()});
+  hideModal('modal-create-class');
+  document.getElementById('cls-name').value='';document.getElementById('cls-desc').value='';
+  toast(`✅ Sınıf oluşturuldu! Kod: ${code}`,'s');
+  if(currentNav==='classes')renderClasses();
+}
+
+function genCode(){
+  const c='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let s='CL-';for(let i=0;i<4;i++)s+=c[Math.floor(Math.random()*c.length)];return s;
+}
+
+// ═══════════ ASSIGN HOMEWORK (Teacher) ═══════════
+async function renderAssign(){
+  navTo('homework');
+  showModal('modal-assign-hw');
+  await loadTeacherClassesForHw();
+}
+
+async function loadTeacherClassesForHw(){
+  const sel=document.getElementById('hw-class-sel');if(!sel)return;
+  const classes=await dbGet('classes')||{};
+  const myClasses=Object.values(classes).filter(c=>c.teacherUid===session.uid);
+  sel.innerHTML='<option value="">— Seç —</option>';
+  myClasses.forEach(c=>sel.innerHTML+=`<option value="${c.code}">${c.name}</option>`);
+}
+
+window.loadClassStudentsForHw=async function(){
+  // just a placeholder for future "assign to specific students" feature
+}
+
+window.assignHomework=async function(){
+  const classCode=document.getElementById('hw-class-sel').value;
+  const subjectId=document.getElementById('hw-subject-sel').value;
+  const title=document.getElementById('hw-title').value.trim();
+  const desc=document.getElementById('hw-desc').value.trim();
+  const dueDate=document.getElementById('hw-due').value;
+  const xp=parseInt(document.getElementById('hw-xp').value)||50;
+  const penalty=parseInt(document.getElementById('hw-penalty').value)||20;
+  if(!classCode||!subjectId||!title||!dueDate){toast('Tüm zorunlu alanları doldur!','w');return}
+  // Get all students in class
+  const members=await dbGet(`classMembers/${safeKey(classCode)}`)||{};
+  const assignedTo=Object.keys(members);
+  if(assignedTo.length===0){toast('Bu sınıfta henüz öğrenci yok!','w');return}
+  const hwId='hw_'+Date.now();
+  await dbSet(`homeworks/${hwId}`,{id:hwId,classCode,subjectId,title,description:desc,dueDate,xp,penalty,teacherUid:session.uid,teacherName:session.name,assignedTo,submittedBy:[],submissions:{},createdAt:Date.now()});
+  hideModal('modal-assign-hw');
+  document.getElementById('hw-class-sel').value='';
+  document.getElementById('hw-subject-sel').value='';
+  document.getElementById('hw-title').value='';
+  document.getElementById('hw-desc').value='';
+  document.getElementById('hw-due').value='';
+  toast(`📤 Ödev atandı: ${title} → ${assignedTo.length} öğrenci`,'s');
+}
+
+// ═══════════ STUDENTS (Teacher) ═══════════
+async function renderStudents(){
+  const mc=document.getElementById('main-content');
+  mc.innerHTML=`<div style="font-family:'Syne',sans-serif;font-size:1.3rem;font-weight:700;margin-bottom:20px">👥 Öğrencilerim</div>
+  <div class="tabs">
+    <div class="tab active" id="stu-tab-pending" onclick="stuTab('pending')">⏳ Bekleyenler <span id="pending-count-tab" class="nav-badge" style="display:inline;margin-left:4px">0</span></div>
+    <div class="tab" id="stu-tab-approved" onclick="stuTab('approved')">✅ Onaylananlar</div>
+  </div>
+  <div id="stu-content"></div>`;
+  await loadStuTab('pending');
+}
+
+window.stuTab=async function(tab){
+  document.querySelectorAll('[id^="stu-tab-"]').forEach(t=>t.classList.remove('active'));
+  document.getElementById('stu-tab-'+tab)?.classList.add('active');
+  await loadStuTab(tab);
+}
+
+async function loadStuTab(tab){
+  const el=document.getElementById('stu-content');if(!el)return;
+  const classes=await getMyClasses();
+  const classCodes=classes.map(c=>c.code);
+  const classMap={};classes.forEach(c=>classMap[c.code]=c);
+
+  if(tab==='pending'){
+    let pending=[];
+    for(const code of classCodes){
+      const reqs=await dbGet(`pendingStudents/${safeKey(code)}`)||{};
+      Object.values(reqs).filter(r=>r.status==='pending').forEach(r=>pending.push({...r,className:classMap[code]?.name||code}));
+    }
+    // Badge güncelle
+    const badge=document.getElementById('pending-count-tab');
+    if(badge){badge.textContent=pending.length;badge.style.display=pending.length>0?'inline':'none';}
+    if(pending.length===0){
+      el.innerHTML=`<div class="card text-center text-dim" style="padding:50px"><div style="font-size:3rem;margin-bottom:10px">✅</div><div>Bekleyen öğrenci yok.</div></div>`;
+      return;
+    }
+    el.innerHTML=pending.map(r=>`
+      <div class="card mb-3" style="margin-bottom:12px;border-left:4px solid var(--warning)">
+        <div class="flex items-center justify-between">
+          <div>
+            <div style="font-weight:700;font-size:.95rem">${r.name}</div>
+            <div class="text-dim" style="font-size:.8rem;margin-top:3px">📧 ${r.email||'—'} · 🏫 ${r.className}</div>
+            <div class="text-dim2" style="font-size:.72rem;margin-top:2px">📅 ${new Date(r.requestedAt).toLocaleDateString('tr-TR',{day:'numeric',month:'long',hour:'2-digit',minute:'2-digit'})}</div>
+          </div>
+          <div class="flex gap-2">
+            <button class="btn btn-success" style="padding:8px 16px;font-size:.82rem" onclick="approveStudent('${r.uid}','${r.classCode}','${r.name}','${r.email||''}')">✓ Kabul Et</button>
+            <button class="btn btn-danger" style="padding:8px 16px;font-size:.82rem" onclick="rejectStudent('${r.uid}','${r.classCode}','${r.name}')">✕ Reddet</button>
+          </div>
+        </div>
+      </div>`).join('');
+
+  } else {
+    // Onaylananlar
+    let approved=[];
+    for(const code of classCodes){
+      const members=await dbGet(`classMembers/${safeKey(code)}`)||{};
+      for(const [uid,m] of Object.entries(members)){
+        const state=await dbGet(`users/${uid}/gameState`)||defaultState();
+        approved.push({...m,uid,classCode:code,className:classMap[code]?.name||code,...state});
+      }
+    }
+    if(approved.length===0){
+      el.innerHTML=`<div class="card text-center text-dim" style="padding:50px"><div style="font-size:3rem;margin-bottom:10px">👥</div><div>Henüz onaylanan öğrenci yok.</div></div>`;
+      return;
+    }
+    approved.sort((a,b)=>(b.totalXp||0)-(a.totalXp||0));
+    el.innerHTML=`<div class="card"><table class="table">
+      <thead><tr><th>ÖĞRENCİ</th><th>SINIF</th><th>SEVİYE</th><th>XP</th><th>TAMAMLANAN</th><th>SERİ</th><th>İŞLEM</th></tr></thead>
+      <tbody>${approved.map(s=>`<tr>
+        <td><strong>${s.name}</strong></td>
+        <td><span class="badge badge-primary">${s.className}</span></td>
+        <td>${s.lvl||1}</td>
+        <td class="text-accent">${s.totalXp||0}</td>
+        <td class="text-success">${s.totalCompleted||0}</td>
+        <td>${s.streak||0} 🔥</td>
+        <td><button class="btn btn-danger" style="padding:5px 10px;font-size:.72rem" onclick="removeStudent('${s.uid}','${s.classCode}','${s.name}')">✕ Çıkar</button></td>
+      </tr>`).join('')}</tbody>
+    </table></div>`;
+  }
+}
+
+window.approveStudent=async function(uid,classCode,name,email){
+  // Onay: pendingStudents güncelle + classMembers'a ekle
+  await dbUpdate(`pendingStudents/${safeKey(classCode)}/${safeKey(uid)}`,{status:'approved',approvedAt:Date.now()});
+  await dbSet(`classMembers/${safeKey(classCode)}/${safeKey(uid)}`,{name,uid,email,classCode,joinedAt:Date.now()});
+  // Kullanıcı profilini onayla
+  await dbUpdate(`users/${uid}/profile`,{approved:true});
+  toast(`✅ ${name} sınıfa kabul edildi!`,'s');
+  loadStuTab('pending');
+}
+
+window.rejectStudent=async function(uid,classCode,name){
+  if(!confirm(`"${name}" adlı öğrencinin başvurusunu reddetmek istiyor musun?`))return;
+  await dbUpdate(`pendingStudents/${safeKey(classCode)}/${safeKey(uid)}`,{status:'rejected',rejectedAt:Date.now()});
+  toast(`❌ ${name} reddedildi.`,'d');
+  loadStuTab('pending');
+}
+
+window.removeStudent=async function(uid,classCode,name){
+  if(!confirm(`"${name}" adlı öğrenciyi sınıftan çıkarmak istiyor musun?`))return;
+  // classMembers'dan sil
+  await dbSet(`classMembers/${safeKey(classCode)}/${safeKey(uid)}`,null);
+  // pending'e geri al (tekrar başvurabilsin)
+  await dbUpdate(`pendingStudents/${safeKey(classCode)}/${safeKey(uid)}`,{status:'removed',removedAt:Date.now()});
+  // Profilini güncelle
+  await dbUpdate(`users/${uid}/profile`,{approved:false});
+  toast(`🗑️ ${name} sınıftan çıkarıldı.`,'w');
+  loadStuTab('approved');
+}
+
+// ═══════════ LEADERBOARD ═══════════
+async function renderLeaderboard(){
+  const mc=document.getElementById('main-content');
+  mc.innerHTML=`<div style="font-family:'Syne',sans-serif;font-size:1.3rem;font-weight:700;margin-bottom:20px">🏆 Liderboard</div>
+  <div id="lb-content"></div>`;
+  const classes=await dbGet('classes')||{};
+  const myClassCodes=session.role==='teacher'
+    ?Object.values(classes).filter(c=>c.teacherUid===session.uid).map(c=>c.code)
+    :session.classCode?[session.classCode]:[];
+  if(myClassCodes.length===0){document.getElementById('lb-content').innerHTML='<div class="card text-center text-dim" style="padding:50px">Sınıf bulunamadı.</div>';return}
+  let allStudents=[];
+  for(const code of myClassCodes){
+    const members=await dbGet(`classMembers/${safeKey(code)}`)||{};
+    const cls=classes[code];
+    for(const [uid,m] of Object.entries(members)){
+      const state=await dbGet(`users/${uid}/gameState`)||defaultState();
+      allStudents.push({...m,classCode:code,className:cls?.name||code,...state});
+    }
+  }
+  allStudents.sort((a,b)=>(b.totalXp||0)-(a.totalXp||0));
+  document.getElementById('lb-content').innerHTML=`<div class="card"><table class="table">
+    <thead><tr><th>#</th><th>ÖĞRENCİ</th><th>SINIF</th><th>RÜTBE</th><th>SEVİYE</th><th>TOPLAM XP</th><th>SERİ</th></tr></thead>
+    <tbody>${allStudents.map((s,i)=>{
+      const medal=i===0?'🥇':i===1?'🥈':i===2?'🥉':`#${i+1}`;
+      const isMe=s.uid===session.uid;
+      return `<tr style="${isMe?'background:rgba(108,99,255,.08)':''}">
+        <td><span style="font-family:'Syne',sans-serif;font-weight:700">${medal}</span></td>
+        <td><strong>${s.name}</strong>${isMe?' <span class="badge badge-primary">Sen</span>':''}</td>
+        <td><span class="badge badge-accent">${s.className}</span></td>
+        <td style="font-size:.82rem;color:var(--warning)">${getRank(s.lvl||1)}</td>
+        <td>${s.lvl||1}</td>
+        <td style="font-family:'Syne',sans-serif;font-weight:700;color:var(--accent)">${s.totalXp||0}</td>
+        <td>${s.streak||0} 🔥</td>
+      </tr>`;
+    }).join('')}</tbody>
+  </table></div>`;
+}
+
+// ═══════════ TINKERCAD RPG ═══════════
+async function renderTinkercad(){
+  const mc=document.getElementById('main-content');
+  const state=await dbGet(`users/${session.uid}/gameState`)||defaultState();
+  mc.innerHTML=`
+    <div style="font-family:'Syne',sans-serif;font-size:1.3rem;font-weight:700;margin-bottom:4px">🖨️ Tinkercad RPG</div>
+    <div class="text-dim mb-4" style="font-size:.85rem;margin-bottom:20px">3D tasarım görevleri — özel Tinkercad modu</div>
+    <div style="display:grid;grid-template-columns:1fr 300px;gap:20px" class="game-main-grid">
+      <div class="card">
+        <div id="tk-no-quest">
+          <div style="position:relative;width:220px;height:220px;margin:0 auto 20px">
+            <div style="position:absolute;top:-12px;left:50%;transform:translateX(-50%);width:0;height:0;border-left:7px solid transparent;border-right:7px solid transparent;border-top:20px solid var(--warning);filter:drop-shadow(0 0 6px var(--warning))"></div>
+            <canvas id="tk-wheel" width="220" height="220" style="border-radius:50%"></canvas>
+          </div>
+          <div class="text-center">
+            <div style="font-family:'Syne',sans-serif;font-size:.95rem;font-weight:700;margin-bottom:6px">3D GÖREVE HAZIR MISIN?</div>
+            <div class="text-dim mb-3" style="font-size:.85rem">Çarkı döndür, Tinkercad görevi al</div>
+            <button class="btn btn-accent btn-lg btn-block" onclick="tkSpin()">🎲 Çarkı Döndür</button>
+          </div>
+        </div>
+        <div id="tk-active-quest" style="display:none">
+          <div style="background:var(--bg2);border:1px solid var(--border);border-left:5px solid var(--accent);border-radius:12px;padding:20px;margin-bottom:16px">
+            <div class="badge badge-accent mb-2">⚡ AKTİF 3D GÖREV</div>
+            <div id="tk-qname" style="font-family:'Syne',sans-serif;font-size:1.1rem;font-weight:700;margin:8px 0 6px"></div>
+            <div class="text-dim" style="font-size:.85rem;margin-bottom:12px">Tinkercad'de tasarımı yap ve paylaşım linkini gir.</div>
+            <div class="flex items-center gap-2 mb-3">
+              <span class="text-dim" style="font-size:.72rem">ZORLUK:</span>
+              <div id="tk-diff-dots" class="flex gap-2"></div>
+              <span id="tk-diff-label" class="text-warning" style="font-size:.72rem;font-weight:700"></span>
+              <span id="tk-xp-reward" class="badge badge-success" style="margin-left:8px"></span>
+            </div>
+            <input type="url" class="input" id="tk-link" placeholder="https://www.tinkercad.com/things/...">
+            <div class="flex gap-2 mt-3">
+              <button class="btn btn-success" style="flex:1" onclick="tkVerify()">✓ Tamamla</button>
+              <button class="btn btn-ghost" onclick="window.open('https://tinkercad.com/learn','_blank')">💡 Yardım</button>
+            </div>
+            <button class="btn btn-danger btn-block mt-2" onclick="tkSkip()">✗ Görevden Kaç (−20 XP)</button>
+          </div>
+        </div>
+      </div>
+      <div class="flex flex-col" style="gap:14px">
+        <div class="grid-2" style="gap:10px">
+          <div class="stat-card"><div class="lbl">SEVİYE</div><div class="val text-primary">${state.lvl||1}</div></div>
+          <div class="stat-card"><div class="lbl">SERİ</div><div class="val text-warning">${state.streak||0}🔥</div></div>
+          <div class="stat-card"><div class="lbl">XP</div><div class="val text-accent">${state.totalXp||0}</div></div>
+          <div class="stat-card"><div class="lbl">TAMAMLANAN</div><div class="val text-success">${state.totalCompleted||0}</div></div>
+        </div>
+        <div class="card-sm"><div style="font-family:'Syne',sans-serif;font-size:.65rem;letter-spacing:.1em;color:var(--dim);margin-bottom:12px">🏆 ROZETLER</div><div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px">${renderBadgesHTML(state)}</div></div>
+      </div>
+    </div>`;
+  setTimeout(()=>{
+    drawTkWheel(indWheelAngle);
+    if(state.activeQuest){
+      document.getElementById('tk-no-quest').style.display='none';
+      document.getElementById('tk-active-quest').style.display='block';
+      document.getElementById('tk-qname').textContent=state.activeQuest;
+      renderTkDiff(state.activeDiff||1);
+    }
+  },100);
+}
+
+function drawTkWheel(angle){
+  const canvas=document.getElementById('tk-wheel');if(!canvas)return;
+  const ctx=canvas.getContext('2d'),cx=110,cy=110,r=104,n=TINKERCAD_QUESTS.length,slice=2*Math.PI/n;
+  ctx.clearRect(0,0,220,220);
+  for(let i=0;i<n;i++){
+    const s=angle+i*slice,e=s+slice;
+    ctx.beginPath();ctx.moveTo(cx,cy);ctx.arc(cx,cy,r,s,e);ctx.closePath();
+    ctx.fillStyle=WHEEL_COLORS[i%WHEEL_COLORS.length];ctx.fill();
+    ctx.strokeStyle='rgba(0,0,0,.3)';ctx.lineWidth=1.2;ctx.stroke();
+    ctx.save();ctx.translate(cx,cy);ctx.rotate(s+slice/2);ctx.textAlign='right';
+    ctx.fillStyle='rgba(255,255,255,.9)';ctx.font='bold 6px DM Sans,sans-serif';
+    const lbl=TINKERCAD_QUESTS[i].name.length>14?TINKERCAD_QUESTS[i].name.substring(0,14)+'…':TINKERCAD_QUESTS[i].name;
+    ctx.fillText(lbl,r-6,3);ctx.restore();
+  }
+  ctx.beginPath();ctx.arc(cx,cy,18,0,2*Math.PI);ctx.fillStyle='#0a0a0f';ctx.fill();
+  ctx.strokeStyle='rgba(0,212,255,.5)';ctx.lineWidth=2;ctx.stroke();
+  ctx.font='12px Segoe UI';ctx.fillStyle='white';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('🎲',cx,cy);
+}
+
+function renderTkDiff(diff){
+  document.getElementById('tk-diff-label').textContent=DIFF_LABELS[diff];
+  document.getElementById('tk-xp-reward').textContent=`+${30+diff*20} XP`;
+  const dots=document.getElementById('tk-diff-dots');dots.innerHTML='';
+  for(let i=1;i<=5;i++){const d=document.createElement('div');d.style.cssText=`width:8px;height:8px;border-radius:50%;background:${i<=diff?'var(--warning)':'rgba(255,255,255,.1)'};box-shadow:${i<=diff?'0 0 6px var(--warning)':'none'}`;dots.appendChild(d)}
+}
+
+window.tkSpin=function(){
+  if(indSpinning)return;indSpinning=true;
+  const btn=document.querySelector('#tk-no-quest .btn-accent');if(btn){btn.disabled=true;btn.style.opacity='.5'}
+  const idx=Math.floor(Math.random()*TINKERCAD_QUESTS.length);
+  const n=TINKERCAD_QUESTS.length,slice=2*Math.PI/n;
+  const totalRot=Math.PI*2*7+(Math.PI*2-(idx*slice+slice/2));
+  const start=performance.now(),dur=3500,startAngle=indWheelAngle;
+  function anim(now){
+    const t=Math.min((now-start)/dur,1),eased=1-Math.pow(1-t,4);
+    indWheelAngle=startAngle+totalRot*eased;drawTkWheel(indWheelAngle);
+    if(t<1)requestAnimationFrame(anim);
+    else{
+      indSpinning=false;if(btn){btn.disabled=false;btn.style.opacity='1'}
+      const q=TINKERCAD_QUESTS[idx];
+      dbUpdate(`users/${session.uid}/gameState`,{activeQuest:q.name,activeDiff:q.diff});
+      toast(`🎯 Yeni görev: ${q.name}`,'i');
+      renderTinkercad();
+    }
+  }
+  requestAnimationFrame(anim);
+}
+
+window.tkVerify=async function(){
+  const link=document.getElementById('tk-link').value.trim();
+  if(!link.includes('tinkercad.com')){toast('⚠️ Geçerli Tinkercad linki gir!','w');return}
+  const path=`users/${session.uid}/gameState`;
+  const s=await dbGet(path)||defaultState();
+  const xpGain=30+(s.activeDiff||1)*20;
+  s.history=s.history||{};
+  s.history[Date.now()]={name:s.activeQuest,date:new Date().toLocaleDateString('tr-TR'),type:'tinkercad'};
+  s.totalCompleted=(s.totalCompleted||0)+1;
+  s.streak=(s.streak||0)+1;if(s.streak>(s.bestStreak||0))s.bestStreak=s.streak;
+  if((s.activeDiff||1)>=5)s.completedHard=(s.completedHard||0)+1;
+  const leveled=addXP(s,xpGain);
+  s.activeQuest=null;s.activeDiff=1;
+  await dbSet(path,s);
+  particles();toast(`✨ +${xpGain} XP! Seri: ${s.streak} 🔥`,'s');
+  if(leveled){setTimeout(()=>{document.getElementById('lvlup-info').textContent=`Yeni rütben: ${getRank(s.lvl)}`;showModal('modal-levelup')},600)}
+  renderTinkercad();
+}
+
+window.tkSkip=async function(){
+  if(!confirm('Görevden kaçmak seriyi sıfırlar. Emin misin?'))return;
+  const path=`users/${session.uid}/gameState`;
+  const s=await dbGet(path)||defaultState();
+  s.xp=Math.max(0,(s.xp||0)-20);s.streak=0;s.skipped=(s.skipped||0)+1;s.activeQuest=null;
+  await dbSet(path,s);
+  toast('😔 Görevden kaçtın.','d');
+  renderTinkercad();
+}
+
+function clearAllTimers(){Object.values(timerIntervals).forEach(clearInterval);timerIntervals={}}
+window.showModal=showModal;window.hideModal=hideModal;
+
+// ═══════════ THEME TOGGLE ═══════════
+window.toggleTheme=function(){
+  const isLight=document.body.classList.toggle('light-mode');
+  localStorage.setItem('classroom_theme',isLight?'light':'dark');
+  const icon=isLight?'☀️':'🌙';
+  const label=isLight?'Karanlık Mod':'Aydınlık Mod';
+  const tl=document.getElementById('theme-label');
+  const ti=document.getElementById('theme-toggle');
+  if(tl)tl.textContent=label;
+  if(ti)ti.querySelector('.nav-icon').textContent=icon;
+  const gb=document.getElementById('global-theme-btn');
+  if(gb)gb.textContent=icon;
+}
+function applyStoredTheme(){
+  if(localStorage.getItem('classroom_theme')==='light'){
+    document.body.classList.add('light-mode');
+    const gb=document.getElementById('global-theme-btn');
+    if(gb)gb.textContent='☀️';
+    const tl=document.getElementById('theme-label');
+    const ti=document.getElementById('theme-toggle');
+    if(tl)tl.textContent='Karanlık Mod';
+    if(ti)ti.querySelector('.nav-icon').textContent='☀️';
+  }
+}
+applyStoredTheme();
+
+// ═══════════ ANNOUNCEMENTS ═══════════
+async function renderAnnouncements(){
+  const mc=document.getElementById('main-content');
+  mc.innerHTML=`<div class="flex items-center justify-between mb-4">
+    <div style="font-family:'Syne',sans-serif;font-size:1.3rem;font-weight:700">📢 Duyurular</div>
+    ${session.role==='teacher'?`<button class="btn btn-primary" onclick="openAnnModal()">+ Duyuru Ekle</button>`:''}
+  </div><div id="ann-list"></div>`;
+  const anns=await dbGet('announcements')||{};
+  const myClassCode=session.classCode||'';
+  let list=Object.values(anns).filter(a=>a.classCode===myClassCode||(session.role==='teacher'&&a.teacherUid===session.uid));
+  list.sort((a,b)=>{if(a.type==='pinned'&&b.type!=='pinned')return -1;if(b.type==='pinned'&&a.type!=='pinned')return 1;return b.createdAt-a.createdAt});
+  const el=document.getElementById('ann-list');
+  if(list.length===0){el.innerHTML=`<div class="card text-center text-dim" style="padding:50px"><div style="font-size:3rem;margin-bottom:10px">📢</div><div>Henüz duyuru yok.</div></div>`;return}
+  el.innerHTML=list.map(a=>{
+    const typeColor=a.type==='important'?'var(--danger)':a.type==='pinned'?'var(--warning)':'var(--primary)';
+    const typeIcon=a.type==='important'?'⚠️':a.type==='pinned'?'📌':'📢';
+    return `<div class="card mb-3" style="margin-bottom:12px;border-left:4px solid ${typeColor}">
+      <div class="flex items-center justify-between mb-2">
+        <div class="flex items-center gap-2">
+          <span>${typeIcon}</span>
+          <strong style="font-size:.95rem">${a.title}</strong>
+          ${a.type==='pinned'?`<span class="badge badge-warning">Sabitlenmiş</span>`:''}
+          ${a.type==='important'?`<span class="badge badge-danger">Önemli</span>`:''}
+        </div>
+        <span class="text-dim" style="font-size:.75rem">${new Date(a.createdAt).toLocaleDateString('tr-TR')}</span>
+      </div>
+      <div style="font-size:.88rem;color:var(--dim);line-height:1.6">${a.content}</div>
+      <div class="text-dim2" style="font-size:.72rem;margin-top:8px">👤 ${a.teacherName}</div>
+    </div>`;
+  }).join('');
+}
+
+window.openAnnModal=async function(){
+  const classes=await getMyClasses();
+  const sel=document.getElementById('ann-class-sel');
+  sel.innerHTML='<option value="">— Seç —</option>';
+  classes.forEach(c=>sel.innerHTML+=`<option value="${c.code}">${c.name}</option>`);
+  showModal('modal-create-ann');
+}
+
+window.createAnnouncement=async function(){
+  const title=document.getElementById('ann-title').value.trim();
+  const content=document.getElementById('ann-content').value.trim();
+  const type=document.getElementById('ann-type').value;
+  const classCode=document.getElementById('ann-class-sel').value;
+  if(!title||!content||!classCode){toast('Tüm alanları doldur!','w');return}
+  const id='ann_'+Date.now();
+  await dbSet(`announcements/${id}`,{id,title,content,type,classCode,teacherName:session.name,teacherUid:session.uid,createdAt:Date.now()});
+  hideModal('modal-create-ann');
+  document.getElementById('ann-title').value='';document.getElementById('ann-content').value='';
+  toast('📢 Duyuru yayınlandı!','s');
+  renderAnnouncements();
+}
+
+// ═══════════ CHAT ═══════════
+let chatListener=null;
+async function renderChat(){
+  const mc=document.getElementById('main-content');
+  const classCode=session.classCode||'_teacher_'+session.uid;
+  mc.innerHTML=`<div style="font-family:'Syne',sans-serif;font-size:1.3rem;font-weight:700;margin-bottom:16px">💬 Sınıf Sohbeti</div>
+  <div style="display:flex;flex-direction:column;height:calc(100vh - 180px)">
+    <div id="chat-messages" class="scroll-y" style="flex:1;background:var(--card);border:1px solid var(--border);border-radius:16px 16px 0 0;padding:16px;overflow-y:auto;display:flex;flex-direction:column;gap:10px"></div>
+    <div style="display:flex;gap:10px;background:var(--card2);border:1px solid var(--border);border-top:none;border-radius:0 0 16px 16px;padding:12px">
+      <input type="text" class="input" id="chat-input" placeholder="Mesaj yaz..." onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendChatMsg()}" style="flex:1">
+      <button class="btn btn-primary" onclick="sendChatMsg()">Gönder →</button>
+    </div>
+  </div>`;
+  // Realtime listener
+  if(chatListener)off(chatListener);
+  const r=dbRef(`chats/${safeKey(classCode)}`);
+  chatListener=r;
+  onValue(r,snap=>{
+    const msgs=snap.exists()?Object.values(snap.val()):[];
+    msgs.sort((a,b)=>a.createdAt-b.createdAt);
+    const el=document.getElementById('chat-messages');
+    if(!el)return;
+    el.innerHTML=msgs.map(m=>{
+      const isMe=m.uid===session.uid;
+      return `<div style="display:flex;flex-direction:${isMe?'row-reverse':'row'};align-items:flex-end;gap:8px">
+        <div style="width:32px;height:32px;border-radius:50%;background:var(--primary-dim);border:1px solid var(--primary);display:flex;align-items:center;justify-content:center;font-size:.75rem;font-weight:700;color:var(--primary);flex-shrink:0">${m.name.charAt(0).toUpperCase()}</div>
+        <div style="max-width:65%">
+          <div style="font-size:.68rem;color:var(--dim);margin-bottom:3px;text-align:${isMe?'right':'left'}">${m.name}</div>
+          <div style="background:${isMe?'var(--primary)':'var(--card2)'};color:${isMe?'#fff':'var(--text)'};padding:10px 14px;border-radius:${isMe?'14px 14px 4px 14px':'14px 14px 14px 4px'};font-size:.88rem;line-height:1.5">${m.text}</div>
+          <div style="font-size:.65rem;color:var(--dim2);margin-top:3px;text-align:${isMe?'right':'left'}">${new Date(m.createdAt).toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit'})}</div>
+        </div>
+      </div>`;
+    }).join('');
+    el.scrollTop=el.scrollHeight;
+  });
+}
+
+window.sendChatMsg=async function(){
+  const input=document.getElementById('chat-input');
+  const text=input?.value.trim();
+  if(!text)return;
+  const classCode=session.classCode||'_teacher_'+session.uid;
+  const msgId='msg_'+Date.now();
+  await dbSet(`chats/${safeKey(classCode)}/${msgId}`,{id:msgId,text,name:session.name,uid:session.uid,role:session.role,createdAt:Date.now()});
+  input.value='';
+}
+
+// ═══════════ QUIZ ═══════════
+let quizQuestions=[];
+
+async function renderQuiz(){
+  const mc=document.getElementById('main-content');
+  mc.innerHTML=`<div style="font-family:'Syne',sans-serif;font-size:1.3rem;font-weight:700;margin-bottom:16px">📝 Quizler</div>
+  <div class="tabs">
+    <div class="tab active" id="quiz-tab-active" onclick="quizTab('active')">Aktif</div>
+    <div class="tab" id="quiz-tab-cancelled" onclick="quizTab('cancelled')">🚫 İptal</div>
+  </div>
+  <div id="quiz-list"></div>`;
+  await loadQuizTab('active');
+}
+
+window.quizTab=async function(tab){
+  document.querySelectorAll('[id^="quiz-tab-"]').forEach(t=>t.classList.remove('active'));
+  document.getElementById('quiz-tab-'+tab)?.classList.add('active');
+  await loadQuizTab(tab);
+}
+
+async function loadQuizTab(tab){
+  const quizzes=await dbGet('quizzes')||{};
+  const myCode=session.classCode;
+  let list=Object.values(quizzes).filter(q=>session.role==='teacher'?q.teacherUid===session.uid:q.classCode===myCode);
+  if(tab==='active')list=list.filter(q=>q.status!=='cancelled');
+  else if(tab==='cancelled')list=list.filter(q=>q.status==='cancelled');
+  list.sort((a,b)=>b.createdAt-a.createdAt);
+  const el=document.getElementById('quiz-list');if(!el)return;
+  if(list.length===0){el.innerHTML=`<div class="card text-center text-dim" style="padding:50px"><div style="font-size:3rem;margin-bottom:10px">📝</div><div>${tab==='cancelled'?'İptal edilmiş quiz yok.':(session.role==='teacher'?'Henüz quiz oluşturmadın.':'Henüz quiz yok.')}</div></div>`;return}
+  el.innerHTML=list.map(q=>{
+    const subj=getSubject(q.subjectId||'');
+    const myResult=q.results?.[safeKey(session.uid)];
+    const totalXP=(q.questions?.length||0)*(q.xpPerQ||10);
+    const isCancelled=q.status==='cancelled';
+    return `<div class="card card-hover mb-3" style="margin-bottom:12px;${isCancelled?'opacity:.65;border-left:4px solid var(--danger)':''}">
+      <div class="flex items-center justify-between mb-2">
+        <div>
+          <div style="font-weight:700;font-size:.95rem">${q.title}${isCancelled?` <span class="badge badge-danger">🚫 İptal</span>`:''}</div>
+          <div class="flex items-center gap-2 mt-1">
+            <span style="color:${subj.color};font-size:.8rem">${subj.icon} ${subj.name}</span>
+            <span class="badge badge-primary">${q.questions?.length||0} soru</span>
+            <span class="badge badge-success">+${totalXP} XP max</span>
+          </div>
+        </div>
+        <div class="flex items-center gap-2">
+          ${session.role==='student'
+            ?isCancelled?`<span class="badge badge-danger">İptal</span>`
+            :myResult?`<span class="badge badge-success">✓ ${myResult.score}/${q.questions?.length||0} · +${myResult.xp}XP</span>`
+            :`<button class="btn btn-primary" onclick="startQuiz('${q.id}')">Quize Gir →</button>`
+            :`<span class="badge badge-accent">${Object.keys(q.results||{}).length} tamamladı</span>`
+          }
+          ${session.role==='teacher'&&!isCancelled?`<button class="btn btn-danger" style="padding:6px 12px;font-size:.75rem" onclick="cancelQuiz('${q.id}','${q.title.replace(/'/g,"\\'")}')">🚫 İptal</button>`:''}
+          ${session.role==='teacher'&&isCancelled?`<button class="btn btn-ghost" style="padding:6px 12px;font-size:.75rem" onclick="restoreQuiz('${q.id}','${q.title.replace(/'/g,"\\'")}')">↩ Geri Al</button>`:''}
+        </div>
+      </div>
+      <div class="text-dim" style="font-size:.75rem">${new Date(q.createdAt).toLocaleDateString('tr-TR')} · ${q.teacherName}${isCancelled&&q.cancelledAt?` · İptal: ${new Date(q.cancelledAt).toLocaleDateString('tr-TR')}`  :''}</div>
+    </div>`;
+  }).join('');
+}
+
+window.cancelQuiz=async function(quizId,title){
+  if(!confirm(`"${title}" quizini iptal etmek istiyor musun?\nÖğrenciler artık bu quize giremeyecek.`))return;
+  await dbUpdate(`quizzes/${quizId}`,{status:'cancelled',cancelledAt:Date.now(),cancelledBy:session.name});
+  toast(`🚫 "${title}" quizi iptal edildi.`,'w');
+  loadQuizTab('active');
+}
+
+window.restoreQuiz=async function(quizId,title){
+  if(!confirm(`"${title}" quizini geri almak istiyor musun?`))return;
+  await dbUpdate(`quizzes/${quizId}`,{status:'active',cancelledAt:null});
+  toast(`↩ "${title}" quizi geri alındı.`,'s');
+  loadQuizTab('cancelled');
+}
+
+window.startQuiz=async function(quizId){
+  const quiz=await dbGet(`quizzes/${quizId}`);
+  if(!quiz)return;
+  const mc=document.getElementById('main-content');
+  let current=0;let score=0;const answers=[];
+  function renderQ(){
+    if(current>=quiz.questions.length){
+      // Finish
+      const xp=score*(quiz.xpPerQ||10);
+      dbGet(`users/${session.uid}/gameState`).then(async s=>{
+        s=s||defaultState();addXP(s,xp);s.totalCompleted=(s.totalCompleted||0)+1;
+        await dbSet(`users/${session.uid}/gameState`,s);
+        await dbUpdate(`quizzes/${quizId}/results/${safeKey(session.uid)}`,{score,total:quiz.questions.length,xp,completedAt:Date.now()});
+      });
+      mc.innerHTML=`<div class="card text-center" style="max-width:500px;margin:60px auto;padding:40px">
+        <div style="font-size:4rem;margin-bottom:16px">${score===quiz.questions.length?'🏆':score>quiz.questions.length/2?'👍':'💪'}</div>
+        <div style="font-family:'Syne',sans-serif;font-size:1.5rem;font-weight:700;margin-bottom:8px">${score}/${quiz.questions.length} Doğru</div>
+        <div style="font-size:1rem;color:var(--success);margin-bottom:24px">+${xp} XP kazandın!</div>
+        <button class="btn btn-primary" onclick="navTo('quiz')">← Quizlere Dön</button>
+      </div>`;
+      return;
+    }
+    const q=quiz.questions[current];
+    mc.innerHTML=`<div style="max-width:600px;margin:0 auto">
+      <div class="flex items-center justify-between mb-4">
+        <div style="font-family:'Syne',sans-serif;font-size:.8rem;color:var(--dim)">SORU ${current+1}/${quiz.questions.length}</div>
+        <div class="badge badge-success">+${quiz.xpPerQ||10} XP</div>
+      </div>
+      <div class="card mb-4" style="padding:28px">
+        <div style="font-size:1.05rem;font-weight:600;margin-bottom:20px;line-height:1.5">${q.question}</div>
+        <div style="display:flex;flex-direction:column;gap:10px">
+          ${q.options.map((opt,i)=>`<button onclick="answerQuiz(${i})" style="text-align:left;padding:12px 16px;border-radius:10px;border:1px solid var(--border);background:var(--bg2);color:var(--text);cursor:pointer;transition:all .2s;font-size:.9rem;font-family:'DM Sans',sans-serif" onmouseover="this.style.borderColor='var(--primary)'" onmouseout="this.style.borderColor='var(--border)'">
+            <span style="font-weight:700;color:var(--primary);margin-right:8px">${String.fromCharCode(65+i)})</span>${opt}
+          </button>`).join('')}
+        </div>
+      </div>
+      <div class="xp-bar-bg"><div class="xp-bar-fill" style="width:${(current/quiz.questions.length*100)}%"></div></div>
+    </div>`;
+    window.answerQuiz=function(idx){
+      if(idx===q.correct)score++;
+      answers.push(idx);current++;
+      renderQ();
+    }
+  }
+  renderQ();
+}
+
+window.addQuizQuestion=function(){
+  quizQuestions.push({question:'',options:['','','',''],correct:0});
+  renderQuizForm();
+}
+
+function renderQuizForm(){
+  const el=document.getElementById('quiz-questions-list');if(!el)return;
+  el.innerHTML=quizQuestions.map((q,qi)=>`
+    <div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:12px">
+      <div class="flex items-center justify-between mb-2">
+        <span style="font-size:.75rem;font-family:'Syne',sans-serif;color:var(--dim)">SORU ${qi+1}</span>
+        <button onclick="removeQ(${qi})" style="background:none;border:none;color:var(--danger);cursor:pointer;font-size:.8rem">✕ Sil</button>
+      </div>
+      <input type="text" class="input mb-2" placeholder="Soru metni..." value="${q.question}" oninput="quizQuestions[${qi}].question=this.value" style="margin-bottom:8px">
+      ${q.options.map((opt,oi)=>`<div class="flex items-center gap-2" style="margin-bottom:6px">
+        <input type="radio" name="correct_${qi}" ${q.correct===oi?'checked':''} onchange="quizQuestions[${qi}].correct=${oi}" style="accent-color:var(--success)">
+        <input type="text" class="input" placeholder="Seçenek ${String.fromCharCode(65+oi)}" value="${opt}" oninput="quizQuestions[${qi}].options[${oi}]=this.value" style="font-size:.85rem;padding:8px 10px">
+      </div>`).join('')}
+      <div style="font-size:.7rem;color:var(--dim);margin-top:4px">Radio butonu doğru cevabı işaretle</div>
+    </div>`).join('');
+}
+
+window.removeQ=function(qi){quizQuestions.splice(qi,1);renderQuizForm()}
+
+async function loadTeacherClassesForQuiz(){
+  quizQuestions=[];
+  const classes=await getMyClasses();
+  ['quiz-class-sel'].forEach(id=>{
+    const sel=document.getElementById(id);if(!sel)return;
+    sel.innerHTML='<option value="">— Seç —</option>';
+    classes.forEach(c=>sel.innerHTML+=`<option value="${c.code}">${c.name}</option>`);
+  });
+  populateSubjectSelects();
+  renderQuizForm();
+}
+
+window.publishQuiz=async function(){
+  const title=document.getElementById('quiz-title').value.trim();
+  const classCode=document.getElementById('quiz-class-sel').value;
+  const subjectId=document.getElementById('quiz-subject-sel').value;
+  const xpPerQ=parseInt(document.getElementById('quiz-xp-per-q').value)||10;
+  if(!title||!classCode||quizQuestions.length===0){toast('Başlık, sınıf ve en az 1 soru gir!','w');return}
+  const valid=quizQuestions.every(q=>q.question&&q.options.every(o=>o));
+  if(!valid){toast('Tüm soru ve seçenekleri doldur!','w');return}
+  const id='quiz_'+Date.now();
+  await dbSet(`quizzes/${id}`,{id,title,classCode,subjectId,xpPerQ,questions:quizQuestions,teacherName:session.name,teacherUid:session.uid,results:{},createdAt:Date.now()});
+  hideModal('modal-create-quiz');
+  quizQuestions=[];
+  toast('🚀 Quiz yayınlandı!','s');
+}
+
+// ═══════════ STORE ═══════════
+const STORE_ITEMS=[
+  {id:'color_purple',name:'Mor Profil Rengi',desc:'Profilinde mor renk teması',price:200,icon:'💜',type:'cosmetic'},
+  {id:'color_gold',name:'Altın Çerçeve',desc:'Profilinde altın çerçeve',price:300,icon:'🥇',type:'cosmetic'},
+  {id:'emoji_fire',name:'🔥 Ateş Rozeti',desc:'Profil rozetine ateş emojisi',price:150,icon:'🔥',type:'badge'},
+  {id:'emoji_star',name:'⭐ Yıldız Rozeti',desc:'Profil rozetine yıldız emojisi',price:150,icon:'⭐',type:'badge'},
+  {id:'emoji_crown',name:'👑 Taç Rozeti',desc:'Sınıfın en özel rozeti',price:500,icon:'👑',type:'badge'},
+  {id:'boost_xp',name:'2x XP Boost (1 ödev)',desc:'Bir sonraki ödevde 2 kat XP',price:400,icon:'⚡',type:'boost'},
+  {id:'skip_pass',name:'Geç Teslim Affı',desc:'1 ödevde geç teslim cezası kaldırılır',price:350,icon:'🛡️',type:'boost'},
+];
+
+async function renderStore(){
+  const mc=document.getElementById('main-content');
+  const state=await dbGet(`users/${session.uid}/gameState`)||defaultState();
+  const owned=state.storeItems||[];
+  mc.innerHTML=`<div class="flex items-center justify-between mb-4">
+    <div style="font-family:'Syne',sans-serif;font-size:1.3rem;font-weight:700">🛒 Mağaza</div>
+    <div class="badge badge-success" style="font-size:.85rem;padding:6px 14px">💰 ${state.totalXp||0} XP</div>
+  </div>
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px">
+    ${STORE_ITEMS.map(item=>{
+      const isOwned=owned.includes(item.id);
+      const canBuy=(state.totalXp||0)>=item.price;
+      return `<div class="card card-hover" style="${isOwned?'border-color:var(--success);':''}">
+        <div style="font-size:2.5rem;text-align:center;margin-bottom:10px">${item.icon}</div>
+        <div style="font-weight:700;font-size:.9rem;margin-bottom:4px">${item.name}</div>
+        <div class="text-dim" style="font-size:.78rem;margin-bottom:14px;line-height:1.4">${item.desc}</div>
+        ${isOwned
+          ?`<span class="badge badge-success btn-block" style="justify-content:center;padding:8px">✓ Sahip</span>`
+          :`<button class="btn ${canBuy?'btn-primary':'btn-ghost'} btn-block" onclick="buyItem('${item.id}',${item.price})" ${canBuy?'':'disabled'} style="font-size:.82rem">
+            ${canBuy?`Satın Al · ${item.price} XP`:`${item.price} XP gerekli`}
+          </button>`
+        }
+      </div>`;
+    }).join('')}
+  </div>`;
+}
+
+window.buyItem=async function(itemId,price){
+  const path=`users/${session.uid}/gameState`;
+  const s=await dbGet(path)||defaultState();
+  if((s.totalXp||0)<price){toast('Yetersiz XP!','d');return}
+  s.storeItems=s.storeItems||[];
+  if(s.storeItems.includes(itemId)){toast('Zaten sahipsin!','w');return}
+  s.storeItems.push(itemId);
+  s.totalXp=(s.totalXp||0)-price;
+  await dbSet(path,s);
+  particles();
+  toast('🛒 Satın alındı!','s');
+  renderStore();
+}
+
+// ═══════════ ANALYTICS (Teacher) ═══════════
+async function renderAnalytics(){
+  const mc=document.getElementById('main-content');
+  mc.innerHTML=`<div style="font-family:'Syne',sans-serif;font-size:1.3rem;font-weight:700;margin-bottom:20px">📊 Analitik Panel</div>
+  <div id="analytics-content"><div class="text-center text-dim" style="padding:40px">Veriler yükleniyor...</div></div>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"><\/script>`;
+  const classes=await getMyClasses();
+  if(classes.length===0){document.getElementById('analytics-content').innerHTML='<div class="card text-center text-dim" style="padding:50px">Sınıf bulunamadı.</div>';return}
+  const hws=await dbGet('homeworks')||{};
+  const myHws=Object.values(hws).filter(h=>h.teacherUid===session.uid);
+  // Ders bazlı ödev sayısı
+  const subjCount={};
+  myHws.forEach(h=>{subjCount[h.subjectId]=(subjCount[h.subjectId]||0)+1});
+  // Tamamlanma oranları
+  const completionData=myHws.slice(0,8).map(h=>({
+    label:h.title.substring(0,15),
+    total:h.assignedTo?.length||0,
+    done:h.submittedBy?.length||0
+  }));
+  // Öğrenci XP
+  let stuXP=[];
+  for(const cls of classes.slice(0,1)){
+    const members=await dbGet(`classMembers/${safeKey(cls.code)}`)||{};
+    for(const [uid,m] of Object.entries(members).slice(0,8)){
+      const state=await dbGet(`users/${uid}/gameState`)||{};
+      stuXP.push({name:m.name,xp:state.totalXp||0});
+    }
+  }
+  stuXP.sort((a,b)=>b.xp-a.xp);
+  document.getElementById('analytics-content').innerHTML=`
+  <div class="grid-2 mb-4" style="margin-bottom:20px">
+    <div class="stat-card"><div class="lbl">TOPLAM ÖDEV</div><div class="val text-primary">${myHws.length}</div></div>
+    <div class="stat-card"><div class="lbl">AKTİF SINIF</div><div class="val text-success">${classes.length}</div></div>
+  </div>
+  <div class="grid-2" style="gap:20px">
+    <div class="card"><div style="font-family:'Syne',sans-serif;font-size:.75rem;letter-spacing:.1em;color:var(--dim);margin-bottom:14px">📋 ÖDEV TAMAMLANMA</div><canvas id="chart-completion" height="200"></canvas></div>
+    <div class="card"><div style="font-family:'Syne',sans-serif;font-size:.75rem;letter-spacing:.1em;color:var(--dim);margin-bottom:14px">🏆 ÖĞRENCİ XP SIRASI</div><canvas id="chart-xp" height="200"></canvas></div>
+  </div>`;
+  // Charts
+  setTimeout(()=>{
+    if(window.Chart){
+      new Chart(document.getElementById('chart-completion'),{
+        type:'bar',
+        data:{
+          labels:completionData.map(d=>d.label),
+          datasets:[
+            {label:'Atanan',data:completionData.map(d=>d.total),backgroundColor:'rgba(108,99,255,.4)',borderColor:'#6c63ff',borderWidth:1},
+            {label:'Tamamlayan',data:completionData.map(d=>d.done),backgroundColor:'rgba(0,214,143,.4)',borderColor:'#00d68f',borderWidth:1}
+          ]
+        },
+        options:{responsive:true,plugins:{legend:{labels:{color:'#a0a0b8',font:{size:11}}}},scales:{x:{ticks:{color:'#a0a0b8',font:{size:10}}},y:{ticks:{color:'#a0a0b8'},grid:{color:'rgba(255,255,255,.05)'}}}}
+      });
+      new Chart(document.getElementById('chart-xp'),{
+        type:'horizontalBar'||'bar',
+        data:{
+          labels:stuXP.map(s=>s.name),
+          datasets:[{label:'Toplam XP',data:stuXP.map(s=>s.xp),backgroundColor:stuXP.map((_,i)=>`hsl(${250+i*20},70%,65%)`)}]
+        },
+        options:{indexAxis:'y',responsive:true,plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#a0a0b8'},grid:{color:'rgba(255,255,255,.05)'}},y:{ticks:{color:'#a0a0b8',font:{size:11}}}}}
+      });
+    }
+  },500);
+}
+
+// ═══════════ PWA SERVICE WORKER ═══════════
+if('serviceWorker' in navigator){
+  const swCode=`
+    const CACHE='classroom-v1';
+    const ASSETS=['/'];
+    self.addEventListener('install',e=>e.waitUntil(caches.open(CACHE).then(c=>c.addAll(ASSETS))));
+    self.addEventListener('fetch',e=>e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request))));
+  `;
+  const blob=new Blob([swCode],{type:'application/javascript'});
+  const swUrl=URL.createObjectURL(blob);
+  navigator.serviceWorker.register(swUrl).catch(()=>{});
+}
+
+// ═══════════ FILE UPLOAD (Firebase Storage) ═══════════
+// Firebase Storage entegrasyonu — submit ve note paylaşımında dosya yükleme
+window.handleFileUpload=async function(inputId, pathPrefix){
+  const input=document.getElementById(inputId);
+  if(!input?.files?.length)return null;
+  const file=input.files[0];
+  if(file.size>10*1024*1024){toast('Dosya 10MB\'dan büyük olamaz!','w');return null}
+  // Firebase Storage yoksa link olarak kullan
+  // Gerçek Storage için: import { getStorage, ref, uploadBytes, getDownloadURL } from firebase/storage
+  toast('📁 Dosya yükleme için Firebase Storage gerekli. Link kullanabilirsin.','w');
+  return null;
+}
+
+// ═══════════ TEST GİRİŞİ ═══════════
+let testRole='teacher';
+
+// ═══════════ PWA INSTALL ═══════════
+let deferredPrompt=null;
+window.addEventListener('beforeinstallprompt',e=>{
+  e.preventDefault();deferredPrompt=e;
+  const btn=document.getElementById('pwa-install-btn');
+  if(btn)btn.style.display='flex';
+});
+window.installPWA=async function(){
+  if(!deferredPrompt)return;
+  deferredPrompt.prompt();
+  const{outcome}=await deferredPrompt.userChoice;
+  if(outcome==='accepted')toast('📱 Uygulama yüklendi!','s');
+  deferredPrompt=null;
+  const btn=document.getElementById('pwa-install-btn');
+  if(btn)btn.style.display='none';
+}
+
+const TEST_PASSWORD='classroom2024';
+
+window.toggleTest=function(){
+  const passScreen=document.getElementById('test-password-screen');
+  const formScreen=document.getElementById('test-expanded');
+  if(passScreen.style.display==='none'&&formScreen.style.display==='none'){
+    passScreen.style.display='block';
+    setTimeout(()=>document.getElementById('test-pass-input')?.focus(),100);
+  } else {
+    passScreen.style.display='none';
+    formScreen.style.display='none';
+  }
+}
+
+window.closeTest=function(){
+  document.getElementById('test-password-screen').style.display='none';
+  document.getElementById('test-expanded').style.display='none';
+  document.getElementById('test-pass-input').value='';
+  document.getElementById('test-pass-error').style.display='none';
+}
+
+window.checkTestPass=function(){
+  const val=document.getElementById('test-pass-input').value;
+  const errEl=document.getElementById('test-pass-error');
+  if(val===TEST_PASSWORD){
+    document.getElementById('test-password-screen').style.display='none';
+    document.getElementById('test-expanded').style.display='block';
+    document.getElementById('test-pass-input').value='';
+    errEl.style.display='none';
+  } else {
+    errEl.style.display='block';
+    document.getElementById('test-pass-input').value='';
+    document.getElementById('test-pass-input').focus();
+  }
+}
+
+window.selectTestRole=function(role){
+  testRole=role;
+  document.getElementById('test-role-teacher').className='role-btn'+(role==='teacher'?' sel-teacher':'');
+  document.getElementById('test-role-student').className='role-btn'+(role==='student'?' sel-student':'');
+  document.getElementById('test-class-group').style.display=role==='student'?'block':'none';
+}
+
+window.doTestLogin=async function(){
+  const name=document.getElementById('test-name').value.trim();
+  if(!name){toast('Ad soyad gir!','w');return}
+  const classCode=document.getElementById('test-class-code')?.value.trim().toUpperCase()||'';
+  if(testRole==='student'&&classCode){
+    const cls=await dbGet(`classes/${classCode}`);
+    if(!cls){toast('Geçersiz sınıf kodu!','d');return}
+  }
+  // Test kullanıcısı — Firebase Auth olmadan, localStorage + DB ile
+  const testUid='test_'+safeKey(name)+'_'+testRole;
+  const profile={name,role:testRole,classCode:testRole==='student'&&classCode?classCode:null,email:testUid+'@test.local',isTest:true,createdAt:Date.now()};
+  await dbSet(`users/${testUid}/profile`,profile);
+  if(testRole==='student'&&classCode){
+    await dbUpdate(`classMembers/${safeKey(classCode)}/${safeKey(testUid)}`,{name,uid:testUid,email:profile.email,joinedAt:Date.now()});
+  }
+  session={uid:testUid,role:testRole,name,classCode:profile.classCode,email:profile.email};
+  document.getElementById('test-expanded').style.display='none';
+  toast(`✅ Test girişi: ${name} (${testRole})`,'s');
+  enterApp();
+}
+</script>
+
+<!-- EmailJS (isteğe bağlı — kendi hesabınla kurun) -->
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+</body>
+</html>
