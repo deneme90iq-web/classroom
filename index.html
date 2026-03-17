@@ -2479,83 +2479,179 @@ window.joinVoice=async function(){
   // Diğer katılımcıları dinle ve WebRTC bağlantı kur
   dbListen(`voiceRooms/${safeKey(voiceClassCode)}`,async data=>{
     if(!data||!voiceActive)return;
-    const others=Object.values(data).filter(p=>p.uid!==session.uid);
+    const others=Object.values(data).filter(p=>p.uid&&p.uid!==session.uid&&p.roomId===window._activeRoomId);
     for(const p of others){
-      if(!peerConnections[p.uid]){
-        await createPeerConnection(p.uid);
+      if(!peerConnections[safeKey(p.uid)]){
+        await createPeerConnection(safeKey(p.uid));
       }
     }
     // Giden katılımcıları temizle
+    const activeUids=new Set(others.map(p=>safeKey(p.uid)));
     Object.keys(peerConnections).forEach(uid=>{
-      if(!data[safeKey(uid)]){closePeer(uid)}
+      if(!activeUids.has(uid))closePeer(uid);
     });
   });
 
-  // ICE ve offer/answer sinyalleri dinle
+  // Sinyal dinleyici
   dbListen(`voiceSignals/${safeKey(voiceClassCode)}/${safeKey(session.uid)}`,async data=>{
     if(!data)return;
-    for(const [fromUid,signals] of Object.entries(data)){
-      const realUid=fromUid.replace(/_/g,' ');// rough reverse
-      await handleSignals(fromUid,signals);
+    for(const[fromUid,signals] of Object.entries(data)){
+      if(signals&&typeof signals==='object')await handleSignals(fromUid,signals);
     }
   });
 }
 
 async function createPeerConnection(remoteUid){
+  if(peerConnections[remoteUid])return;
   const pc=new RTCPeerConnection(ICE_SERVERS);
   peerConnections[remoteUid]=pc;
-  localStream.getTracks().forEach(t=>pc.addTrack(t,localStream));
+
+  // Local track'leri ekle
+  if(localStream){
+    localStream.getTracks().forEach(t=>pc.addTrack(t,localStream));
+  }
+
+  // ICE candidate
   pc.onicecandidate=e=>{
-    if(e.candidate){
-      dbUpdate(`voiceSignals/${safeKey(voiceClassCode)}/${safeKey(remoteUid)}/${safeKey(session.uid)}`,{
-        ice:JSON.stringify(e.candidate)
-      });
-    }
+    if(!e.candidate)return;
+    const path=`voiceSignals/${safeKey(voiceClassCode)}/${safeKey(remoteUid)}/${safeKey(session.uid)}/ice_${Date.now()}`;
+    dbSet(path,JSON.stringify(e.candidate));
   };
+
+  // Uzak ses/video
   pc.ontrack=e=>{
-    let audio=document.getElementById('audio-'+remoteUid);
-    if(!audio){
-      audio=document.createElement('audio');
-      audio.id='audio-'+remoteUid;
-      audio.autoplay=true;
-      document.getElementById('voice-audio-container')?.appendChild(audio);
+    const stream=e.streams[0]||new MediaStream([e.track]);
+    if(e.track.kind==='audio'){
+      let audio=document.getElementById('audio-'+remoteUid);
+      if(!audio){
+        audio=document.createElement('audio');
+        audio.id='audio-'+remoteUid;
+        audio.autoplay=true;
+        audio.setAttribute('playsinline','');
+        document.getElementById('voice-audio-container')?.appendChild(audio);
+      }
+      audio.srcObject=stream;
+      audio.play().catch(()=>{});
+    } else if(e.track.kind==='video'){
+      // Uzak ekran paylaşımı
+      const area=document.getElementById('remote-screen-area');
+      if(area){
+        let video=document.getElementById('remote-video-'+remoteUid);
+        if(!video){
+          video=document.createElement('video');
+          video.id='remote-video-'+remoteUid;
+          video.autoplay=true;
+          video.setAttribute('playsinline','');
+          video.style.cssText='width:100%;border-radius:10px;background:#000;margin-top:8px';
+          const label=document.createElement('div');
+          label.style.cssText='font-size:.75rem;color:var(--dim);margin-top:6px';
+          label.textContent='📺 Uzak Ekran';
+          area.appendChild(label);
+          area.appendChild(video);
+          document.getElementById('screen-share-area').style.display='block';
+        }
+        video.srcObject=stream;
+        video.play().catch(()=>{});
+      }
     }
-    audio.srcObject=e.streams[0];
   };
+
+  pc.onconnectionstatechange=()=>{
+    if(pc.connectionState==='failed'||pc.connectionState==='disconnected'){
+      closePeer(remoteUid);
+    }
+  };
+
   // Offer gönder
-  const offer=await pc.createOffer();
-  await pc.setLocalDescription(offer);
-  await dbUpdate(`voiceSignals/${safeKey(voiceClassCode)}/${safeKey(remoteUid)}/${safeKey(session.uid)}`,{
-    offer:JSON.stringify(offer)
-  });
+  try{
+    const offer=await pc.createOffer({offerToReceiveAudio:true,offerToReceiveVideo:true});
+    await pc.setLocalDescription(offer);
+    await dbSet(`voiceSignals/${safeKey(voiceClassCode)}/${safeKey(remoteUid)}/${safeKey(session.uid)}/offer`,JSON.stringify({type:offer.type,sdp:offer.sdp}));
+  }catch(e){console.warn('Offer hatası:',e);}
 }
 
 async function handleSignals(fromUid,signals){
+  if(!signals)return;
   let pc=peerConnections[fromUid];
-  if(signals.offer&&!pc){
+
+  // Offer geldi — yeni PC oluştur ve answer gönder
+  if(signals.offer&&(!pc||pc.signalingState==='closed')){
+    if(pc)pc.close();
     pc=new RTCPeerConnection(ICE_SERVERS);
     peerConnections[fromUid]=pc;
-    localStream?.getTracks().forEach(t=>pc.addTrack(t,localStream));
+
+    if(localStream){
+      localStream.getTracks().forEach(t=>pc.addTrack(t,localStream));
+    }
+
     pc.onicecandidate=e=>{
-      if(e.candidate){
-        dbUpdate(`voiceSignals/${safeKey(voiceClassCode)}/${safeKey(fromUid)}/${safeKey(session.uid)}`,{ice:JSON.stringify(e.candidate)});
+      if(!e.candidate)return;
+      const path=`voiceSignals/${safeKey(voiceClassCode)}/${safeKey(fromUid)}/${safeKey(session.uid)}/ice_${Date.now()}`;
+      dbSet(path,JSON.stringify(e.candidate));
+    };
+
+    pc.ontrack=e=>{
+      const stream=e.streams[0]||new MediaStream([e.track]);
+      if(e.track.kind==='audio'){
+        let audio=document.getElementById('audio-'+fromUid);
+        if(!audio){
+          audio=document.createElement('audio');
+          audio.id='audio-'+fromUid;
+          audio.autoplay=true;
+          audio.setAttribute('playsinline','');
+          document.getElementById('voice-audio-container')?.appendChild(audio);
+        }
+        audio.srcObject=stream;
+        audio.play().catch(()=>{});
+      } else if(e.track.kind==='video'){
+        const area=document.getElementById('remote-screen-area');
+        if(area){
+          let video=document.getElementById('remote-video-'+fromUid);
+          if(!video){
+            video=document.createElement('video');
+            video.id='remote-video-'+fromUid;
+            video.autoplay=true;
+            video.setAttribute('playsinline','');
+            video.style.cssText='width:100%;border-radius:10px;background:#000;margin-top:8px';
+            area.appendChild(video);
+            document.getElementById('screen-share-area').style.display='block';
+          }
+          video.srcObject=stream;
+          video.play().catch(()=>{});
+        }
       }
     };
-    pc.ontrack=e=>{
-      let audio=document.getElementById('audio-'+fromUid);
-      if(!audio){audio=document.createElement('audio');audio.id='audio-'+fromUid;audio.autoplay=true;document.getElementById('voice-audio-container')?.appendChild(audio)}
-      audio.srcObject=e.streams[0];
+
+    pc.onconnectionstatechange=()=>{
+      if(pc.connectionState==='failed'||pc.connectionState==='disconnected'){
+        closePeer(fromUid);
+      }
     };
-    await pc.setRemoteDescription(JSON.parse(signals.offer));
-    const answer=await pc.createAnswer();
-    await pc.setLocalDescription(answer);
-    await dbUpdate(`voiceSignals/${safeKey(voiceClassCode)}/${safeKey(fromUid)}/${safeKey(session.uid)}`,{answer:JSON.stringify(answer)});
+
+    try{
+      await pc.setRemoteDescription(JSON.parse(signals.offer));
+      const answer=await pc.createAnswer();
+      await pc.setLocalDescription(answer);
+      await dbSet(`voiceSignals/${safeKey(voiceClassCode)}/${safeKey(fromUid)}/${safeKey(session.uid)}/answer`,JSON.stringify({type:answer.type,sdp:answer.sdp}));
+    }catch(e){console.warn('Answer hatası:',e);}
   }
+
+  // Answer geldi
   if(signals.answer&&pc&&pc.signalingState==='have-local-offer'){
-    try{await pc.setRemoteDescription(JSON.parse(signals.answer))}catch(e){}
+    try{
+      await pc.setRemoteDescription(JSON.parse(signals.answer));
+    }catch(e){console.warn('setRemoteDesc hatası:',e);}
   }
-  if(signals.ice&&pc){
-    try{await pc.addIceCandidate(JSON.parse(signals.ice))}catch(e){}
+
+  // ICE candidates
+  if(pc&&(pc.signalingState!=='closed')){
+    for(const[key,val] of Object.entries(signals)){
+      if(key.startsWith('ice_')&&val){
+        try{
+          await pc.addIceCandidate(new RTCIceCandidate(JSON.parse(val)));
+        }catch(e){}
+      }
+    }
   }
 }
 
@@ -2606,12 +2702,15 @@ window.toggleScreenShare=async function(){
     if(videoEl){videoEl.srcObject=screenStream;area.style.display='block';}
     const btn=document.getElementById('voice-screen-btn');
     if(btn){btn.textContent='⏹️ Paylaşımı Durdur';btn.className='btn btn-danger';}
-    Object.values(peerConnections).forEach(pc=>{
-      screenStream.getTracks().forEach(track=>{
+    const videoTrack=screenStream.getVideoTracks()[0];
+    // Mevcut bağlantılara video track ekle veya değiştir
+    for(const pc of Object.values(peerConnections)){
+      try{
         const sender=pc.getSenders().find(s=>s.track?.kind==='video');
-        if(sender)sender.replaceTrack(track);else pc.addTrack(track,screenStream);
-      });
-    });
+        if(sender)await sender.replaceTrack(videoTrack);
+        else pc.addTrack(videoTrack,screenStream);
+      }catch(e){}
+    }
     screenStream.getVideoTracks()[0].onended=()=>stopScreenShare();
     toast('🖥️ Ekran paylaşımı başladı','s');
   }catch(e){if(e.name!=='NotAllowedError')toast('❌ Ekran paylaşılamadı','d');}
