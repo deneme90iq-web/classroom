@@ -610,6 +610,7 @@ async function dbUpdate(p,v){await update(dbRef(p),v)}
 function dbListen(p,cb){const r=dbRef(p);onValue(r,sn=>cb(sn.exists()?sn.val():null));activeListeners.push(r)}
 function clearListeners(){activeListeners.forEach(r=>off(r));activeListeners=[]}
 function safeKey(s){return s.replace(/[.#$[\]/\s@]/g,'_')}
+window.safeKey=safeKey;
 
 // ═══════════ UI HELPERS ═══════════
 function showScreen(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));document.getElementById(id).classList.add('active')}
@@ -617,11 +618,13 @@ function showModal(id){document.getElementById(id).style.display='flex'}
 function hideModal(id){document.getElementById(id).style.display='none'}
 function hideLoading(){document.getElementById('loading-overlay').style.display='none'}
 function toast(msg,type='i'){const c=document.getElementById('toast-root');const t=document.createElement('div');t.className=`toast ${type}`;t.textContent=msg;c.appendChild(t);setTimeout(()=>t.remove(),3500)}
+window.toast=toast;
 function particles(){const e=['⭐','✨','🎉','🏆','💎','🚀'];for(let i=0;i<10;i++){setTimeout(()=>{const p=document.createElement('div');p.className='particle';p.textContent=e[Math.floor(Math.random()*e.length)];p.style.left=Math.random()*window.innerWidth+'px';p.style.top=(window.innerHeight*.5+Math.random()*100)+'px';document.body.appendChild(p);setTimeout(()=>p.remove(),1300)},i*70)}}
 function xpFor(lvl){return lvl*150}
 function addXP(s,amt){s.xp=(s.xp||0)+amt;s.totalXp=(s.totalXp||0)+amt;let up=false;while(s.xp>=xpFor(s.lvl)){s.xp-=xpFor(s.lvl);s.lvl++;up=true}return up}
 function getRank(lvl){return RANKS[Math.min(lvl-1,5)]}
 function getSubject(id){return SUBJECTS.find(s=>s.id===id)||{name:id,icon:'📚',color:'#888'}}
+window.getSubject=getSubject;
 function showErr(msg){const el=document.getElementById('auth-error');el.textContent=msg;el.style.display='block'}
 function hideErr(){document.getElementById('auth-error').style.display='none'}
 function defaultState(){return{xp:0,lvl:1,streak:0,bestStreak:0,totalCompleted:0,totalXp:0,skipped:0,penalties:0,totalNotes:0,earnedBadges:[],history:{},activeQuest:null,activeDiff:1}}
@@ -1292,6 +1295,13 @@ function genCode(){
   let s='CL-';for(let i=0;i<4;i++)s+=c[Math.floor(Math.random()*c.length)];return s;
 }
 
+// Öğretmenin sınıflarını getir — global
+async function getMyClasses(){
+  const all=await dbGet('classes')||{};
+  return Object.values(all).filter(c=>c.teacherUid===session.uid);
+}
+window.getMyClasses=getMyClasses;
+
 // ═══════════ ASSIGN HOMEWORK (Teacher) ═══════════
 async function renderAssign(){
   navTo('homework');
@@ -1449,13 +1459,16 @@ window.removeStudent=async function(uid,classCode,name){
 // ═══════════ LEADERBOARD ═══════════
 async function renderLeaderboard(){
   const mc=document.getElementById('main-content');
+  if(!mc)return;
   mc.innerHTML=`<div style="font-family:'Syne',sans-serif;font-size:1.3rem;font-weight:700;margin-bottom:20px">🏆 Liderboard</div>
   <div id="lb-content"></div>`;
   const classes=await dbGet('classes')||{};
   const myClassCodes=session.role==='teacher'
     ?Object.values(classes).filter(c=>c.teacherUid===session.uid).map(c=>c.code)
     :session.classCode?[session.classCode]:[];
-  if(myClassCodes.length===0){document.getElementById('lb-content').innerHTML='<div class="card text-center text-dim" style="padding:50px">Sınıf bulunamadı.</div>';return}
+  const lbEl=document.getElementById('lb-content');
+  if(!lbEl)return;
+  if(myClassCodes.length===0){lbEl.innerHTML='<div class="card text-center text-dim" style="padding:50px">Sınıf bulunamadı.</div>';return}
   let allStudents=[];
   for(const code of myClassCodes){
     const members=await dbGet(`classMembers/${safeKey(code)}`)||{};
@@ -1466,7 +1479,8 @@ async function renderLeaderboard(){
     }
   }
   allStudents.sort((a,b)=>(b.totalXp||0)-(a.totalXp||0));
-  document.getElementById('lb-content').innerHTML=`<div class="card"><table class="table">
+  if(allStudents.length===0){lbEl.innerHTML='<div class="card text-center text-dim" style="padding:50px">Henüz öğrenci yok.</div>';return}
+  lbEl.innerHTML=`<div class="card"><table class="table">
     <thead><tr><th>#</th><th>ÖĞRENCİ</th><th>SINIF</th><th>RÜTBE</th><th>SEVİYE</th><th>TOPLAM XP</th><th>SERİ</th></tr></thead>
     <tbody>${allStudents.map((s,i)=>{
       const medal=i===0?'🥇':i===1?'🥈':i===2?'🥉':`#${i+1}`;
