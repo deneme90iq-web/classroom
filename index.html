@@ -2664,19 +2664,21 @@ function makePeer(remoteKey, isInitiator){
     console.log(`[ICE] ${remoteKey}: ${pc.iceConnectionState}`);
   };
 
-  // Initiator offer gönderir
+  // Initiator — track ekledikten sonra offer gönder
   if(isInitiator){
-    pc.onnegotiationneeded = async () => {
+    // onnegotiationneeded bazen tetiklenmez, setTimeout ile garanti edelim
+    setTimeout(async()=>{
       try{
-        const offer = await pc.createOffer();
-        if(pc.signalingState !== 'stable') return;
+        if(!voiceActive||peerConnections[remoteKey]!==pc)return;
+        const offer=await pc.createOffer();
         await pc.setLocalDescription(offer);
         await dbSet(
           `vc/${safeKey(voiceClassCode)}/sig/${remoteKey}/${myVoiceKey()}/offer`,
-          JSON.stringify({type: offer.type, sdp: offer.sdp})
+          JSON.stringify({type:offer.type,sdp:offer.sdp})
         );
-      }catch(e){ console.warn('[offer]', e); }
-    };
+        console.log('[offer sent to]',remoteKey);
+      }catch(e){console.warn('[offer err]',e);}
+    },300);
   }
 
   return pc;
