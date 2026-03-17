@@ -234,6 +234,7 @@ textarea.input{resize:vertical;min-height:80px}
 .voice-wave span{display:block;width:3px;background:var(--success);border-radius:2px;animation:vwave .7s ease-in-out infinite}
 .voice-wave span:nth-child(2){animation-delay:.15s}.voice-wave span:nth-child(3){animation-delay:.3s}.voice-wave span:nth-child(4){animation-delay:.45s}
 @keyframes vwave{0%,100%{height:3px}50%{height:15px}}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.85;transform:scale(1.02)}}
 
 /* ══════════ MOBİL ══════════ */
 @media(max-width:768px){
@@ -2466,11 +2467,21 @@ function makePeer(remoteKey, isInitiator){
         el = document.createElement('audio');
         el.id = 'va-'+remoteKey;
         el.autoplay = true;
+        el.controls = false;
         el.setAttribute('playsinline','');
+        el.setAttribute('webkit-playsinline','');
+        el.volume = 1.0;
         document.getElementById('voice-audio-container')?.appendChild(el);
       }
       el.srcObject = stream;
-      el.play().catch(()=>{});
+      // Mobilede play promise — hata olursa unlock butonu göster
+      const playPromise = el.play();
+      if(playPromise !== undefined){
+        playPromise.catch(err=>{
+          console.warn('[audio play blocked]', err);
+          showAudioUnlockBtn();
+        });
+      }
     } else {
       let el = document.getElementById('vv-'+remoteKey);
       if(!el){
@@ -2829,21 +2840,8 @@ window.joinVoiceRoom=async function(roomId,roomName){
 
   toast(`🎤 "${roomName}" odasına katıldın!`,'s');
 
-  // Mobil autoplay politikası için ses kilidi açma
-  if(/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)){
-    const unlockBtn=document.createElement('button');
-    unlockBtn.className='btn btn-success btn-block';
-    unlockBtn.style.cssText='margin-top:10px;font-size:.9rem';
-    unlockBtn.textContent='🔊 Sesi Etkinleştir (Mobil)';
-    unlockBtn.onclick=()=>{
-      document.querySelectorAll('audio,video').forEach(el=>{
-        el.play().then(()=>el.muted=false).catch(()=>{});
-      });
-      unlockBtn.remove();
-      toast('🔊 Ses etkinleştirildi!','s');
-    };
-    document.getElementById('voice-active-room')?.appendChild(unlockBtn);
-  }
+  // Ses kilit açma butonu — her zaman göster (mobil için kritik)
+  showAudioUnlockBtn();
 
   // Ses aktivite tespiti
   try{
@@ -2908,6 +2906,32 @@ window.toggleMute=function(){
   if(btn){btn.textContent=isMuted?'🎤 Susturmayı Kaldır':'🔇 Sustur';btn.className=isMuted?'btn btn-success':'btn btn-warning';}
   toast(isMuted?'🔇 Mikrofon kapatıldı.':'🎤 Mikrofon açıldı.','i');
 }
+
+// Ses kilidi açma — mobil tarayıcılar autoplay'i bloklar
+function showAudioUnlockBtn(){
+  if(document.getElementById('audio-unlock-btn'))return;
+  const btn=document.createElement('button');
+  btn.id='audio-unlock-btn';
+  btn.className='btn btn-success btn-block';
+  btn.style.cssText='margin-top:12px;font-size:1rem;padding:14px;animation:pulse 1.5s infinite';
+  btn.innerHTML='🔊 Sesi Aç — Buraya Dokun';
+  btn.onclick=async()=>{
+    // Tüm audio elementlerini zorla oynat
+    const audios=document.querySelectorAll('#voice-audio-container audio');
+    let allOk=true;
+    for(const a of audios){
+      try{
+        a.muted=false;
+        a.volume=1.0;
+        await a.play();
+      }catch(e){ allOk=false; console.warn('[unlock]',e); }
+    }
+    btn.remove();
+    toast(allOk?'🔊 Ses açıldı!':'🔊 Ses etkinleştirildi, bağlantı bekleniyor...','s');
+  };
+  document.getElementById('voice-active-room')?.appendChild(btn);
+}
+window.showAudioUnlockBtn=showAudioUnlockBtn;
 
 window.leaveVoice=async function(silent=false){
   voiceActive=false;isMuted=false;window._lastSpeaking=false;
