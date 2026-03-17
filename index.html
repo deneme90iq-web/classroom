@@ -2405,125 +2405,143 @@ function voiceListen(path,cb){
 }
 
 // ── Peer bağlantısı ──
-function makePeer(remoteKey,isInitiator){
+function makePeer(remoteKey, isInitiator){
+  // Varsa kapat
   if(peerConnections[remoteKey]){
-    peerConnections[remoteKey].close();
+    try{peerConnections[remoteKey].close();}catch(e){}
     delete peerConnections[remoteKey];
   }
 
-  const pc=new RTCPeerConnection(ICE_SERVERS);
-  peerConnections[remoteKey]=pc;
+  const pc = new RTCPeerConnection(ICE_SERVERS);
+  peerConnections[remoteKey] = pc;
 
-  // Yerel ses ekle
+  // Yerel ses track'lerini ekle
   if(localStream){
-    localStream.getTracks().forEach(t=>pc.addTrack(t,localStream));
+    localStream.getTracks().forEach(t => pc.addTrack(t, localStream));
   }
 
-  // ICE gönder
-  const iceBuf=[];
-  let remoteReady=false;
-  pc.onicecandidate=async e=>{
-    if(!e.candidate)return;
-    const key=`vc/${safeKey(voiceClassCode||'')}/sig/${remoteKey}/${myVoiceKey()}/ice_${Date.now()}_${Math.random().toString(36).slice(2,6)}`;
-    await dbSet(key,JSON.stringify(e.candidate));
+  // ICE candidate — her birini ayrı key ile kaydet
+  pc.onicecandidate = async e => {
+    if(!e.candidate || !voiceActive) return;
+    const iceKey = `vc/${safeKey(voiceClassCode)}/sig/${remoteKey}/${myVoiceKey()}/ice_${Date.now()}_${Math.random().toString(36).slice(2,5)}`;
+    try{ await dbSet(iceKey, JSON.stringify(e.candidate)); }catch(err){}
   };
 
-  // Uzak ses/video
-  pc.ontrack=e=>{
-    const track=e.track;
-    const stream=e.streams[0]||new MediaStream([track]);
-    if(track.kind==='audio'){
-      let el=document.getElementById('va-'+remoteKey);
+  // Uzak ses/video al
+  pc.ontrack = e => {
+    const stream = e.streams[0] || new MediaStream([e.track]);
+    if(e.track.kind === 'audio'){
+      let el = document.getElementById('va-'+remoteKey);
       if(!el){
-        el=document.createElement('audio');
-        el.id='va-'+remoteKey;
-        el.autoplay=true;
+        el = document.createElement('audio');
+        el.id = 'va-'+remoteKey;
+        el.autoplay = true;
         el.setAttribute('playsinline','');
         document.getElementById('voice-audio-container')?.appendChild(el);
       }
-      if(el.srcObject!==stream){el.srcObject=stream;}
+      el.srcObject = stream;
       el.play().catch(()=>{});
-    } else if(track.kind==='video'){
-      let el=document.getElementById('vv-'+remoteKey);
+    } else {
+      let el = document.getElementById('vv-'+remoteKey);
       if(!el){
-        el=document.createElement('video');
-        el.id='vv-'+remoteKey;
-        el.autoplay=true;el.muted=true;
+        el = document.createElement('video');
+        el.id = 'vv-'+remoteKey;
+        el.autoplay = true; el.muted = true;
         el.setAttribute('playsinline','');
-        el.style.cssText='width:100%;border-radius:10px;background:#000;margin-top:8px';
+        el.style.cssText = 'width:100%;border-radius:10px;background:#000;margin-top:8px';
         document.getElementById('remote-screen-area')?.appendChild(el);
-        const sa=document.getElementById('screen-share-area');
-        if(sa)sa.style.display='block';
+        const sa = document.getElementById('screen-share-area');
+        if(sa) sa.style.display = 'block';
       }
-      if(el.srcObject!==stream){el.srcObject=stream;}
+      el.srcObject = stream;
       el.play().catch(()=>{});
     }
   };
 
-  pc.onconnectionstatechange=()=>{
-    if(['failed','disconnected','closed'].includes(pc.connectionState)){
-      closePeer(remoteKey);
+  pc.onconnectionstatechange = () => {
+    console.log(`[WebRTC] ${remoteKey}: ${pc.connectionState}`);
+    if(pc.connectionState === 'failed'){
+      // Yeniden bağlan
+      setTimeout(()=>{
+        if(voiceActive && peerConnections[remoteKey]){
+          makePeer(remoteKey, isInitiator);
+        }
+      }, 2000);
     }
   };
 
-  // Offer veya answer başlat
+  pc.oniceconnectionstatechange = () => {
+    console.log(`[ICE] ${remoteKey}: ${pc.iceConnectionState}`);
+  };
+
+  // Initiator offer gönderir
   if(isInitiator){
-    pc.createOffer({offerToReceiveAudio:true,offerToReceiveVideo:true})
-      .then(offer=>pc.setLocalDescription(offer))
-      .then(()=>{
-        const sdp=JSON.stringify({type:pc.localDescription.type,sdp:pc.localDescription.sdp});
-        return dbSet(`vc/${safeKey(voiceClassCode||'')}/sig/${remoteKey}/${myVoiceKey()}/offer`,sdp);
-      })
-      .catch(e=>console.warn('offer err',e));
+    pc.onnegotiationneeded = async () => {
+      try{
+        const offer = await pc.createOffer();
+        if(pc.signalingState !== 'stable') return;
+        await pc.setLocalDescription(offer);
+        await dbSet(
+          `vc/${safeKey(voiceClassCode)}/sig/${remoteKey}/${myVoiceKey()}/offer`,
+          JSON.stringify({type: offer.type, sdp: offer.sdp})
+        );
+      }catch(e){ console.warn('[offer]', e); }
+    };
   }
 
   return pc;
 }
 
 function closePeer(key){
-  const pc=peerConnections[key];
-  if(pc){try{pc.close();}catch(e){} delete peerConnections[key];}
-  ['va-','vv-'].forEach(p=>{const el=document.getElementById(p+key);if(el)el.remove();});
+  const pc = peerConnections[key];
+  if(pc){ try{pc.close();}catch(e){} delete peerConnections[key]; }
+  ['va-','vv-'].forEach(p => { const el=document.getElementById(p+key); if(el) el.remove(); });
 }
 
 // ── Signaling dinleyici ──
 function startSignalListener(){
-  const sigPath=`vc/${safeKey(voiceClassCode||'')}/sig/${myVoiceKey()}`;
-  voiceListen(sigPath,async allSigs=>{
-    if(!allSigs||!voiceActive)return;
-    for(const[fromKey,sigs] of Object.entries(allSigs)){
-      if(!sigs||typeof sigs!=='object')continue;
-      let pc=peerConnections[fromKey];
+  const path = `vc/${safeKey(voiceClassCode)}/sig/${myVoiceKey()}`;
+  voiceListen(path, async allSigs => {
+    if(!allSigs || !voiceActive) return;
 
-      // Offer
+    for(const [fromKey, sigs] of Object.entries(allSigs)){
+      if(!sigs || typeof sigs !== 'object') continue;
+      let pc = peerConnections[fromKey];
+
+      // --- OFFER geldi → answer gönder ---
       if(sigs.offer){
-        // Biz initiator değiliz — answer tarafıyız
-        if(!pc||pc.signalingState==='closed'){
-          pc=makePeer(fromKey,false);
+        // Eğer PC yoksa veya zaten stable/closed ise yeni peer yap
+        if(!pc || pc.signalingState === 'closed'){
+          pc = makePeer(fromKey, false);
         }
-        if(pc.signalingState==='stable'||pc.signalingState==='have-remote-offer'||pc.signalingState==='closed'){
+        // Sadece stable veya offer bekliyorsak işle
+        if(pc.signalingState === 'stable' || pc.signalingState === 'have-remote-offer'){
           try{
-            await pc.setRemoteDescription(JSON.parse(sigs.offer));
-            const ans=await pc.createAnswer();
+            await pc.setRemoteDescription(new RTCSessionDescription(JSON.parse(sigs.offer)));
+            const ans = await pc.createAnswer();
             await pc.setLocalDescription(ans);
-            await dbSet(`vc/${safeKey(voiceClassCode||'')}/sig/${fromKey}/${myVoiceKey()}/answer`,
-              JSON.stringify({type:ans.type,sdp:ans.sdp}));
-          }catch(e){console.warn('ans err',e);}
+            await dbSet(
+              `vc/${safeKey(voiceClassCode)}/sig/${fromKey}/${myVoiceKey()}/answer`,
+              JSON.stringify({type: ans.type, sdp: ans.sdp})
+            );
+          }catch(e){ console.warn('[answer]', e); }
         }
       }
 
-      // Answer
-      if(sigs.answer&&pc&&pc.signalingState==='have-local-offer'){
-        try{await pc.setRemoteDescription(JSON.parse(sigs.answer));}
-        catch(e){console.warn('setRemote err',e);}
+      // --- ANSWER geldi ---
+      if(sigs.answer && pc && pc.signalingState === 'have-local-offer'){
+        try{
+          await pc.setRemoteDescription(new RTCSessionDescription(JSON.parse(sigs.answer)));
+        }catch(e){ console.warn('[setRemote]', e); }
       }
 
-      // ICE
-      if(pc&&pc.remoteDescription){
-        for(const[k,v] of Object.entries(sigs)){
-          if(k.startsWith('ice_')&&v){
-            try{await pc.addIceCandidate(new RTCIceCandidate(JSON.parse(v)));}
-            catch(e){}
+      // --- ICE candidates ---
+      if(pc && pc.remoteDescription){
+        for(const [k, v] of Object.entries(sigs)){
+          if(k.startsWith('ice_') && v){
+            try{
+              await pc.addIceCandidate(new RTCIceCandidate(JSON.parse(v)));
+            }catch(e){}
           }
         }
       }
@@ -2533,38 +2551,37 @@ function startSignalListener(){
 
 // ── Katılımcı dinleyici ──
 function startParticipantListener(roomId){
-  // Mevcut üyeleri takip et
-  const knownMembers=new Set();
+  const knownJoinTimes = {};
 
-  voiceListen(`vc/${safeKey(voiceClassCode||'')}/members`,async data=>{
-    if(!data||!voiceActive)return;
-    const others=Object.entries(data)
-      .filter(([k,v])=>k!==myVoiceKey()&&v&&v.roomId===roomId);
+  voiceListen(`vc/${safeKey(voiceClassCode)}/members`, async data => {
+    if(!data || !voiceActive) return;
 
-    for(const[key,member] of others){
-      const joinedAt=member.joinedAt||0;
-      const prevJoinedAt=knownMembers[key];
-      // Yeni üye veya yeniden katılan (joinedAt değişmiş)
-      if(!peerConnections[key]||prevJoinedAt!==joinedAt){
-        knownMembers[key]=joinedAt;
-        // Eski sinyali temizle
-        await dbSet(`vc/${safeKey(voiceClassCode)}/sig/${myVoiceKey()}/${key}`,null);
-        await dbSet(`vc/${safeKey(voiceClassCode)}/sig/${key}/${myVoiceKey()}`,null);
-        // Peer kur — uid karşılaştırması ile sadece bir taraf initiator olsun
-        const iAmInitiator=myVoiceKey()<key;
-        makePeer(key,iAmInitiator);
+    const others = Object.entries(data)
+      .filter(([k, v]) => k !== myVoiceKey() && v && v.roomId === roomId);
+
+    for(const [key, member] of others){
+      const jt = member.joinedAt || 0;
+      // Yeni geldi veya yeniden katıldı
+      if(!peerConnections[key] || knownJoinTimes[key] !== jt){
+        knownJoinTimes[key] = jt;
+        console.log(`[WebRTC] Connecting to ${member.name}, initiator=${myVoiceKey() < key}`);
+        // Sinyalleri temizle
+        await dbSet(`vc/${safeKey(voiceClassCode)}/sig/${myVoiceKey()}/${key}`, null);
+        await dbSet(`vc/${safeKey(voiceClassCode)}/sig/${key}/${myVoiceKey()}`, null);
+        // Lexicografik sırayla sadece biri initiator — glare önlemek için
+        makePeer(key, myVoiceKey() < key);
       }
     }
 
-    // Gidenler
-    const activeKeys=new Set(others.map(([k])=>k));
-    Object.keys(peerConnections).forEach(k=>{
-      if(!activeKeys.has(k)){closePeer(k);delete knownMembers[k];}
-    });
+    // Ayrılanları temizle
+    const activeKeys = new Set(others.map(([k]) => k));
+    for(const k of Object.keys(peerConnections)){
+      if(!activeKeys.has(k)){ closePeer(k); delete knownJoinTimes[k]; }
+    }
 
-    // UI güncelle
+    // UI
     renderVoiceParticipants(Object.fromEntries(
-      Object.entries(data).filter(([,v])=>v&&v.roomId===roomId)
+      Object.entries(data).filter(([, v]) => v && v.roomId === roomId)
     ));
   });
 }
@@ -2782,6 +2799,22 @@ window.joinVoiceRoom=async function(roomId,roomName){
 
   toast(`🎤 "${roomName}" odasına katıldın!`,'s');
 
+  // Mobil autoplay politikası için ses kilidi açma
+  if(/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)){
+    const unlockBtn=document.createElement('button');
+    unlockBtn.className='btn btn-success btn-block';
+    unlockBtn.style.cssText='margin-top:10px;font-size:.9rem';
+    unlockBtn.textContent='🔊 Sesi Etkinleştir (Mobil)';
+    unlockBtn.onclick=()=>{
+      document.querySelectorAll('audio,video').forEach(el=>{
+        el.play().then(()=>el.muted=false).catch(()=>{});
+      });
+      unlockBtn.remove();
+      toast('🔊 Ses etkinleştirildi!','s');
+    };
+    document.getElementById('voice-active-room')?.appendChild(unlockBtn);
+  }
+
   // Ses aktivite tespiti
   try{
     const audioCtx=new(window.AudioContext||window.webkitAudioContext)();
@@ -2875,6 +2908,11 @@ let screenStream=null;
 let isSharing=false;
 
 window.toggleScreenShare=async function(){
+  // Mobilde getDisplayMedia desteklenmiyor
+  if(!navigator.mediaDevices?.getDisplayMedia){
+    toast('📱 Ekran paylaşımı mobil cihazlarda desteklenmiyor. Bilgisayardan deneyin.','w');
+    return;
+  }
   if(isSharing){stopScreenShare();return;}
   try{
     screenStream=await navigator.mediaDevices.getDisplayMedia({video:true,audio:false});
