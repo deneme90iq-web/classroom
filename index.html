@@ -2216,7 +2216,7 @@ async function renderVoiceChat(){
     }
   </div>
 
-  <!-- Aktif oda varsa katılımcılar -->
+  <!-- Aktif oda varsa katılımcılar + araçlar -->
   <div id="voice-active-room" style="display:none;margin-top:20px">
     <div class="card" style="margin-bottom:14px">
       <div class="flex items-center justify-between mb-3">
@@ -2224,13 +2224,63 @@ async function renderVoiceChat(){
           <div style="font-family:'Syne',sans-serif;font-size:.75rem;letter-spacing:.1em;color:var(--dim)">ODADAKI KATILIMCILAR</div>
           <div id="voice-room-title" style="font-weight:700;font-size:.95rem;margin-top:4px"></div>
         </div>
-        <div class="flex gap-2">
+        <div class="flex gap-2" style="flex-wrap:wrap">
           <button id="voice-mute-btn" class="btn btn-warning" onclick="toggleMute()" style="display:none">🔇 Sustur</button>
+          <button id="voice-screen-btn" class="btn btn-accent" onclick="toggleScreenShare()" style="display:none">🖥️ Ekran Paylaş</button>
+          <button id="voice-pdf-btn" class="btn btn-ghost" onclick="document.getElementById('pdf-upload-input').click()" style="display:none">📄 PDF Aç</button>
+          <input type="file" id="pdf-upload-input" accept=".pdf" style="display:none" onchange="openPDF(this)">
           <button id="voice-leave-btn" class="btn btn-danger" onclick="leaveVoice()" style="display:none">📵 Çık</button>
-          ${session.role==='teacher'?`<button id="voice-close-btn" class="btn btn-danger" onclick="closeVoiceRoom()" style="display:none">🗑️ Odayı Kapat</button>`:''}
+          ${session.role==='teacher'?`<button id="voice-close-btn" class="btn btn-danger" onclick="closeVoiceRoom()" style="display:none">🗑️ Kapat</button>`:''}
         </div>
       </div>
       <div id="voice-participants"><div class="text-dim" style="font-size:.85rem">Henüz kimse yok.</div></div>
+    </div>
+
+    <!-- Ekran paylaşım alanı -->
+    <div id="screen-share-area" style="display:none;margin-bottom:14px">
+      <div class="card" style="padding:12px">
+        <div style="font-family:'Syne',sans-serif;font-size:.7rem;letter-spacing:.1em;color:var(--dim);margin-bottom:8px">🖥️ EKRAN PAYLAŞIMI</div>
+        <video id="screen-video" autoplay muted style="width:100%;border-radius:10px;background:#000;max-height:480px"></video>
+        <div id="remote-screen-area"></div>
+      </div>
+    </div>
+
+    <!-- PDF Okuyucu + Kalem -->
+    <div id="pdf-viewer-area" style="display:none;margin-bottom:14px">
+      <div class="card" style="padding:0;overflow:hidden">
+        <!-- PDF Toolbar -->
+        <div style="display:flex;align-items:center;gap:8px;padding:10px 16px;background:var(--card2);border-bottom:1px solid var(--border);flex-wrap:wrap">
+          <span style="font-family:'Syne',sans-serif;font-size:.7rem;letter-spacing:.1em;color:var(--dim)">📄 PDF OKUYUCU</span>
+          <div style="display:flex;align-items:center;gap:6px;margin-left:auto">
+            <button class="btn btn-ghost btn-icon" onclick="pdfPrevPage()" title="Önceki sayfa">◀</button>
+            <span id="pdf-page-info" style="font-size:.8rem;color:var(--dim);white-space:nowrap">1 / 1</span>
+            <button class="btn btn-ghost btn-icon" onclick="pdfNextPage()" title="Sonraki sayfa">▶</button>
+          </div>
+          <div style="width:1px;height:24px;background:var(--border);margin:0 4px"></div>
+          <!-- Araçlar -->
+          <button id="tool-pen" class="btn btn-primary btn-icon" onclick="setTool('pen')" title="Kalem" style="font-size:.85rem">✏️</button>
+          <button id="tool-highlight" class="btn btn-ghost btn-icon" onclick="setTool('highlight')" title="İşaretçi" style="font-size:.85rem">🖊️</button>
+          <button id="tool-eraser" class="btn btn-ghost btn-icon" onclick="setTool('eraser')" title="Silgi" style="font-size:.85rem">🧹</button>
+          <button id="tool-text" class="btn btn-ghost btn-icon" onclick="setTool('text')" title="Metin" style="font-size:.85rem">T</button>
+          <!-- Renk -->
+          <input type="color" id="pen-color" value="#ff4d6d" style="width:32px;height:32px;border:none;background:none;cursor:pointer;border-radius:6px" title="Renk seç">
+          <!-- Kalınlık -->
+          <select id="pen-size" class="input" style="width:70px;padding:5px 8px;font-size:.78rem">
+            <option value="2">İnce</option>
+            <option value="4" selected>Orta</option>
+            <option value="8">Kalın</option>
+          </select>
+          <button class="btn btn-ghost btn-icon" onclick="clearCanvas()" title="Temizle" style="font-size:.85rem">🗑️</button>
+          <button class="btn btn-ghost btn-icon" onclick="closePDF()" title="PDF Kapat" style="font-size:.85rem">✕</button>
+        </div>
+        <!-- PDF Canvas Alanı -->
+        <div id="pdf-canvas-wrapper" style="position:relative;overflow:auto;background:#525659;padding:16px;min-height:400px;display:flex;justify-content:center">
+          <div style="position:relative;display:inline-block">
+            <canvas id="pdf-render-canvas" style="display:block;box-shadow:0 4px 20px rgba(0,0,0,.5)"></canvas>
+            <canvas id="pdf-draw-canvas" style="position:absolute;top:0;left:0;cursor:crosshair"></canvas>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -2311,6 +2361,8 @@ window.joinVoiceRoom=async function(roomId,roomName){
   if(joinBtn){joinBtn.textContent='✓ Katıldın';joinBtn.disabled=true;}
   document.getElementById('voice-mute-btn').style.display='flex';
   document.getElementById('voice-leave-btn').style.display='flex';
+  document.getElementById('voice-screen-btn').style.display='flex';
+  document.getElementById('voice-pdf-btn').style.display='flex';
   if(session.role==='teacher'){const cb=document.getElementById('voice-close-btn');if(cb)cb.style.display='flex';}
 
   toast(`🎤 "${roomName}" odasına katıldın!`,'s');
@@ -2539,6 +2591,145 @@ window.leaveVoice=async function(silent=false){
     renderVoiceChat();
   }
 }
+
+// ═══════════ EKRAN PAYLAŞIMI ═══════════
+let screenStream=null;
+let isSharing=false;
+
+window.toggleScreenShare=async function(){
+  if(isSharing){stopScreenShare();return;}
+  try{
+    screenStream=await navigator.mediaDevices.getDisplayMedia({video:true,audio:false});
+    isSharing=true;
+    const videoEl=document.getElementById('screen-video');
+    const area=document.getElementById('screen-share-area');
+    if(videoEl){videoEl.srcObject=screenStream;area.style.display='block';}
+    const btn=document.getElementById('voice-screen-btn');
+    if(btn){btn.textContent='⏹️ Paylaşımı Durdur';btn.className='btn btn-danger';}
+    Object.values(peerConnections).forEach(pc=>{
+      screenStream.getTracks().forEach(track=>{
+        const sender=pc.getSenders().find(s=>s.track?.kind==='video');
+        if(sender)sender.replaceTrack(track);else pc.addTrack(track,screenStream);
+      });
+    });
+    screenStream.getVideoTracks()[0].onended=()=>stopScreenShare();
+    toast('🖥️ Ekran paylaşımı başladı','s');
+  }catch(e){if(e.name!=='NotAllowedError')toast('❌ Ekran paylaşılamadı','d');}
+}
+async function stopScreenShare(){
+  isSharing=false;
+  screenStream?.getTracks().forEach(t=>t.stop());
+  screenStream=null;
+  const area=document.getElementById('screen-share-area');
+  const video=document.getElementById('screen-video');
+  if(area)area.style.display='none';
+  if(video)video.srcObject=null;
+  const btn=document.getElementById('voice-screen-btn');
+  if(btn){btn.textContent='🖥️ Ekran Paylaş';btn.className='btn btn-accent';}
+  toast('⏹️ Ekran paylaşımı durduruldu','i');
+}
+
+// ═══════════ PDF OKUYUCU + KALEM ═══════════
+let pdfDoc=null,pdfPage=1,pdfTotalPages=1;
+let currentTool='pen';
+let isDrawing=false,lastX=0,lastY=0;
+
+window.openPDF=async function(input){
+  const file=input.files[0];if(!file)return;
+  if(!window.pdfjsLib){
+    await new Promise((res,rej)=>{const s=document.createElement('script');s.src='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';s.onload=res;s.onerror=rej;document.head.appendChild(s);});
+    window.pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+  }
+  const reader=new FileReader();
+  reader.onload=async e=>{
+    pdfDoc=await window.pdfjsLib.getDocument(new Uint8Array(e.target.result)).promise;
+    pdfTotalPages=pdfDoc.numPages;pdfPage=1;
+    document.getElementById('pdf-viewer-area').style.display='block';
+    await renderPDFPage(pdfPage);
+    setupDrawCanvas();
+    toast(`📄 ${file.name} açıldı (${pdfTotalPages} sayfa)`,'s');
+  };
+  reader.readAsArrayBuffer(file);
+  input.value='';
+}
+
+async function renderPDFPage(num){
+  if(!pdfDoc)return;
+  const page=await pdfDoc.getPage(num);
+  const wrapper=document.getElementById('pdf-canvas-wrapper');
+  const scale=Math.min(1.5,(wrapper?.clientWidth-40||700)/page.getViewport({scale:1}).width);
+  const vp=page.getViewport({scale});
+  const rc=document.getElementById('pdf-render-canvas');
+  const dc=document.getElementById('pdf-draw-canvas');
+  rc.width=vp.width;rc.height=vp.height;
+  dc.width=vp.width;dc.height=vp.height;
+  await page.render({canvasContext:rc.getContext('2d'),viewport:vp}).promise;
+  document.getElementById('pdf-page-info').textContent=`${num} / ${pdfTotalPages}`;
+  loadPageAnnotations(num);
+}
+
+function setupDrawCanvas(){
+  const dc=document.getElementById('pdf-draw-canvas');if(!dc)return;
+  dc.onmousedown=e=>{isDrawing=true;[lastX,lastY]=getPos(e,dc);if(currentTool==='text'){isDrawing=false;addTextAnnot(e,dc);}};
+  dc.onmousemove=e=>{if(!isDrawing||currentTool==='text')return;doDraw(e,dc);};
+  dc.onmouseup=dc.onmouseleave=()=>{if(isDrawing){isDrawing=false;saveAnnot();}};
+  dc.ontouchstart=e=>{e.preventDefault();isDrawing=true;[lastX,lastY]=getPos(e.touches[0],dc);};
+  dc.ontouchmove=e=>{e.preventDefault();if(isDrawing)doDraw(e.touches[0],dc);};
+  dc.ontouchend=()=>{isDrawing=false;saveAnnot();};
+}
+function getPos(e,c){const r=c.getBoundingClientRect();return[e.clientX-r.left,e.clientY-r.top];}
+function doDraw(e,dc){
+  const ctx=dc.getContext('2d');
+  const[x,y]=getPos(e,dc);
+  const color=document.getElementById('pen-color')?.value||'#ff4d6d';
+  const size=parseInt(document.getElementById('pen-size')?.value||4);
+  ctx.beginPath();
+  if(currentTool==='eraser'){ctx.globalCompositeOperation='destination-out';ctx.arc(x,y,size*4,0,Math.PI*2);ctx.fill();ctx.globalCompositeOperation='source-over';}
+  else{ctx.strokeStyle=currentTool==='highlight'?color+'66':color;ctx.lineWidth=currentTool==='highlight'?size*5:size;ctx.lineCap=ctx.lineJoin='round';ctx.moveTo(lastX,lastY);ctx.lineTo(x,y);ctx.stroke();}
+  [lastX,lastY]=[x,y];
+}
+function addTextAnnot(e,dc){
+  const txt=prompt('Metin gir:');if(!txt)return;
+  const[x,y]=getPos(e,dc);
+  const ctx=dc.getContext('2d');
+  const color=document.getElementById('pen-color')?.value||'#ff4d6d';
+  const size=parseInt(document.getElementById('pen-size')?.value||4);
+  ctx.font=`${10+size*3}px DM Sans,sans-serif`;ctx.fillStyle=color;ctx.fillText(txt,x,y);
+  saveAnnot();
+}
+async function saveAnnot(){
+  if(!window._activeRoomId||!voiceClassCode)return;
+  const dc=document.getElementById('pdf-draw-canvas');if(!dc)return;
+  try{await dbSet(`pdfAnnot/${safeKey(voiceClassCode)}/${window._activeRoomId}/p${pdfPage}`,{d:dc.toDataURL(),by:session.name,t:Date.now()});}catch(e){}
+}
+function loadPageAnnotations(num){
+  if(!window._activeRoomId||!voiceClassCode)return;
+  dbListen(`pdfAnnot/${safeKey(voiceClassCode)}/${window._activeRoomId}/p${num}`,data=>{
+    if(!data?.d)return;
+    const dc=document.getElementById('pdf-draw-canvas');if(!dc)return;
+    const img=new Image();
+    img.onload=()=>{dc.getContext('2d').clearRect(0,0,dc.width,dc.height);dc.getContext('2d').drawImage(img,0,0);};
+    img.src=data.d;
+  });
+}
+window.pdfPrevPage=async function(){if(pdfPage>1){pdfPage--;await renderPDFPage(pdfPage);}}
+window.pdfNextPage=async function(){if(pdfPage<pdfTotalPages){pdfPage++;await renderPDFPage(pdfPage);}}
+window.setTool=function(tool){
+  currentTool=tool;
+  ['pen','highlight','eraser','text'].forEach(t=>{const b=document.getElementById('tool-'+t);if(b)b.className=t===tool?'btn btn-primary btn-icon':'btn btn-ghost btn-icon';});
+  const dc=document.getElementById('pdf-draw-canvas');
+  if(dc)dc.style.cursor=tool==='eraser'?'cell':tool==='text'?'text':'crosshair';
+}
+window.clearCanvas=function(){
+  const dc=document.getElementById('pdf-draw-canvas');if(!dc)return;
+  if(!confirm('Bu sayfanın çizimleri silinecek. Emin misin?'))return;
+  dc.getContext('2d').clearRect(0,0,dc.width,dc.height);saveAnnot();
+}
+window.closePDF=function(){
+  document.getElementById('pdf-viewer-area').style.display='none';
+  pdfDoc=null;pdfPage=1;pdfTotalPages=1;
+}
+
 if('serviceWorker' in navigator){
   const swCode=`
     const CACHE='classroom-v1';
