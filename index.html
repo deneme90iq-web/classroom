@@ -2383,7 +2383,178 @@ let peerConnections={};
 let voiceClassCode=null;
 let isMuted=false;
 let voiceActive=false;
-const ICE_SERVERS={iceServers:[{urls:'stun:stun.l.google.com:19302'},{urls:'stun:stun1.l.google.com:19302'}]};
+let voiceListeners=[];
+const ICE_SERVERS={iceServers:[
+  {urls:'stun:stun.l.google.com:19302'},
+  {urls:'stun:stun1.l.google.com:19302'},
+  {urls:'stun:stun2.l.google.com:19302'},
+]};
+
+// ── Yardımcılar ──
+function myVoiceKey(){return safeKey(session.uid)}
+function voicePath(p){return `vc/${safeKey(voiceClassCode||'')}/${p}`}
+
+function clearVoiceListeners(){
+  voiceListeners.forEach(r=>off(r));
+  voiceListeners=[];
+}
+function voiceListen(path,cb){
+  const r=dbRef(path);
+  onValue(r,sn=>cb(sn.exists()?sn.val():null));
+  voiceListeners.push(r);
+}
+
+// ── Peer bağlantısı ──
+function makePeer(remoteKey,isInitiator){
+  if(peerConnections[remoteKey]){
+    peerConnections[remoteKey].close();
+    delete peerConnections[remoteKey];
+  }
+
+  const pc=new RTCPeerConnection(ICE_SERVERS);
+  peerConnections[remoteKey]=pc;
+
+  // Yerel ses ekle
+  if(localStream){
+    localStream.getTracks().forEach(t=>pc.addTrack(t,localStream));
+  }
+
+  // ICE gönder
+  const iceBuf=[];
+  let remoteReady=false;
+  pc.onicecandidate=async e=>{
+    if(!e.candidate)return;
+    const key=`vc/${safeKey(voiceClassCode||'')}/sig/${remoteKey}/${myVoiceKey()}/ice_${Date.now()}_${Math.random().toString(36).slice(2,6)}`;
+    await dbSet(key,JSON.stringify(e.candidate));
+  };
+
+  // Uzak ses/video
+  pc.ontrack=e=>{
+    const track=e.track;
+    const stream=e.streams[0]||new MediaStream([track]);
+    if(track.kind==='audio'){
+      let el=document.getElementById('va-'+remoteKey);
+      if(!el){
+        el=document.createElement('audio');
+        el.id='va-'+remoteKey;
+        el.autoplay=true;
+        el.setAttribute('playsinline','');
+        document.getElementById('voice-audio-container')?.appendChild(el);
+      }
+      if(el.srcObject!==stream){el.srcObject=stream;}
+      el.play().catch(()=>{});
+    } else if(track.kind==='video'){
+      let el=document.getElementById('vv-'+remoteKey);
+      if(!el){
+        el=document.createElement('video');
+        el.id='vv-'+remoteKey;
+        el.autoplay=true;el.muted=true;
+        el.setAttribute('playsinline','');
+        el.style.cssText='width:100%;border-radius:10px;background:#000;margin-top:8px';
+        document.getElementById('remote-screen-area')?.appendChild(el);
+        const sa=document.getElementById('screen-share-area');
+        if(sa)sa.style.display='block';
+      }
+      if(el.srcObject!==stream){el.srcObject=stream;}
+      el.play().catch(()=>{});
+    }
+  };
+
+  pc.onconnectionstatechange=()=>{
+    if(['failed','disconnected','closed'].includes(pc.connectionState)){
+      closePeer(remoteKey);
+    }
+  };
+
+  // Offer veya answer başlat
+  if(isInitiator){
+    pc.createOffer({offerToReceiveAudio:true,offerToReceiveVideo:true})
+      .then(offer=>pc.setLocalDescription(offer))
+      .then(()=>{
+        const sdp=JSON.stringify({type:pc.localDescription.type,sdp:pc.localDescription.sdp});
+        return dbSet(`vc/${safeKey(voiceClassCode||'')}/sig/${remoteKey}/${myVoiceKey()}/offer`,sdp);
+      })
+      .catch(e=>console.warn('offer err',e));
+  }
+
+  return pc;
+}
+
+function closePeer(key){
+  const pc=peerConnections[key];
+  if(pc){try{pc.close();}catch(e){} delete peerConnections[key];}
+  ['va-','vv-'].forEach(p=>{const el=document.getElementById(p+key);if(el)el.remove();});
+}
+
+// ── Signaling dinleyici ──
+function startSignalListener(){
+  const sigPath=`vc/${safeKey(voiceClassCode||'')}/sig/${myVoiceKey()}`;
+  voiceListen(sigPath,async allSigs=>{
+    if(!allSigs||!voiceActive)return;
+    for(const[fromKey,sigs] of Object.entries(allSigs)){
+      if(!sigs||typeof sigs!=='object')continue;
+      let pc=peerConnections[fromKey];
+
+      // Offer
+      if(sigs.offer){
+        // Biz initiator değiliz — answer tarafıyız
+        if(!pc||pc.signalingState==='closed'){
+          pc=makePeer(fromKey,false);
+        }
+        if(pc.signalingState==='stable'||pc.signalingState==='have-remote-offer'||pc.signalingState==='closed'){
+          try{
+            await pc.setRemoteDescription(JSON.parse(sigs.offer));
+            const ans=await pc.createAnswer();
+            await pc.setLocalDescription(ans);
+            await dbSet(`vc/${safeKey(voiceClassCode||'')}/sig/${fromKey}/${myVoiceKey()}/answer`,
+              JSON.stringify({type:ans.type,sdp:ans.sdp}));
+          }catch(e){console.warn('ans err',e);}
+        }
+      }
+
+      // Answer
+      if(sigs.answer&&pc&&pc.signalingState==='have-local-offer'){
+        try{await pc.setRemoteDescription(JSON.parse(sigs.answer));}
+        catch(e){console.warn('setRemote err',e);}
+      }
+
+      // ICE
+      if(pc&&pc.remoteDescription){
+        for(const[k,v] of Object.entries(sigs)){
+          if(k.startsWith('ice_')&&v){
+            try{await pc.addIceCandidate(new RTCIceCandidate(JSON.parse(v)));}
+            catch(e){}
+          }
+        }
+      }
+    }
+  });
+}
+
+// ── Katılımcı dinleyici ──
+function startParticipantListener(roomId){
+  voiceListen(`vc/${safeKey(voiceClassCode||'')}/members`,async data=>{
+    if(!data||!voiceActive)return;
+    const others=Object.entries(data)
+      .filter(([k,v])=>k!==myVoiceKey()&&v&&v.roomId===roomId);
+
+    // Yeni gelenlere offer at
+    for(const[key]of others){
+      if(!peerConnections[key])makePeer(key,true);
+    }
+
+    // Gidenler
+    const activeKeys=new Set(others.map(([k])=>k));
+    Object.keys(peerConnections).forEach(k=>{
+      if(!activeKeys.has(k))closePeer(k);
+    });
+
+    // Katılımcılar UI
+    renderVoiceParticipants(Object.fromEntries(
+      Object.entries(data).filter(([,v])=>v&&v.roomId===roomId)
+    ));
+  });
+}
 
 async function renderVoiceChat(){
   const mc=document.getElementById('main-content');
@@ -2568,14 +2739,54 @@ window.joinVoiceRoom=async function(roomId,roomName){
   voiceActive=true;
   window._activeRoomId=roomId;
 
-  // Odaya üye olarak ekle
-  await dbUpdate(`voiceRoomMeta/${safeKey(voiceClassCode)}/${roomId}/members/${safeKey(session.uid)}`,{
+  // Odaya üye kaydet
+  await dbSet(`vc/${safeKey(voiceClassCode)}/${myVoiceKey()}`,null); // sinyalleri temizle
+  await dbSet(`vc/${safeKey(voiceClassCode)}/members/${myVoiceKey()}`,{
+    uid:session.uid,name:session.name,role:session.role,
+    muted:false,speaking:false,roomId,joinedAt:Date.now()
+  });
+  await dbUpdate(`voiceRoomMeta/${safeKey(voiceClassCode)}/${roomId}/members/${myVoiceKey()}`,{
     name:session.name,uid:session.uid,role:session.role,muted:false,joinedAt:Date.now()
   });
-  // Eski sistemi de güncelle (WebRTC için)
-  await dbSet(`voiceRooms/${safeKey(voiceClassCode)}/${safeKey(session.uid)}`,{
-    uid:session.uid,name:session.name,role:session.role,muted:false,speaking:false,roomId,joinedAt:Date.now()
-  });
+
+  // UI güncelle
+  const activeDiv=document.getElementById('voice-active-room');
+  if(activeDiv)activeDiv.style.display='block';
+  const titleEl=document.getElementById('voice-room-title');
+  if(titleEl)titleEl.textContent=roomName;
+  document.getElementById('voice-mute-btn').style.display='flex';
+  document.getElementById('voice-leave-btn').style.display='flex';
+  document.getElementById('voice-screen-btn').style.display='flex';
+  document.getElementById('voice-pdf-btn').style.display='flex';
+  if(session.role==='teacher'){const cb=document.getElementById('voice-close-btn');if(cb)cb.style.display='flex';}
+
+  toast(`🎤 "${roomName}" odasına katıldın!`,'s');
+
+  // Ses aktivite tespiti
+  try{
+    const audioCtx=new(window.AudioContext||window.webkitAudioContext)();
+    const analyser=audioCtx.createAnalyser();
+    audioCtx.createMediaStreamSource(localStream).connect(analyser);
+    analyser.fftSize=512;
+    const buf=new Uint8Array(analyser.fftSize);
+    function detectSpeech(){
+      if(!voiceActive)return;
+      analyser.getByteTimeDomainData(buf);
+      let sum=0;buf.forEach(v=>{const n=v/128-1;sum+=n*n});
+      const speaking=Math.sqrt(sum/buf.length)>0.02;
+      if(speaking!==window._lastSpeaking){
+        window._lastSpeaking=speaking;
+        dbUpdate(`vc/${safeKey(voiceClassCode)}/members/${myVoiceKey()}`,{speaking:speaking&&!isMuted});
+      }
+      requestAnimationFrame(detectSpeech);
+    }
+    detectSpeech();
+  }catch(e){}
+
+  // Dinleyicileri başlat
+  startSignalListener();
+  startParticipantListener(roomId);
+}
 
   // UI güncelle
   const activeDiv=document.getElementById('voice-active-room');
@@ -2614,21 +2825,9 @@ window.joinVoiceRoom=async function(roomId,roomName){
     detectSpeech();
   }catch(e){}
 
-  // Katılımcıları dinle
-  dbListen(`voiceRoomMeta/${safeKey(voiceClassCode)}/${roomId}/members`,data=>{
-    renderVoiceParticipants(data||{});
-  });
-  // WebRTC
-  dbListen(`voiceRooms/${safeKey(voiceClassCode)}`,async data=>{
-    if(!data||!voiceActive)return;
-    const others=Object.values(data).filter(p=>p.uid!==session.uid&&p.roomId===roomId);
-    for(const p of others){if(!peerConnections[p.uid])await createPeerConnection(p.uid);}
-    Object.keys(peerConnections).forEach(uid=>{if(!data[safeKey(uid)])closePeer(uid)});
-  });
-  dbListen(`voiceSignals/${safeKey(voiceClassCode)}/${safeKey(session.uid)}`,async data=>{
-    if(!data)return;
-    for(const[fromUid,signals]of Object.entries(data))await handleSignals(fromUid,signals);
-  });
+  // Dinleyicileri başlat
+  startSignalListener();
+  startParticipantListener(roomId);
 }
 
 window.closeVoiceRoom=async function(){
@@ -2660,237 +2859,12 @@ function renderVoiceParticipants(data){
   }).join('');
 }
 
-window.joinVoice=async function(){
-  if(!voiceClassCode){toast('Sınıf seç!','w');return}
-  try{
-    localStream=await navigator.mediaDevices.getUserMedia({audio:true,video:false});
-  }catch(e){
-    toast('❌ Mikrofon izni gerekli! Tarayıcı ayarlarından izin ver.','d');
-    return;
-  }
-  voiceActive=true;
-  // Odaya katıl
-  await dbSet(`voiceRooms/${safeKey(voiceClassCode)}/${safeKey(session.uid)}`,{
-    uid:session.uid,name:session.name,role:session.role,
-    muted:false,speaking:false,joinedAt:Date.now()
-  });
-  document.getElementById('voice-join-btn').style.display='none';
-  document.getElementById('voice-mute-btn').style.display='flex';
-  document.getElementById('voice-leave-btn').style.display='flex';
-  toast('🎤 Odaya katıldın!','s');
-
-  // Ses aktivite tespiti
-  const audioCtx=new(window.AudioContext||window.webkitAudioContext)();
-  const analyser=audioCtx.createAnalyser();
-  const src=audioCtx.createMediaStreamSource(localStream);
-  src.connect(analyser);
-  analyser.fftSize=512;
-  const buf=new Uint8Array(analyser.fftSize);
-  let speakingTimeout;
-  function detectSpeech(){
-    if(!voiceActive)return;
-    analyser.getByteTimeDomainData(buf);
-    let sum=0;buf.forEach(v=>{const n=v/128-1;sum+=n*n});
-    const rms=Math.sqrt(sum/buf.length);
-    const speaking=rms>0.02;
-    if(speaking!==window._lastSpeaking){
-      window._lastSpeaking=speaking;
-      dbUpdate(`voiceRooms/${safeKey(voiceClassCode)}/${safeKey(session.uid)}`,{speaking:speaking&&!isMuted});
-    }
-    requestAnimationFrame(detectSpeech);
-  }
-  detectSpeech();
-
-  // Diğer katılımcıları dinle ve WebRTC bağlantı kur
-  dbListen(`voiceRooms/${safeKey(voiceClassCode)}`,async data=>{
-    if(!data||!voiceActive)return;
-    const others=Object.values(data).filter(p=>p.uid&&p.uid!==session.uid&&p.roomId===window._activeRoomId);
-    for(const p of others){
-      if(!peerConnections[safeKey(p.uid)]){
-        await createPeerConnection(safeKey(p.uid));
-      }
-    }
-    // Giden katılımcıları temizle
-    const activeUids=new Set(others.map(p=>safeKey(p.uid)));
-    Object.keys(peerConnections).forEach(uid=>{
-      if(!activeUids.has(uid))closePeer(uid);
-    });
-  });
-
-  // Sinyal dinleyici
-  dbListen(`voiceSignals/${safeKey(voiceClassCode)}/${safeKey(session.uid)}`,async data=>{
-    if(!data)return;
-    for(const[fromUid,signals] of Object.entries(data)){
-      if(signals&&typeof signals==='object')await handleSignals(fromUid,signals);
-    }
-  });
-}
-
-async function createPeerConnection(remoteUid){
-  if(peerConnections[remoteUid])return;
-  const pc=new RTCPeerConnection(ICE_SERVERS);
-  peerConnections[remoteUid]=pc;
-
-  // Local track'leri ekle
-  if(localStream){
-    localStream.getTracks().forEach(t=>pc.addTrack(t,localStream));
-  }
-
-  // ICE candidate
-  pc.onicecandidate=e=>{
-    if(!e.candidate)return;
-    const path=`voiceSignals/${safeKey(voiceClassCode)}/${safeKey(remoteUid)}/${safeKey(session.uid)}/ice_${Date.now()}`;
-    dbSet(path,JSON.stringify(e.candidate));
-  };
-
-  // Uzak ses/video
-  pc.ontrack=e=>{
-    const stream=e.streams[0]||new MediaStream([e.track]);
-    if(e.track.kind==='audio'){
-      let audio=document.getElementById('audio-'+remoteUid);
-      if(!audio){
-        audio=document.createElement('audio');
-        audio.id='audio-'+remoteUid;
-        audio.autoplay=true;
-        audio.setAttribute('playsinline','');
-        document.getElementById('voice-audio-container')?.appendChild(audio);
-      }
-      audio.srcObject=stream;
-      audio.play().catch(()=>{});
-    } else if(e.track.kind==='video'){
-      // Uzak ekran paylaşımı
-      const area=document.getElementById('remote-screen-area');
-      if(area){
-        let video=document.getElementById('remote-video-'+remoteUid);
-        if(!video){
-          video=document.createElement('video');
-          video.id='remote-video-'+remoteUid;
-          video.autoplay=true;
-          video.setAttribute('playsinline','');
-          video.style.cssText='width:100%;border-radius:10px;background:#000;margin-top:8px';
-          const label=document.createElement('div');
-          label.style.cssText='font-size:.75rem;color:var(--dim);margin-top:6px';
-          label.textContent='📺 Uzak Ekran';
-          area.appendChild(label);
-          area.appendChild(video);
-          document.getElementById('screen-share-area').style.display='block';
-        }
-        video.srcObject=stream;
-        video.play().catch(()=>{});
-      }
-    }
-  };
-
-  pc.onconnectionstatechange=()=>{
-    if(pc.connectionState==='failed'||pc.connectionState==='disconnected'){
-      closePeer(remoteUid);
-    }
-  };
-
-  // Offer gönder
-  try{
-    const offer=await pc.createOffer({offerToReceiveAudio:true,offerToReceiveVideo:true});
-    await pc.setLocalDescription(offer);
-    await dbSet(`voiceSignals/${safeKey(voiceClassCode)}/${safeKey(remoteUid)}/${safeKey(session.uid)}/offer`,JSON.stringify({type:offer.type,sdp:offer.sdp}));
-  }catch(e){console.warn('Offer hatası:',e);}
-}
-
-async function handleSignals(fromUid,signals){
-  if(!signals)return;
-  let pc=peerConnections[fromUid];
-
-  // Offer geldi — yeni PC oluştur ve answer gönder
-  if(signals.offer&&(!pc||pc.signalingState==='closed')){
-    if(pc)pc.close();
-    pc=new RTCPeerConnection(ICE_SERVERS);
-    peerConnections[fromUid]=pc;
-
-    if(localStream){
-      localStream.getTracks().forEach(t=>pc.addTrack(t,localStream));
-    }
-
-    pc.onicecandidate=e=>{
-      if(!e.candidate)return;
-      const path=`voiceSignals/${safeKey(voiceClassCode)}/${safeKey(fromUid)}/${safeKey(session.uid)}/ice_${Date.now()}`;
-      dbSet(path,JSON.stringify(e.candidate));
-    };
-
-    pc.ontrack=e=>{
-      const stream=e.streams[0]||new MediaStream([e.track]);
-      if(e.track.kind==='audio'){
-        let audio=document.getElementById('audio-'+fromUid);
-        if(!audio){
-          audio=document.createElement('audio');
-          audio.id='audio-'+fromUid;
-          audio.autoplay=true;
-          audio.setAttribute('playsinline','');
-          document.getElementById('voice-audio-container')?.appendChild(audio);
-        }
-        audio.srcObject=stream;
-        audio.play().catch(()=>{});
-      } else if(e.track.kind==='video'){
-        const area=document.getElementById('remote-screen-area');
-        if(area){
-          let video=document.getElementById('remote-video-'+fromUid);
-          if(!video){
-            video=document.createElement('video');
-            video.id='remote-video-'+fromUid;
-            video.autoplay=true;
-            video.setAttribute('playsinline','');
-            video.style.cssText='width:100%;border-radius:10px;background:#000;margin-top:8px';
-            area.appendChild(video);
-            document.getElementById('screen-share-area').style.display='block';
-          }
-          video.srcObject=stream;
-          video.play().catch(()=>{});
-        }
-      }
-    };
-
-    pc.onconnectionstatechange=()=>{
-      if(pc.connectionState==='failed'||pc.connectionState==='disconnected'){
-        closePeer(fromUid);
-      }
-    };
-
-    try{
-      await pc.setRemoteDescription(JSON.parse(signals.offer));
-      const answer=await pc.createAnswer();
-      await pc.setLocalDescription(answer);
-      await dbSet(`voiceSignals/${safeKey(voiceClassCode)}/${safeKey(fromUid)}/${safeKey(session.uid)}/answer`,JSON.stringify({type:answer.type,sdp:answer.sdp}));
-    }catch(e){console.warn('Answer hatası:',e);}
-  }
-
-  // Answer geldi
-  if(signals.answer&&pc&&pc.signalingState==='have-local-offer'){
-    try{
-      await pc.setRemoteDescription(JSON.parse(signals.answer));
-    }catch(e){console.warn('setRemoteDesc hatası:',e);}
-  }
-
-  // ICE candidates
-  if(pc&&(pc.signalingState!=='closed')){
-    for(const[key,val] of Object.entries(signals)){
-      if(key.startsWith('ice_')&&val){
-        try{
-          await pc.addIceCandidate(new RTCIceCandidate(JSON.parse(val)));
-        }catch(e){}
-      }
-    }
-  }
-}
-
-function closePeer(uid){
-  if(peerConnections[uid]){peerConnections[uid].close();delete peerConnections[uid]}
-  const audio=document.getElementById('audio-'+uid);if(audio)audio.remove();
-}
-
 window.toggleMute=function(){
   isMuted=!isMuted;
   localStream?.getAudioTracks().forEach(t=>t.enabled=!isMuted);
-  dbUpdate(`voiceRooms/${safeKey(voiceClassCode)}/${safeKey(session.uid)}`,{muted:isMuted,speaking:false});
+  dbUpdate(`vc/${safeKey(voiceClassCode)}/members/${myVoiceKey()}`,{muted:isMuted,speaking:false});
   const btn=document.getElementById('voice-mute-btn');
-  if(btn){btn.textContent=isMuted?'🎤 Susturmayı Kaldır':'🔇 Sustur';btn.className=isMuted?'btn btn-success btn-lg':'btn btn-warning btn-lg'}
+  if(btn){btn.textContent=isMuted?'🎤 Susturmayı Kaldır':'🔇 Sustur';btn.className=isMuted?'btn btn-success':'btn btn-warning';}
   toast(isMuted?'🔇 Mikrofon kapatıldı.':'🎤 Mikrofon açıldı.','i');
 }
 
@@ -2898,12 +2872,17 @@ window.leaveVoice=async function(silent=false){
   voiceActive=false;isMuted=false;window._lastSpeaking=false;
   localStream?.getTracks().forEach(t=>t.stop());
   localStream=null;
-  Object.keys(peerConnections).forEach(uid=>closePeer(uid));
+  clearVoiceListeners();
+  Object.keys(peerConnections).forEach(k=>closePeer(k));
   if(voiceClassCode){
-    await dbSet(`voiceRooms/${safeKey(voiceClassCode)}/${safeKey(session.uid)}`,null);
-    await dbSet(`voiceSignals/${safeKey(voiceClassCode)}/${safeKey(session.uid)}`,null);
+    // Yeni path
+    await dbSet(`vc/${safeKey(voiceClassCode)}/members/${myVoiceKey()}`,null);
+    await dbSet(`vc/${safeKey(voiceClassCode)}/sig/${myVoiceKey()}`,null);
+    // Eski path (temizlik)
+    await dbSet(`voiceRooms/${safeKey(voiceClassCode)}/${myVoiceKey()}`,null);
+    await dbSet(`voiceSignals/${safeKey(voiceClassCode)}/${myVoiceKey()}`,null);
     if(window._activeRoomId){
-      await dbSet(`voiceRoomMeta/${safeKey(voiceClassCode)}/${window._activeRoomId}/members/${safeKey(session.uid)}`,null);
+      await dbSet(`voiceRoomMeta/${safeKey(voiceClassCode)}/${window._activeRoomId}/members/${myVoiceKey()}`,null);
     }
   }
   window._activeRoomId=null;
