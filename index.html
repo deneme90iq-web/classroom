@@ -335,8 +335,28 @@ if(!window.toggleTheme){
           <button class="role-btn" id="test-role-student" onclick="selectTestRole('student')" style="font-size:.7rem;padding:8px 4px">🎓<br>Öğrenci</button>
         </div>
       </div>
+      <div id="test-branch-group" style="margin-bottom:12px">
+        <label style="font-size:.65rem;font-family:'Syne',sans-serif;letter-spacing:.1em;color:var(--dim);display:block;margin-bottom:5px">BRANŞ</label>
+        <select id="test-branch" class="input" style="padding:8px 10px;font-size:.82rem">
+          <option value="genel">🏫 Genel</option>
+          <option value="math">📐 Matematik</option>
+          <option value="physics">⚛️ Fizik</option>
+          <option value="chem">🧪 Kimya</option>
+          <option value="bio">🧬 Biyoloji</option>
+          <option value="tr">📖 Türkçe</option>
+          <option value="lit">✍️ Edebiyat</option>
+          <option value="hist">🏛️ Tarih</option>
+          <option value="geo">🌍 Coğrafya</option>
+          <option value="eng">🇬🇧 İngilizce</option>
+          <option value="lang">🌐 Yabancı Dil</option>
+          <option value="music">🎵 Müzik</option>
+          <option value="art">🎨 Görsel Sanatlar</option>
+          <option value="pe">⚽ Beden</option>
+          <option value="siyer">📿 Siyer</option>
+        </select>
+      </div>
       <div id="test-class-group" style="display:none;margin-bottom:12px">
-        <label style="font-size:.65rem;font-family:'Syne',sans-serif;letter-spacing:.1em;color:var(--dim);display:block;margin-bottom:5px">SINIF KODU (isteğe bağlı — sonradan da girebilirsin)</label>
+        <label style="font-size:.65rem;font-family:'Syne',sans-serif;letter-spacing:.1em;color:var(--dim);display:block;margin-bottom:5px">SINIF KODU (isteğe bağlı)</label>
         <input type="text" id="test-class-code" class="input" placeholder="Örn: CL-A3B7" maxlength="10" style="padding:9px 12px;font-size:.85rem;text-transform:uppercase;letter-spacing:.1em">
       </div>
       <button class="btn btn-accent btn-block" onclick="doTestLogin()" style="font-size:.85rem">⚡ Test Olarak Gir</button>
@@ -698,6 +718,8 @@ window.selectRole=function(role){
   document.getElementById('role-teacher').className='role-btn'+(role==='teacher'?' sel-teacher':'');
   document.getElementById('role-student').className='role-btn'+(role==='student'?' sel-student':'');
   document.getElementById('reg-branch-group').style.display=role==='teacher'?'block':'none';
+  // Öğrenci kayıtta default olarak öğretmen seçili geldiği için başlangıçta branş görünür
+  // Öğrenci seçince gizle
 }
 window.doLogin=async function(){
   const email=document.getElementById('login-email').value.trim();
@@ -1687,16 +1709,49 @@ window.createAnnouncement=async function(){
 let chatListener=null;
 async function renderChat(){
   const mc=document.getElementById('main-content');
-  const classCode=session.classCode||'_teacher_'+session.uid;
-  mc.innerHTML=`<div style="font-family:'Syne',sans-serif;font-size:1.3rem;font-weight:700;margin-bottom:16px">💬 Sınıf Sohbeti</div>
-  <div style="display:flex;flex-direction:column;height:calc(100vh - 180px)">
+  // Sınıf kodu: öğrenci kendi sınıf kodunu, öğretmen seçilen sınıfı kullanır
+  let chatClassCode=session.classCode;
+  // Öğretmenin birden fazla sınıfı olabilir — seçim yaptır
+  let classOptions='';
+  if(session.role==='teacher'){
+    const classes=await getMyClasses();
+    if(classes.length===0){
+      mc.innerHTML=`<div class="card text-center text-dim" style="padding:50px"><div style="font-size:3rem;margin-bottom:10px">💬</div><div>Sohbet için önce bir sınıf oluştur.</div></div>`;
+      return;
+    }
+    chatClassCode=chatClassCode||classes[0].code;
+    classOptions=`<select class="input" id="chat-class-sel" onchange="switchChatClass(this.value)" style="max-width:220px;margin-bottom:12px">
+      ${classes.map(c=>`<option value="${c.code}" ${c.code===chatClassCode?'selected':''}>${c.name}</option>`).join('')}
+    </select>`;
+  }
+  if(!chatClassCode){
+    mc.innerHTML=`<div class="card text-center text-dim" style="padding:50px"><div style="font-size:3rem;margin-bottom:10px">💬</div><div>Sohbet için önce bir sınıfa katıl.</div></div>`;
+    return;
+  }
+  mc.innerHTML=`<div style="font-family:'Syne',sans-serif;font-size:1.3rem;font-weight:700;margin-bottom:12px">💬 Sınıf Sohbeti</div>
+  ${classOptions}
+  <div style="display:flex;flex-direction:column;height:calc(100vh - ${session.role==='teacher'?'230':'190'}px)">
     <div id="chat-messages" class="scroll-y" style="flex:1;background:var(--card);border:1px solid var(--border);border-radius:16px 16px 0 0;padding:16px;overflow-y:auto;display:flex;flex-direction:column;gap:10px"></div>
     <div style="display:flex;gap:10px;background:var(--card2);border:1px solid var(--border);border-top:none;border-radius:0 0 16px 16px;padding:12px">
-      <input type="text" class="input" id="chat-input" placeholder="Mesaj yaz..." onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendChatMsg()}" style="flex:1">
-      <button class="btn btn-primary" onclick="sendChatMsg()">Gönder →</button>
+      <input type="text" class="input" id="chat-input" placeholder="Mesaj yaz..." onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendChatMsg('${chatClassCode}')}" style="flex:1">
+      <button class="btn btn-primary" onclick="sendChatMsg('${chatClassCode}')">Gönder →</button>
     </div>
   </div>`;
-  // Realtime listener
+  startChatListener(chatClassCode);
+}
+
+window.switchChatClass=function(code){
+  if(chatListener)off(chatListener);
+  const mc=document.getElementById('main-content');
+  const input=document.getElementById('chat-input');
+  if(input){
+    input.onkeydown=e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendChatMsg(code)}};
+    input.nextElementSibling.onclick=()=>sendChatMsg(code);
+  }
+  startChatListener(code);
+}
+
+function startChatListener(classCode){
   if(chatListener)off(chatListener);
   const r=dbRef(`chats/${safeKey(classCode)}`);
   chatListener=r;
@@ -1705,28 +1760,32 @@ async function renderChat(){
     msgs.sort((a,b)=>a.createdAt-b.createdAt);
     const el=document.getElementById('chat-messages');
     if(!el)return;
-    el.innerHTML=msgs.map(m=>{
-      const isMe=m.uid===session.uid;
-      return `<div style="display:flex;flex-direction:${isMe?'row-reverse':'row'};align-items:flex-end;gap:8px">
-        <div style="width:32px;height:32px;border-radius:50%;background:var(--primary-dim);border:1px solid var(--primary);display:flex;align-items:center;justify-content:center;font-size:.75rem;font-weight:700;color:var(--primary);flex-shrink:0">${m.name.charAt(0).toUpperCase()}</div>
-        <div style="max-width:65%">
-          <div style="font-size:.68rem;color:var(--dim);margin-bottom:3px;text-align:${isMe?'right':'left'}">${m.name}</div>
-          <div style="background:${isMe?'var(--primary)':'var(--card2)'};color:${isMe?'#fff':'var(--text)'};padding:10px 14px;border-radius:${isMe?'14px 14px 4px 14px':'14px 14px 14px 4px'};font-size:.88rem;line-height:1.5">${m.text}</div>
-          <div style="font-size:.65rem;color:var(--dim2);margin-top:3px;text-align:${isMe?'right':'left'}">${new Date(m.createdAt).toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit'})}</div>
-        </div>
-      </div>`;
-    }).join('');
+    el.innerHTML=msgs.length===0
+      ?`<div class="text-center text-dim" style="padding:40px;font-size:.85rem">Henüz mesaj yok. İlk mesajı sen gönder! 👋</div>`
+      :msgs.map(m=>{
+        const isMe=m.uid===session.uid;
+        const roleColor=m.role==='teacher'?'var(--warning)':'var(--primary)';
+        return `<div style="display:flex;flex-direction:${isMe?'row-reverse':'row'};align-items:flex-end;gap:8px">
+          <div style="width:32px;height:32px;border-radius:50%;background:${isMe?'var(--primary-dim)':'var(--card2)'};border:1px solid ${roleColor};display:flex;align-items:center;justify-content:center;font-size:.75rem;font-weight:700;color:${roleColor};flex-shrink:0">${(m.name||'?').charAt(0).toUpperCase()}</div>
+          <div style="max-width:65%">
+            <div style="font-size:.68rem;color:var(--dim);margin-bottom:3px;text-align:${isMe?'right':'left'}">${m.name}${m.role==='teacher'?' 👨‍🏫':''}</div>
+            <div style="background:${isMe?'var(--primary)':'var(--card2)'};color:${isMe?'#fff':'var(--text)'};padding:10px 14px;border-radius:${isMe?'14px 14px 4px 14px':'14px 14px 14px 4px'};font-size:.88rem;line-height:1.5;word-break:break-word">${m.text}</div>
+            <div style="font-size:.65rem;color:var(--dim2);margin-top:3px;text-align:${isMe?'right':'left'}">${new Date(m.createdAt).toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit'})}</div>
+          </div>
+        </div>`;
+      }).join('');
     el.scrollTop=el.scrollHeight;
   });
 }
 
-window.sendChatMsg=async function(){
+window.sendChatMsg=async function(classCode){
   const input=document.getElementById('chat-input');
   const text=input?.value.trim();
   if(!text)return;
-  const classCode=session.classCode||'_teacher_'+session.uid;
+  const code=classCode||session.classCode;
+  if(!code){toast('Sınıfa katılmadan mesaj gönderemezsin!','w');return}
   const msgId='msg_'+Date.now();
-  await dbSet(`chats/${safeKey(classCode)}/${msgId}`,{id:msgId,text,name:session.name,uid:session.uid,role:session.role,createdAt:Date.now()});
+  await dbSet(`chats/${safeKey(code)}/${msgId}`,{id:msgId,text,name:session.name,uid:session.uid,role:session.role,createdAt:Date.now()});
   input.value='';
 }
 
@@ -2104,6 +2163,7 @@ window.selectTestRole=function(role){
   testRole=role;
   document.getElementById('test-role-teacher').className='role-btn'+(role==='teacher'?' sel-teacher':'');
   document.getElementById('test-role-student').className='role-btn'+(role==='student'?' sel-student':'');
+  document.getElementById('test-branch-group').style.display=role==='teacher'?'block':'none';
   document.getElementById('test-class-group').style.display=role==='student'?'block':'none';
 }
 
@@ -2149,7 +2209,7 @@ window.doTestLogin=async function(){
     if(!cls){toast('Geçersiz sınıf kodu!','d');return}
   }
   const testUid='test_'+safeKey(name)+'_'+testRole;
-  const branch=testRole==='teacher'?'genel':'';
+  const branch=testRole==='teacher'?(document.getElementById('test-branch')?.value||'genel'):'';
   const profile={name,role:testRole,classCode:classCode||null,email:testUid+'@test.local',isTest:true,branch,createdAt:Date.now(),approved:true};
   await dbSet(`users/${testUid}/profile`,profile);
   // Sınıf kodu varsa pending sistemiyle başvur
