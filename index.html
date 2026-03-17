@@ -276,7 +276,26 @@ if(!window.toggleTheme){
             <button class="role-btn" id="role-student" onclick="selectRole('student')">🎓<br>Öğrenci</button>
           </div>
         </div>
-        <div id="reg-class-group" style="display:none" class="form-group"><label class="label">SINIF KODU</label><input type="text" class="input" id="reg-class-code" placeholder="Örn: CL-A3B7" maxlength="10" style="font-family:'Syne',sans-serif;letter-spacing:.15em;text-transform:uppercase"></div>
+        <div id="reg-branch-group" class="form-group">
+          <label class="label">BRANŞ</label>
+          <select class="input" id="reg-branch">
+            <option value="genel">🏫 Genel (Tüm Dersler)</option>
+            <option value="math">📐 Matematik</option>
+            <option value="physics">⚛️ Fizik</option>
+            <option value="chem">🧪 Kimya</option>
+            <option value="bio">🧬 Biyoloji</option>
+            <option value="tr">📖 Türkçe</option>
+            <option value="lit">✍️ Edebiyat</option>
+            <option value="hist">🏛️ Tarih</option>
+            <option value="geo">🌍 Coğrafya</option>
+            <option value="eng">🇬🇧 İngilizce</option>
+            <option value="lang">🌐 Yabancı Dil</option>
+            <option value="music">🎵 Müzik</option>
+            <option value="art">🎨 Görsel Sanatlar</option>
+            <option value="pe">⚽ Beden Eğitimi</option>
+            <option value="siyer">📿 Siyer</option>
+          </select>
+        </div>
         <div class="form-group"><label class="label">E-POSTA</label><input type="email" class="input" id="reg-email" placeholder="ornek@mail.com"></div>
         <div class="form-group"><label class="label">ŞİFRE (en az 6 karakter)</label><input type="password" class="input" id="reg-pass" placeholder="••••••••" onkeydown="if(event.key==='Enter')doRegister()"></div>
         <button class="btn btn-success btn-block btn-lg mt-3" onclick="doRegister()" id="register-btn">Hesap Oluştur →</button>
@@ -317,7 +336,7 @@ if(!window.toggleTheme){
         </div>
       </div>
       <div id="test-class-group" style="display:none;margin-bottom:12px">
-        <label style="font-size:.65rem;font-family:'Syne',sans-serif;letter-spacing:.1em;color:var(--dim);display:block;margin-bottom:5px">SINIF KODU (isteğe bağlı)</label>
+        <label style="font-size:.65rem;font-family:'Syne',sans-serif;letter-spacing:.1em;color:var(--dim);display:block;margin-bottom:5px">SINIF KODU (isteğe bağlı — sonradan da girebilirsin)</label>
         <input type="text" id="test-class-code" class="input" placeholder="Örn: CL-A3B7" maxlength="10" style="padding:9px 12px;font-size:.85rem;text-transform:uppercase;letter-spacing:.1em">
       </div>
       <button class="btn btn-accent btn-block" onclick="doTestLogin()" style="font-size:.85rem">⚡ Test Olarak Gir</button>
@@ -351,6 +370,7 @@ if(!window.toggleTheme){
       <div class="nav-item" id="nav-chat" onclick="navTo('chat')"><span class="nav-icon">💬</span> Sınıf Sohbeti</div>
       <div class="nav-item" id="nav-quiz" onclick="navTo('quiz')"><span class="nav-icon">📝</span> Quiz</div>
       <div class="nav-item" id="nav-classes" onclick="navTo('classes')"><span class="nav-icon">🏫</span> Sınıflarım</div>
+      <div class="nav-item" id="nav-join-class" onclick="showModal('modal-join-class')" style="display:none"><span class="nav-icon">➕</span> Sınıfa Katıl</div>
 
       <div class="sidebar-section">ARAÇLAR</div>
       <div class="nav-item" id="nav-store" onclick="navTo('store')"><span class="nav-icon">🛒</span> Mağaza</div>
@@ -382,6 +402,24 @@ if(!window.toggleTheme){
 <!-- ══════════════════════════════════
      MODALS
 ══════════════════════════════════ -->
+
+<!-- Join Class -->
+<div id="modal-join-class" class="modal-overlay" style="display:none">
+  <div class="modal">
+    <div class="modal-title">➕ Sınıfa Katıl</div>
+    <div style="font-size:.85rem;color:var(--dim);margin-bottom:16px;line-height:1.6">Öğretmeninden aldığın sınıf kodunu gir. Öğretmen onayladıktan sonra sınıfa dahil olursun.</div>
+    <div class="form-group">
+      <label class="label">SINIF KODU</label>
+      <input type="text" class="input" id="join-class-code" placeholder="Örn: CL-A3B7" maxlength="10" style="font-family:'Syne',sans-serif;letter-spacing:.15em;text-transform:uppercase;font-size:1rem;text-align:center" onkeydown="if(event.key==='Enter')joinClass()">
+    </div>
+    <div id="join-class-error" style="display:none;font-size:.82rem;color:var(--danger);margin-bottom:10px"></div>
+    <div id="join-class-info" style="display:none;background:var(--success-dim);border:1px solid rgba(0,214,143,.3);border-radius:10px;padding:12px;margin-bottom:14px;font-size:.85rem"></div>
+    <div class="flex gap-2 mt-2">
+      <button class="btn btn-ghost" style="flex:1" onclick="hideModal('modal-join-class')">İptal</button>
+      <button class="btn btn-primary" style="flex:2" onclick="joinClass()" id="join-btn">Sınıfa Başvur →</button>
+    </div>
+  </div>
+</div>
 
 <!-- Create Announcement -->
 <div id="modal-create-ann" class="modal-overlay" style="display:none">
@@ -591,7 +629,7 @@ onAuthStateChanged(auth, async user=>{
     const profile=await dbGet(`users/${user.uid}/profile`);
     if(profile){
       session={uid:user.uid,role:profile.role,name:profile.name,classCode:profile.classCode||null,email:user.email};
-      // Öğrenci onay kontrolü
+      // Öğrenci onay kontrolü — sadece sınıf koduna sahipse
       if(profile.role==='student'&&profile.classCode){
         const pending=await dbGet(`pendingStudents/${safeKey(profile.classCode)}/${safeKey(user.uid)}`);
         if(pending&&pending.status==='pending'){
@@ -601,8 +639,10 @@ onAuthStateChanged(auth, async user=>{
         }
         if(pending&&pending.status==='rejected'){
           hideLoading();
+          // Profildeki classCode'u temizle, yeniden sınıfa katılabilsin
+          await dbUpdate(`users/${user.uid}/profile`,{classCode:null});
           showScreen('screen-auth');
-          showErr('Başvurun öğretmen tarafından reddedildi.');
+          showErr('Başvurun öğretmen tarafından reddedildi. Farklı bir sınıfa katılabilirsin.');
           return;
         }
       }
@@ -657,7 +697,7 @@ window.selectRole=function(role){
   selectedRole=role;
   document.getElementById('role-teacher').className='role-btn'+(role==='teacher'?' sel-teacher':'');
   document.getElementById('role-student').className='role-btn'+(role==='student'?' sel-student':'');
-  document.getElementById('reg-class-group').style.display=role==='student'?'block':'none';
+  document.getElementById('reg-branch-group').style.display=role==='teacher'?'block':'none';
 }
 window.doLogin=async function(){
   const email=document.getElementById('login-email').value.trim();
@@ -674,23 +714,17 @@ window.doRegister=async function(){
   const name=document.getElementById('reg-name').value.trim();
   const email=document.getElementById('reg-email').value.trim();
   const pass=document.getElementById('reg-pass').value;
-  const code=document.getElementById('reg-class-code').value.trim().toUpperCase();
+  const branch=selectedRole==='teacher'?(document.getElementById('reg-branch').value||'genel'):'';
   if(!name||!email||!pass){showErr('Tüm alanları doldur!');return}
   if(pass.length<6){showErr('Şifre en az 6 karakter!');return}
-  if(selectedRole==='student'){
-    if(!code){showErr('Sınıf kodu gir!');return}
-    const cls=await dbGet(`classes/${code}`);
-    if(!cls){showErr('Geçersiz sınıf kodu!');return}
-  }
   const btn=document.getElementById('register-btn');btn.disabled=true;btn.textContent='Oluşturuluyor...';hideErr();
   try{
     const cred=await createUserWithEmailAndPassword(auth,email,pass);
     const uid=cred.user.uid;
-    await dbSet(`users/${uid}/profile`,{name,role:selectedRole,classCode:code||null,email,createdAt:Date.now(),approved:selectedRole!=='student'});
-    if(selectedRole==='student'){
-      // Direkt üye değil — onay bekleniyor
-      await dbSet(`pendingStudents/${safeKey(code)}/${safeKey(uid)}`,{name,uid,email,classCode:code,requestedAt:Date.now(),status:'pending'});
-    }
+    await dbSet(`users/${uid}/profile`,{
+      name,role:selectedRole,classCode:null,email,branch,
+      createdAt:Date.now(),approved:true
+    });
   }catch(e){
     const m={'auth/email-already-in-use':'Bu e-posta zaten kullanımda.','auth/invalid-email':'Geçersiz e-posta.','auth/weak-password':'Şifre çok zayıf.'};
     showErr(m[e.code]||'Hata: '+e.message);btn.disabled=false;btn.textContent='Hesap Oluştur →';
@@ -717,20 +751,31 @@ function enterApp(){
   }
   if(session.role==='teacher'){
     document.getElementById('teacher-nav').style.display='block';
-    // Bekleyen öğrenci bildirimi
+    // Bekleyen öğrenci bildirimi — gerçek zamanlı
     dbListen('pendingStudents',allPending=>{
       if(!allPending)return;
       let count=0;
-      Object.entries(allPending).forEach(([code,students])=>{
-        Object.values(students).forEach(s=>{
-          if(s.status==='pending')count++;
+      const myClassCodes=new Set();
+      // Öğretmenin sınıflarını bul
+      dbGet('classes').then(classes=>{
+        if(!classes)return;
+        Object.values(classes).forEach(c=>{if(c.teacherUid===session.uid)myClassCodes.add(safeKey(c.code))});
+        Object.entries(allPending).forEach(([codeKey,students])=>{
+          if(!myClassCodes.has(codeKey))return;
+          Object.values(students).forEach(s=>{if(s.status==='pending')count++});
         });
+        const badge=document.getElementById('pending-badge');
+        if(badge){badge.textContent=count;badge.style.display=count>0?'inline':'none';}
+        if(count>0)toast(`⏳ ${count} öğrenci onay bekliyor!`,'w');
       });
-      const badge=document.getElementById('pending-badge');
-      if(badge){badge.textContent=count;badge.style.display=count>0?'inline':'none';}
     });
   }
   populateSubjectSelects();
+  // Öğrenci ise Sınıfa Katıl butonunu göster
+  if(session.role==='student'){
+    const joinBtn=document.getElementById('nav-join-class');
+    if(joinBtn)joinBtn.style.display='flex';
+  }
   // Listen to game state
   dbListen(`users/${session.uid}/gameState`,s=>{
     const state=s||defaultState();
@@ -2062,20 +2107,57 @@ window.selectTestRole=function(role){
   document.getElementById('test-class-group').style.display=role==='student'?'block':'none';
 }
 
+// ═══════════ JOIN CLASS ═══════════
+window.joinClass=async function(){
+  const code=document.getElementById('join-class-code').value.trim().toUpperCase();
+  const errEl=document.getElementById('join-class-error');
+  const infoEl=document.getElementById('join-class-info');
+  errEl.style.display='none';infoEl.style.display='none';
+  if(!code){errEl.textContent='Sınıf kodu gir!';errEl.style.display='block';return}
+  const cls=await dbGet(`classes/${code}`);
+  if(!cls){errEl.textContent='Geçersiz sınıf kodu! Öğretmeninden doğru kodu al.';errEl.style.display='block';return}
+  // Zaten üye mi?
+  const existingMember=await dbGet(`classMembers/${safeKey(code)}/${safeKey(session.uid)}`);
+  if(existingMember){errEl.textContent='Bu sınıfa zaten üyesin!';errEl.style.display='block';return}
+  // Zaten bekliyor mu?
+  const existing=await dbGet(`pendingStudents/${safeKey(code)}/${safeKey(session.uid)}`);
+  if(existing&&existing.status==='pending'){errEl.textContent='Bu sınıfa zaten başvurdun, öğretmen onayını bekle.';errEl.style.display='block';return}
+  const btn=document.getElementById('join-btn');btn.disabled=true;btn.textContent='Başvuruluyor...';
+  // Pending'e ekle
+  await dbSet(`pendingStudents/${safeKey(code)}/${safeKey(session.uid)}`,{
+    name:session.name,uid:session.uid,email:session.email||'',
+    classCode:code,requestedAt:Date.now(),status:'pending'
+  });
+  // Profil güncelle
+  await dbUpdate(`users/${session.uid}/profile`,{classCode:code});
+  session.classCode=code;
+  btn.disabled=false;btn.textContent='Sınıfa Başvur →';
+  infoEl.innerHTML=`✅ <strong>${cls.name}</strong> sınıfına başvurun gönderildi!<br><span style="font-size:.8rem;opacity:.8">Öğretmen onayladıktan sonra sınıfa dahil olursun.</span>`;
+  infoEl.style.display='block';
+  document.getElementById('join-class-code').value='';
+  toast(`📤 ${cls.name} sınıfına başvurdun!`,'s');
+  setTimeout(()=>hideModal('modal-join-class'),2000);
+}
+
 window.doTestLogin=async function(){
   const name=document.getElementById('test-name').value.trim();
   if(!name){toast('Ad soyad gir!','w');return}
   const classCode=document.getElementById('test-class-code')?.value.trim().toUpperCase()||'';
-  if(testRole==='student'&&classCode){
+  // Sınıf kodu varsa doğrula
+  if(classCode){
     const cls=await dbGet(`classes/${classCode}`);
     if(!cls){toast('Geçersiz sınıf kodu!','d');return}
   }
-  // Test kullanıcısı — Firebase Auth olmadan, localStorage + DB ile
   const testUid='test_'+safeKey(name)+'_'+testRole;
-  const profile={name,role:testRole,classCode:testRole==='student'&&classCode?classCode:null,email:testUid+'@test.local',isTest:true,createdAt:Date.now()};
+  const branch=testRole==='teacher'?'genel':'';
+  const profile={name,role:testRole,classCode:classCode||null,email:testUid+'@test.local',isTest:true,branch,createdAt:Date.now(),approved:true};
   await dbSet(`users/${testUid}/profile`,profile);
+  // Sınıf kodu varsa pending sistemiyle başvur
   if(testRole==='student'&&classCode){
-    await dbUpdate(`classMembers/${safeKey(classCode)}/${safeKey(testUid)}`,{name,uid:testUid,email:profile.email,joinedAt:Date.now()});
+    await dbSet(`pendingStudents/${safeKey(classCode)}/${safeKey(testUid)}`,{
+      name,uid:testUid,email:profile.email,classCode,requestedAt:Date.now(),status:'pending'
+    });
+    toast(`📤 Sınıfa başvuru gönderildi! Öğretmen onayını bekle.`,'i');
   }
   session={uid:testUid,role:testRole,name,classCode:profile.classCode,email:profile.email};
   document.getElementById('test-expanded').style.display='none';
