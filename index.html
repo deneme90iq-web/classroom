@@ -1264,7 +1264,7 @@ async function renderDashboard(){
   if(session.role==='student'){
     const btn=document.createElement('button');
     btn.className='btn btn-primary';btn.style.cssText='position:fixed;bottom:24px;right:24px;border-radius:50%;width:56px;height:56px;font-size:1.4rem;box-shadow:0 4px 20px var(--primary-glow)';
-    btn.textContent='📝';btn.title='Not Paylaş';btn.onclick=()=>openShareNoteModal();
+    btn.textContent='📝';btn.title='Not Paylaş';btn.onclick=()=>openNoteModal();
     mc.appendChild(btn);
   }
 }
@@ -1314,7 +1314,7 @@ async function renderHomework(){
   mc.innerHTML=`<div class="flex items-center justify-between mb-4">
     <div style="font-family:'Syne',sans-serif;font-size:1.3rem;font-weight:700">📋 Ödevler</div>
     ${session.role==='teacher'?`<button class="btn btn-primary" onclick="showModal('modal-assign-hw');loadTeacherClassesForHw()">+ Ödev Ver</button>`
-    :`<button class="btn btn-success" onclick="openShareNoteModal()">+ Not Paylaş</button>`}
+    :`<button class="btn btn-success" onclick="openNoteModal()">+ Not Paylaş</button>`}
   </div>
   <div class="tabs">
     <div class="tab active" id="hw-tab-pending" onclick="hwTab('pending')">Bekleyen</div>
@@ -1459,7 +1459,7 @@ async function renderNotes(){
   const mc=document.getElementById('main-content');
   mc.innerHTML=`<div class="flex items-center justify-between mb-4">
     <div style="font-family:'Syne',sans-serif;font-size:1.3rem;font-weight:700">📝 Ders Notları</div>
-    <button class="btn btn-success" onclick="openShareNoteModal()">+ Not Paylaş</button>
+    <button class="btn btn-success" onclick="openNoteModal()">+ Not Paylaş</button>
   </div>
   <div class="flex gap-2 mb-4" style="flex-wrap:wrap">
     <button class="btn btn-ghost" style="font-size:.8rem" id="note-filter-all" onclick="filterNotes('all')">Tümü</button>
@@ -1513,7 +1513,7 @@ function noteCardFull(n){
 }
 
 // Not paylaşma modalını aç
-window.openShareNoteModal=async function(){
+window.openNoteModal=async function(){
   if(session.role==='teacher'){
     const grp=document.getElementById('note-class-group');
     if(grp)grp.style.display='block';
