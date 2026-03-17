@@ -1499,10 +1499,17 @@ async function loadNotes(cat){
 
 function noteCardFull(n){
   const subj=getSubject(n.subjectId);
-  return `<div class="note-card">
+  const isOwner=n.authorUid===session.uid||session.role==='teacher';
+  return `<div class="note-card" id="note-${n.id}">
     <div class="flex items-center justify-between mb-2">
       <div style="font-weight:700;font-size:.92rem">${n.title}</div>
-      <span style="color:${subj.color};font-size:.82rem">${subj.icon} ${subj.name}</span>
+      <div class="flex items-center gap-2">
+        <span style="color:${subj.color};font-size:.82rem">${subj.icon} ${subj.name}</span>
+        ${isOwner?`
+          <button onclick="editNote('${n.id}')" style="background:none;border:none;cursor:pointer;color:var(--primary);font-size:.8rem;padding:2px 6px;border-radius:6px;transition:background .2s" onmouseover="this.style.background='var(--primary-dim)'" onmouseout="this.style.background='none'" title="Düzenle">✏️</button>
+          <button onclick="deleteNote('${n.id}')" style="background:none;border:none;cursor:pointer;color:var(--danger);font-size:.8rem;padding:2px 6px;border-radius:6px;transition:background .2s" onmouseover="this.style.background='var(--danger-dim)'" onmouseout="this.style.background='none'" title="Sil">🗑️</button>
+        `:''}
+      </div>
     </div>
     <div class="text-dim" style="font-size:.83rem;line-height:1.5;margin-bottom:10px">${(n.content||'').substring(0,200)}${(n.content||'').length>200?'...':''}</div>
     ${n.link?`<a href="${n.link}" target="_blank" class="btn btn-accent" style="font-size:.75rem;padding:5px 12px;text-decoration:none;display:inline-flex">📎 Dosyayı Aç</a>`:''}
@@ -1511,6 +1518,48 @@ function noteCardFull(n){
       <div class="text-dim2" style="font-size:.72rem">${new Date(n.createdAt).toLocaleDateString('tr-TR')}</div>
     </div>
   </div>`;
+}
+
+window.deleteNote=async function(noteId){
+  if(!confirm('Bu notu silmek istiyor musun?'))return;
+  await dbSet(`notes/${noteId}`,null);
+  toast('🗑️ Not silindi.','w');
+  loadNotes(document.querySelector('[id^="note-filter-"].btn-primary')?.id.replace('note-filter-','')||'all');
+}
+
+window.editNote=async function(noteId){
+  const n=await dbGet(`notes/${noteId}`);
+  if(!n)return;
+  // Modal'ı doldur
+  await openNoteModal();
+  setTimeout(()=>{
+    document.getElementById('note-title').value=n.title||'';
+    document.getElementById('note-content').value=n.content||'';
+    document.getElementById('note-link').value=n.link||'';
+    document.getElementById('note-subject-sel').value=n.subjectId||'';
+    if(n.classCode){
+      const sel=document.getElementById('note-class-sel');
+      if(sel)sel.value=n.classCode;
+    }
+    // Kaydet butonunu güncelle
+    const btn=document.querySelector('#modal-share-note .btn-success');
+    if(btn){
+      btn.textContent='💾 Güncelle';
+      btn.onclick=async()=>{
+        const title=document.getElementById('note-title').value.trim();
+        const content=document.getElementById('note-content').value.trim();
+        const link=document.getElementById('note-link').value.trim();
+        const subjectId=document.getElementById('note-subject-sel').value;
+        if(!title||!content){toast('Başlık ve içerik zorunlu!','w');return}
+        await dbUpdate(`notes/${noteId}`,{title,content,link,subjectId,updatedAt:Date.now()});
+        hideModal('modal-share-note');
+        toast('✅ Not güncellendi!','s');
+        // Butonu sıfırla
+        btn.textContent='📤 Paylaş';btn.onclick=window.shareNote;
+        loadNotes('all');
+      };
+    }
+  },100);
 }
 
 // Not paylaşma modalını aç
@@ -1997,6 +2046,7 @@ async function renderAnnouncements(){
   el.innerHTML=list.map(a=>{
     const typeColor=a.type==='important'?'var(--danger)':a.type==='pinned'?'var(--warning)':'var(--primary)';
     const typeIcon=a.type==='important'?'⚠️':a.type==='pinned'?'📌':'📢';
+    const isOwner=a.teacherUid===session.uid;
     return `<div class="card mb-3" style="margin-bottom:12px;border-left:4px solid ${typeColor}">
       <div class="flex items-center justify-between mb-2">
         <div class="flex items-center gap-2">
@@ -2005,12 +2055,60 @@ async function renderAnnouncements(){
           ${a.type==='pinned'?`<span class="badge badge-warning">Sabitlenmiş</span>`:''}
           ${a.type==='important'?`<span class="badge badge-danger">Önemli</span>`:''}
         </div>
-        <span class="text-dim" style="font-size:.75rem">${new Date(a.createdAt).toLocaleDateString('tr-TR')}</span>
+        <div class="flex items-center gap-2">
+          <span class="text-dim" style="font-size:.75rem">${new Date(a.createdAt).toLocaleDateString('tr-TR')}</span>
+          ${isOwner?`
+            <button onclick="editAnnouncement('${a.id}')" style="background:none;border:none;cursor:pointer;color:var(--primary);font-size:.82rem;padding:2px 6px;border-radius:6px" title="Düzenle">✏️</button>
+            <button onclick="deleteAnnouncement('${a.id}')" style="background:none;border:none;cursor:pointer;color:var(--danger);font-size:.82rem;padding:2px 6px;border-radius:6px" title="Sil">🗑️</button>
+          `:''}
+        </div>
       </div>
       <div style="font-size:.88rem;color:var(--dim);line-height:1.6">${a.content}</div>
       <div class="text-dim2" style="font-size:.72rem;margin-top:8px">👤 ${a.teacherName}</div>
     </div>`;
   }).join('');
+}
+
+window.deleteAnnouncement=async function(annId){
+  if(!confirm('Bu duyuruyu silmek istiyor musun?'))return;
+  await dbSet(`announcements/${annId}`,null);
+  toast('🗑️ Duyuru silindi.','w');
+  renderAnnouncements();
+}
+
+window.editAnnouncement=async function(annId){
+  const a=await dbGet(`announcements/${annId}`);
+  if(!a)return;
+  // Modal'ı aç ve doldur
+  await openAnnModal();
+  setTimeout(()=>{
+    document.getElementById('ann-title').value=a.title||'';
+    document.getElementById('ann-content').value=a.content||'';
+    document.getElementById('ann-type').value=a.type||'normal';
+    document.getElementById('ann-class-sel').value=a.classCode||'';
+    // Başlığı güncelle
+    const modalTitle=document.querySelector('#modal-create-ann .modal-title');
+    if(modalTitle)modalTitle.textContent='✏️ Duyuru Düzenle';
+    // Butonu güncelle
+    const btn=document.querySelector('#modal-create-ann .btn-primary');
+    if(btn){
+      btn.textContent='💾 Güncelle';
+      btn.onclick=async()=>{
+        const title=document.getElementById('ann-title').value.trim();
+        const content=document.getElementById('ann-content').value.trim();
+        const type=document.getElementById('ann-type').value;
+        const classCode=document.getElementById('ann-class-sel').value;
+        if(!title||!content||!classCode){toast('Tüm alanları doldur!','w');return}
+        await dbUpdate(`announcements/${annId}`,{title,content,type,classCode,updatedAt:Date.now()});
+        hideModal('modal-create-ann');
+        // Sıfırla
+        if(modalTitle)modalTitle.textContent='📢 Duyuru Oluştur';
+        btn.textContent='📢 Yayınla';btn.onclick=window.createAnnouncement;
+        toast('✅ Duyuru güncellendi!','s');
+        renderAnnouncements();
+      };
+    }
+  },100);
 }
 
 window.openAnnModal=async function(){
