@@ -588,6 +588,7 @@ if(!window.toggleTheme){
       <div class="nav-item" id="nav-join-class" onclick="showModal('modal-join-class')" style="display:none"><span class="nav-icon">➕</span> Sınıfa Katıl</div>
 
       <div class="sidebar-section">ARAÇLAR</div>
+      <div class="nav-item" id="nav-books" onclick="navTo('books')"><span class="nav-icon">📚</span> Kitaplarım</div>
       <div class="nav-item" id="nav-store" onclick="navTo('store')"><span class="nav-icon">🛒</span> Mağaza</div>
       <div class="nav-item" id="nav-leaderboard" onclick="navTo('leaderboard')"><span class="nav-icon">🏆</span> Liderboard</div>
 
@@ -1279,6 +1280,7 @@ window.navTo=function(page){
     case 'dashboard': renderDashboard();break;
     case 'homework': renderHomework();break;
     case 'notes': renderNotes();break;
+    case 'books': renderBooks();break;
     case 'announcements': renderAnnouncements();break;
     case 'chat': renderChat();break;
     case 'voice': renderVoiceChat();break;
@@ -2561,7 +2563,145 @@ window.publishQuiz=async function(){
   toast('🚀 Quiz yayınlandı!','s');
 }
 
-// ═══════════ STORE ═══════════
+// ═══════════ KİTAPLARIM ═══════════
+async function renderBooks(){
+  const mc=document.getElementById('main-content');
+  if(!mc)return;
+  mc.innerHTML=`
+  <div class="flex items-center justify-between mb-4">
+    <div style="font-family:'Syne',sans-serif;font-size:1.3rem;font-weight:700">📚 Kitaplarım</div>
+    ${session.role==='teacher'?`<button class="btn btn-primary" onclick="openAddBookModal()">+ Kitap Ekle</button>`:''}
+  </div>
+  <div id="books-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:16px"></div>`;
+  await loadBooks();
+}
+
+async function loadBooks(){
+  const grid=document.getElementById('books-grid');if(!grid)return;
+
+  // Sınıf koduna göre kitapları yükle
+  const myCode=session.classCode||null;
+  if(!myCode&&session.role==='student'){
+    grid.innerHTML=`<div class="card text-center text-dim" style="padding:40px;grid-column:1/-1"><div style="font-size:3rem;margin-bottom:10px">📚</div><div>Önce bir sınıfa katıl.</div></div>`;
+    return;
+  }
+
+  let codes=[];
+  if(session.role==='teacher'){
+    const cls=await getMyClasses();
+    codes=cls.map(c=>c.code);
+  } else {
+    codes=[myCode];
+  }
+
+  const allBooks=await dbGet('books')||{};
+  let books=Object.values(allBooks).filter(b=>codes.includes(b.classCode));
+  books.sort((a,b)=>a.subject.localeCompare(b.subject,'tr'));
+
+  if(books.length===0){
+    grid.innerHTML=`<div class="card text-center text-dim" style="padding:40px;grid-column:1/-1">
+      <div style="font-size:3rem;margin-bottom:10px">📚</div>
+      <div>${session.role==='teacher'?'Henüz kitap eklenmedi. "+ Kitap Ekle" ile ekleyebilirsin.':'Henüz kitap eklenmedi.'}</div>
+    </div>`;
+    return;
+  }
+
+  grid.innerHTML=books.map(b=>{
+    const isOwner=b.teacherUid===session.uid;
+    return `<div class="card" style="display:flex;flex-direction:column;gap:10px;padding:18px">
+      <div style="font-size:3rem;text-align:center">${b.emoji||'📖'}</div>
+      <div>
+        <div style="font-weight:700;font-size:.92rem;margin-bottom:4px">${b.title}</div>
+        <div style="font-size:.78rem;color:var(--primary)">${b.subject}</div>
+        ${b.description?`<div class="text-dim" style="font-size:.78rem;margin-top:6px;line-height:1.4">${b.description}</div>`:''}
+      </div>
+      <div style="margin-top:auto;display:flex;flex-direction:column;gap:6px">
+        <a href="${b.pdfUrl}" target="_blank" class="btn btn-primary btn-block" style="text-decoration:none;text-align:center;font-size:.85rem">📄 PDF Aç</a>
+        ${isOwner?`
+        <div class="flex gap-2">
+          <button class="btn btn-ghost" style="flex:1;font-size:.78rem" onclick="editBook('${b.id}')">✏️ Düzenle</button>
+          <button class="btn btn-danger" style="flex:1;font-size:.78rem" onclick="deleteBook('${b.id}')">🗑️ Sil</button>
+        </div>`:''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+window.openAddBookModal=async function(bookId){
+  const classes=await getMyClasses();
+  if(classes.length===0){toast('Önce sınıf oluştur!','w');return;}
+
+  // Mevcut veri varsa doldur
+  let book=null;
+  if(bookId) book=await dbGet(`books/${bookId}`);
+
+  const modal=document.createElement('div');
+  modal.className='modal-overlay';
+  modal.id='modal-add-book';
+  modal.style.display='flex';
+  modal.innerHTML=`<div class="modal" style="max-width:480px">
+    <div class="modal-title">${book?'✏️ Kitap Düzenle':'📚 Kitap Ekle'}</div>
+    <div class="form-group"><label class="label">SINIF</label>
+      <select class="input" id="book-class">
+        <option value="">— Seç —</option>
+        ${classes.map(c=>`<option value="${c.code}" ${book?.classCode===c.code?'selected':''}>${c.name}</option>`).join('')}
+      </select>
+    </div>
+    <div class="form-group"><label class="label">KİTAP ADI</label>
+      <input type="text" class="input" id="book-title" placeholder="örn: 11. Sınıf Matematik" maxlength="80" value="${book?.title||''}">
+    </div>
+    <div class="form-group"><label class="label">DERS</label>
+      <input type="text" class="input" id="book-subject" placeholder="örn: Matematik" maxlength="40" value="${book?.subject||''}">
+    </div>
+    <div class="form-group"><label class="label">EMOJİ</label>
+      <input type="text" class="input" id="book-emoji" placeholder="📖" maxlength="4" value="${book?.emoji||'📖'}" style="width:80px">
+    </div>
+    <div class="form-group"><label class="label">PDF LİNKİ (Google Drive, vb.)</label>
+      <input type="url" class="input" id="book-pdf" placeholder="https://drive.google.com/file/..." value="${book?.pdfUrl||''}">
+    </div>
+    <div class="form-group"><label class="label">AÇIKLAMA (isteğe bağlı)</label>
+      <textarea class="input" id="book-desc" placeholder="Kitap hakkında kısa bilgi..." style="min-height:70px">${book?.description||''}</textarea>
+    </div>
+    <div class="flex gap-2 mt-4">
+      <button class="btn btn-ghost" style="flex:1" onclick="document.getElementById('modal-add-book').remove()">İptal</button>
+      <button class="btn btn-primary" style="flex:2" onclick="saveBook('${bookId||''}')">💾 Kaydet</button>
+    </div>
+  </div>`;
+  document.body.appendChild(modal);
+}
+
+window.saveBook=async function(bookId){
+  const classCode=document.getElementById('book-class').value;
+  const title=document.getElementById('book-title').value.trim();
+  const subject=document.getElementById('book-subject').value.trim();
+  const emoji=document.getElementById('book-emoji').value.trim()||'📖';
+  const pdfUrl=document.getElementById('book-pdf').value.trim();
+  const description=document.getElementById('book-desc').value.trim();
+
+  if(!classCode||!title||!subject||!pdfUrl){toast('Sınıf, kitap adı, ders ve PDF linki zorunlu!','w');return;}
+
+  const id=bookId||'book_'+Date.now();
+  await dbSet(`books/${id}`,{
+    id,classCode,title,subject,emoji,pdfUrl,description,
+    teacherUid:session.uid,teacherName:session.name,
+    createdAt:bookId?(await dbGet(`books/${id}`))?.createdAt||Date.now():Date.now()
+  });
+
+  document.getElementById('modal-add-book')?.remove();
+  toast(bookId?'✅ Kitap güncellendi!':'📚 Kitap eklendi!','s');
+  loadBooks();
+}
+
+window.editBook=async function(bookId){
+  await openAddBookModal(bookId);
+}
+
+window.deleteBook=async function(bookId){
+  if(!confirm('Bu kitabı silmek istiyor musun?'))return;
+  await dbSet(`books/${bookId}`,null);
+  toast('🗑️ Kitap silindi.','w');
+  loadBooks();
+}
 const STORE_ITEMS=[
   {id:'color_purple',name:'Mor Profil Rengi',desc:'Profilinde mor renk teması',price:200,icon:'💜',type:'cosmetic'},
   {id:'color_gold',name:'Altın Çerçeve',desc:'Profilinde altın çerçeve',price:300,icon:'🥇',type:'cosmetic'},
@@ -3482,6 +3622,7 @@ function buildDrawerNav(){
     {page:'voice',icon:'🎤',label:'Sesli Sohbet'},
     {page:'quiz',icon:'📝',label:'Quiz'},
     {page:'classes',icon:'🏫',label:'Sınıflarım'},
+    {page:'books',icon:'📚',label:'Kitaplarım'},
     {page:'store',icon:'🛒',label:'Mağaza'},
     {page:'leaderboard',icon:'🏆',label:'Liderboard'},
   ];
