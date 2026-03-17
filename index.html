@@ -2609,6 +2609,8 @@ async function loadBooks(){
 
   grid.innerHTML=books.map(b=>{
     const isOwner=b.teacherUid===session.uid;
+    const safeTitle=b.title.replace(/'/g,'&apos;');
+    const safePdf=b.pdfUrl.replace(/'/g,'%27');
     return `<div class="card" style="display:flex;flex-direction:column;gap:10px;padding:18px">
       <div style="font-size:3rem;text-align:center">${b.emoji||'📖'}</div>
       <div>
@@ -2617,7 +2619,7 @@ async function loadBooks(){
         ${b.description?`<div class="text-dim" style="font-size:.78rem;margin-top:6px;line-height:1.4">${b.description}</div>`:''}
       </div>
       <div style="margin-top:auto;display:flex;flex-direction:column;gap:6px">
-        <button class="btn btn-primary btn-block" style="font-size:.85rem" onclick="openBookReader('${b.id}','${b.title.replace(/'/g,"\\'")}','${b.pdfUrl.replace(/'/g,"\\'")}')">📖 Oku & Not Al</button>
+        <button class="btn btn-primary btn-block" style="font-size:.85rem" onclick="openBookReader('${b.id}','${safeTitle}','${safePdf}')">📖 Oku & Not Al</button>
         <a href="${b.pdfUrl}" target="_blank" class="btn btn-ghost btn-block" style="text-decoration:none;text-align:center;font-size:.8rem">🔗 PDF Linkini Aç</a>
         ${isOwner?`
         <div class="flex gap-2">
@@ -2778,27 +2780,7 @@ window.openBookReader=async function(bookId, bookTitle, pdfUrl){
     </div>`;
   }
 }
-
-// PDF kalem aracı — kitap için özel kayıt yolu
-const _origSaveAnnot=window.saveAnnot;
-async function saveBookAnnot(){
-  if(!window._bookAnnotKey)return;
-  const dc=document.getElementById('pdf-draw-canvas');if(!dc)return;
-  try{
-    await dbSet(`${window._bookAnnotKey}/p${pdfPage}`,{d:dc.toDataURL(),t:Date.now()});
-  }catch(e){}
-}
-
-function loadBookAnnotations(num){
-  if(!window._bookAnnotKey)return;
-  dbListen(`${window._bookAnnotKey}/p${num}`,data=>{
-    if(!data?.d)return;
-    const dc=document.getElementById('pdf-draw-canvas');if(!dc)return;
-    const img=new Image();
-    img.onload=()=>{dc.getContext('2d').clearRect(0,0,dc.width,dc.height);dc.getContext('2d').drawImage(img,0,0);};
-    img.src=data.d;
-  });
-}
+window.editBook=async function(bookId){
   await openAddBookModal(bookId);
 }
 
