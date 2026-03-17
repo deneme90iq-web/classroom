@@ -670,7 +670,11 @@ if(!window.toggleTheme){
     <div class="divider"></div>
     <div style="font-family:'Syne',sans-serif;font-size:.75rem;letter-spacing:.1em;color:var(--dim);margin-bottom:12px">SORULAR</div>
     <div id="quiz-questions-list"></div>
-    <button class="btn btn-ghost btn-block mt-2" onclick="addQuizQuestion()" style="font-size:.82rem">+ Soru Ekle</button>
+    <div class="flex gap-2 mt-2" style="flex-wrap:wrap">
+      <button class="btn btn-ghost" onclick="addQuizQuestion('multiple')" style="font-size:.82rem">+ Çoktan Seçmeli</button>
+      <button class="btn btn-ghost" onclick="addQuizQuestion('fill')" style="font-size:.82rem">+ Boşluk Doldurma</button>
+      <button class="btn btn-ghost" onclick="addQuizQuestion('open')" style="font-size:.82rem">+ Açık Uçlu</button>
+    </div>
     <div class="flex gap-2 mt-4"><button class="btn btn-ghost" style="flex:1" onclick="hideModal('modal-create-quiz')">İptal</button><button class="btn btn-primary" style="flex:2" onclick="publishQuiz()">🚀 Quiz Yayınla</button></div>
   </div>
 </div>
@@ -868,7 +872,7 @@ onAuthStateChanged(auth, async user=>{
     } else {hideLoading();showScreen('screen-auth')}
   } else {
     // Firebase user yok — test session kontrolü
-    const savedTest=localStorage.getItem('test_session');
+    const savedTest=sessionStorage.getItem('test_session')||localStorage.getItem('test_session');
     if(savedTest){
       try{
         const s=JSON.parse(savedTest);
@@ -880,7 +884,7 @@ onAuthStateChanged(auth, async user=>{
             // classCode güncel olabilir
             if(profile.classCode!==s.classCode){
               session.classCode=profile.classCode;
-              localStorage.setItem('test_session',JSON.stringify(session));
+              try{localStorage.setItem('test_session',JSON.stringify(session));}catch(e){} sessionStorage.setItem('test_session',JSON.stringify(session));
             }
             hideLoading();
             enterApp();
@@ -888,7 +892,7 @@ onAuthStateChanged(auth, async user=>{
           }
         }
       }catch(e){}
-      localStorage.removeItem('test_session');
+      try{localStorage.removeItem('test_session');}catch(e){} sessionStorage.removeItem('test_session');
     }
     hideLoading();
     showScreen('screen-auth');
@@ -981,7 +985,7 @@ window.doLogout=async function(){
   // Test hesabı ise Firebase'den sil
   if(session.uid&&session.uid.startsWith('test_')){
     await deleteTestUser(session.uid,session.classCode);
-    localStorage.removeItem('test_session');
+    try{localStorage.removeItem('test_session');}catch(e){} sessionStorage.removeItem('test_session');
   }
   await signOut(auth);
   // Tema butonu ve mobil nav gizle
@@ -2347,69 +2351,127 @@ window.startQuiz=async function(quizId){
   const quiz=await dbGet(`quizzes/${quizId}`);
   if(!quiz)return;
   const mc=document.getElementById('main-content');
-  let current=0;let score=0;const answers=[];
+  let current=0; let score=0; const answers=[];
+
+  function finishQuiz(){
+    const xp=score*(quiz.xpPerQ||10);
+    dbGet(`users/${session.uid}/gameState`).then(async s=>{
+      s=s||defaultState();addXP(s,xp);s.totalCompleted=(s.totalCompleted||0)+1;
+      await dbSet(`users/${session.uid}/gameState`,s);
+      await dbUpdate(`quizzes/${quizId}/results/${safeKey(session.uid)}`,{score,total:quiz.questions.length,xp,completedAt:Date.now()});
+    });
+    const pct=Math.round(score/quiz.questions.length*100);
+    mc.innerHTML=`<div class="card text-center" style="max-width:500px;margin:60px auto;padding:40px">
+      <div style="font-size:4rem;margin-bottom:16px">${pct===100?'🏆':pct>=60?'👍':'💪'}</div>
+      <div style="font-family:'Syne',sans-serif;font-size:1.5rem;font-weight:700;margin-bottom:8px">${score}/${quiz.questions.length} Doğru</div>
+      <div style="font-size:1rem;color:var(--success);margin-bottom:24px">+${xp} XP kazandın!</div>
+      <button class="btn btn-primary" onclick="navTo('quiz')">← Quizlere Dön</button>
+    </div>`;
+  }
+
   function renderQ(){
-    if(current>=quiz.questions.length){
-      // Finish
-      const xp=score*(quiz.xpPerQ||10);
-      dbGet(`users/${session.uid}/gameState`).then(async s=>{
-        s=s||defaultState();addXP(s,xp);s.totalCompleted=(s.totalCompleted||0)+1;
-        await dbSet(`users/${session.uid}/gameState`,s);
-        await dbUpdate(`quizzes/${quizId}/results/${safeKey(session.uid)}`,{score,total:quiz.questions.length,xp,completedAt:Date.now()});
-      });
-      mc.innerHTML=`<div class="card text-center" style="max-width:500px;margin:60px auto;padding:40px">
-        <div style="font-size:4rem;margin-bottom:16px">${score===quiz.questions.length?'🏆':score>quiz.questions.length/2?'👍':'💪'}</div>
-        <div style="font-family:'Syne',sans-serif;font-size:1.5rem;font-weight:700;margin-bottom:8px">${score}/${quiz.questions.length} Doğru</div>
-        <div style="font-size:1rem;color:var(--success);margin-bottom:24px">+${xp} XP kazandın!</div>
-        <button class="btn btn-primary" onclick="navTo('quiz')">← Quizlere Dön</button>
-      </div>`;
-      return;
-    }
+    if(current>=quiz.questions.length){finishQuiz();return;}
     const q=quiz.questions[current];
-    mc.innerHTML=`<div style="max-width:600px;margin:0 auto">
-      <div class="flex items-center justify-between mb-4">
-        <div style="font-family:'Syne',sans-serif;font-size:.8rem;color:var(--dim)">SORU ${current+1}/${quiz.questions.length}</div>
+    const t=q.type||'multiple';
+    const progress=`<div class="flex items-center justify-between mb-4">
+      <div style="font-family:'Syne',sans-serif;font-size:.8rem;color:var(--dim)">SORU ${current+1}/${quiz.questions.length}</div>
+      <div class="flex items-center gap-2">
+        <span class="badge" style="background:${t==='multiple'?'var(--primary-dim)':t==='fill'?'var(--success-dim)':'var(--accent-dim)'}">
+          ${t==='multiple'?'🔘 Çoktan Seçmeli':t==='fill'?'✏️ Boşluk Doldurma':'💬 Açık Uçlu'}
+        </span>
         <div class="badge badge-success">+${quiz.xpPerQ||10} XP</div>
       </div>
-      <div class="card mb-4" style="padding:28px">
-        <div style="font-size:1.05rem;font-weight:600;margin-bottom:20px;line-height:1.5">${q.question}</div>
-        <div style="display:flex;flex-direction:column;gap:10px">
-          ${q.options.map((opt,i)=>`<button onclick="answerQuiz(${i})" style="text-align:left;padding:12px 16px;border-radius:10px;border:1px solid var(--border);background:var(--bg2);color:var(--text);cursor:pointer;transition:all .2s;font-size:.9rem;font-family:'DM Sans',sans-serif" onmouseover="this.style.borderColor='var(--primary)'" onmouseout="this.style.borderColor='var(--border)'">
-            <span style="font-weight:700;color:var(--primary);margin-right:8px">${String.fromCharCode(65+i)})</span>${opt}
-          </button>`).join('')}
-        </div>
-      </div>
-      <div class="xp-bar-bg"><div class="xp-bar-fill" style="width:${(current/quiz.questions.length*100)}%"></div></div>
     </div>`;
-    window.answerQuiz=function(idx){
-      if(idx===q.correct)score++;
-      answers.push(idx);current++;
-      renderQ();
+    const qTitle=`<div style="font-size:1.05rem;font-weight:600;margin-bottom:20px;line-height:1.5">${q.question}</div>`;
+    const bar=`<div class="xp-bar-bg mt-4"><div class="xp-bar-fill" style="width:${(current/quiz.questions.length*100)}%"></div></div>`;
+
+    if(t==='multiple'){
+      mc.innerHTML=`<div style="max-width:600px;margin:0 auto">${progress}
+        <div class="card mb-4" style="padding:28px">${qTitle}
+          <div style="display:flex;flex-direction:column;gap:10px">
+            ${q.options.map((opt,i)=>`<button onclick="answerMultiple(${i})" style="text-align:left;padding:12px 16px;border-radius:10px;border:1px solid var(--border);background:var(--bg2);color:var(--text);cursor:pointer;font-size:.9rem;font-family:'DM Sans',sans-serif">
+              <span style="font-weight:700;color:var(--primary);margin-right:8px">${String.fromCharCode(65+i)})</span>${opt}
+            </button>`).join('')}
+          </div>
+        </div>${bar}</div>`;
+      window.answerMultiple=function(idx){
+        if(idx===q.correct)score++;
+        answers.push(idx);current++;renderQ();
+      };
+    } else if(t==='fill'){
+      mc.innerHTML=`<div style="max-width:600px;margin:0 auto">${progress}
+        <div class="card mb-4" style="padding:28px">${qTitle}
+          <input type="text" class="input" id="fill-answer" placeholder="Cevabını yaz..." style="font-size:1rem;margin-bottom:12px" onkeydown="if(event.key==='Enter')submitFill()">
+          <button class="btn btn-primary btn-block" onclick="submitFill()">Cevapla →</button>
+        </div>${bar}</div>`;
+      setTimeout(()=>document.getElementById('fill-answer')?.focus(),100);
+      window.submitFill=function(){
+        const val=(document.getElementById('fill-answer')?.value||'').trim().toLowerCase();
+        const correct=(q.answer||'').trim().toLowerCase();
+        const isOk=val===correct||correct.split(',').map(s=>s.trim()).includes(val);
+        if(isOk){score++; toast('✅ Doğru!','s');}
+        else{toast(`❌ Yanlış! Doğru: ${q.answer}`,'d');}
+        answers.push(val);
+        setTimeout(()=>{current++;renderQ();},1200);
+      };
+    } else if(t==='open'){
+      mc.innerHTML=`<div style="max-width:600px;margin:0 auto">${progress}
+        <div class="card mb-4" style="padding:28px">${qTitle}
+          <textarea class="input" id="open-answer" placeholder="Cevabını yaz..." style="min-height:120px;font-size:.95rem;margin-bottom:12px"></textarea>
+          <button class="btn btn-primary btn-block" onclick="submitOpen()">Cevapla →</button>
+        </div>${bar}</div>`;
+      setTimeout(()=>document.getElementById('open-answer')?.focus(),100);
+      window.submitOpen=function(){
+        const val=(document.getElementById('open-answer')?.value||'').trim();
+        if(!val){toast('Bir şeyler yaz!','w');return;}
+        score++; // Açık uçlu sorular tam XP verir
+        answers.push(val);
+        toast('✅ Cevap kaydedildi! (+'+quiz.xpPerQ+' XP)','s');
+        setTimeout(()=>{current++;renderQ();},1000);
+      };
     }
   }
   renderQ();
 }
 
-window.addQuizQuestion=function(){
-  window.quizQuestions.push({question:'',options:['','','',''],correct:0});
+window.addQuizQuestion=function(type='multiple'){
+  if(type==='multiple') window.quizQuestions.push({type:'multiple',question:'',options:['','','',''],correct:0});
+  else if(type==='fill')  window.quizQuestions.push({type:'fill',question:'',answer:''});
+  else if(type==='open')  window.quizQuestions.push({type:'open',question:'',sampleAnswer:''});
   renderQuizForm();
 }
 
 function renderQuizForm(){
   const el=document.getElementById('quiz-questions-list');if(!el)return;
-  el.innerHTML=window.quizQuestions.map((q,qi)=>`
-    <div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:12px">
+  const typeLabels={multiple:'🔘 Çoktan Seçmeli',fill:'✏️ Boşluk Doldurma',open:'💬 Açık Uçlu'};
+  const typeColors={multiple:'var(--primary)',fill:'var(--success)',open:'var(--accent)'};
+  el.innerHTML=window.quizQuestions.map((q,qi)=>{
+    const t=q.type||'multiple';
+    const color=typeColors[t]||'var(--primary)';
+    let inputHtml='';
+    if(t==='multiple'){
+      inputHtml=q.options.map((opt,oi)=>`
+        <div class="flex items-center gap-2" style="margin-bottom:6px">
+          <input type="radio" name="correct_${qi}" ${q.correct===oi?'checked':''} onchange="window.quizQuestions[${qi}].correct=${oi}" style="accent-color:var(--success);width:16px;height:16px">
+          <input type="text" class="input" placeholder="Seçenek ${String.fromCharCode(65+oi)}" value="${opt.replace(/"/g,'&quot;')}" oninput="window.quizQuestions[${qi}].options[${oi}]=this.value" style="font-size:.85rem;padding:8px 10px">
+        </div>`).join('')
+        +'<div style="font-size:.7rem;color:var(--dim);margin-top:4px">✅ Doğru cevap için radio butonunu işaretle</div>';
+    } else if(t==='fill'){
+      inputHtml=`<input type="text" class="input" placeholder="Doğru cevap (örn: İstanbul)" value="${(q.answer||'').replace(/"/g,'&quot;')}" oninput="window.quizQuestions[${qi}].answer=this.value" style="margin-top:4px">
+      <div style="font-size:.7rem;color:var(--dim);margin-top:4px">Öğrenci bu cevabı yazacak. Büyük/küçük harf duyarlı değil.</div>`;
+    } else if(t==='open'){
+      inputHtml=`<textarea class="input" placeholder="Örnek/beklenen cevap (isteğe bağlı, öğrenciye gösterilmez)" oninput="window.quizQuestions[${qi}].sampleAnswer=this.value" style="min-height:70px;margin-top:4px">${(q.sampleAnswer||'').replace(/</g,'&lt;')}</textarea>
+      <div style="font-size:.7rem;color:var(--dim);margin-top:4px">Öğrenci serbest metin yazar. XP otomatik verilir.</div>`;
+    }
+    return `<div style="background:var(--bg2);border:1px solid ${color}44;border-left:4px solid ${color};border-radius:12px;padding:16px;margin-bottom:12px">
       <div class="flex items-center justify-between mb-2">
-        <span style="font-size:.75rem;font-family:'Syne',sans-serif;color:var(--dim)">SORU ${qi+1}</span>
+        <span style="font-size:.72rem;font-family:'Syne',sans-serif;color:${color}">${typeLabels[t]} · SORU ${qi+1}</span>
         <button onclick="removeQ(${qi})" style="background:none;border:none;color:var(--danger);cursor:pointer;font-size:.8rem">✕ Sil</button>
       </div>
-      <input type="text" class="input mb-2" placeholder="Soru metni..." value="${q.question.replace(/"/g,'&quot;')}" oninput="window.quizQuestions[${qi}].question=this.value" style="margin-bottom:8px">
-      ${q.options.map((opt,oi)=>`<div class="flex items-center gap-2" style="margin-bottom:6px">
-        <input type="radio" name="correct_${qi}" ${q.correct===oi?'checked':''} onchange="window.quizQuestions[${qi}].correct=${oi}" style="accent-color:var(--success)">
-        <input type="text" class="input" placeholder="Seçenek ${String.fromCharCode(65+oi)}" value="${opt.replace(/"/g,'&quot;')}" oninput="window.quizQuestions[${qi}].options[${oi}]=this.value" style="font-size:.85rem;padding:8px 10px">
-      </div>`).join('')}
-      <div style="font-size:.7rem;color:var(--dim);margin-top:4px">Radio butonu doğru cevabı işaretle</div>
-    </div>`).join('');
+      <input type="text" class="input" placeholder="${t==='fill'?'Soru metni (boş bırakılan yer için ___ kullan, örn: Türkiye\'nin başkenti ___ dir)':'Soru metni...'}" value="${q.question.replace(/"/g,'&quot;')}" oninput="window.quizQuestions[${qi}].question=this.value" style="margin-bottom:10px">
+      ${inputHtml}
+    </div>`;
+  }).join('');
 }
 
 window.removeQ=function(qi){window.quizQuestions.splice(qi,1);renderQuizForm()}
@@ -2432,7 +2494,12 @@ window.publishQuiz=async function(){
   const subjectId=document.getElementById('quiz-subject-sel').value;
   const xpPerQ=parseInt(document.getElementById('quiz-xp-per-q').value)||10;
   if(!title||!classCode||window.quizQuestions.length===0){toast('Başlık, sınıf ve en az 1 soru gir!','w');return}
-  const valid=window.quizQuestions.every(q=>q.question&&q.options.every(o=>o));
+  const valid=window.quizQuestions.every(q=>{
+    if(!q.question)return false;
+    if((q.type||'multiple')==='multiple')return q.options&&q.options.every(o=>o);
+    if(q.type==='fill')return q.answer&&q.answer.trim();
+    return true; // open — serbest
+  });
   if(!valid){toast('Tüm soru ve seçenekleri doldur!','w');return}
   const id='quiz_'+Date.now();
   await dbSet(`quizzes/${id}`,{id,title,classCode,subjectId,xpPerQ,questions:window.quizQuestions,teacherName:session.name,teacherUid:session.uid,results:{},createdAt:Date.now()});
@@ -3550,7 +3617,7 @@ window.doTestLogin=async function(){
   }
   session={uid:testUid,role:testRole,name,classCode:profile.classCode,email:profile.email};
   // Test session'ını localStorage'a kaydet — sayfa yenilenince geri yüklensin
-  localStorage.setItem('test_session',JSON.stringify(session));
+  try{localStorage.setItem('test_session',JSON.stringify(session));}catch(e){} sessionStorage.setItem('test_session',JSON.stringify(session));
   document.getElementById('test-expanded').style.display='none';
   toast(`✅ Test girişi: ${name} (${testRole})`,'s');
   enterApp();
