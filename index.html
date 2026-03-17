@@ -807,18 +807,79 @@ window.doLogout=async function(){
 
 async function deleteTestUser(uid,classCode){
   try{
-    // Profil sil
-    await dbSet(`users/${safeKey(uid)}`,null);
-    // Sınıf üyeliğini sil
+    const sKey=safeKey(uid);
+    // Profil ve oyun durumu sil
+    await dbSet(`users/${sKey}`,null);
+
+    // Sınıf üyeliği ve bekleyen başvuru
     if(classCode){
-      await dbSet(`classMembers/${safeKey(classCode)}/${safeKey(uid)}`,null);
-      await dbSet(`pendingStudents/${safeKey(classCode)}/${safeKey(uid)}`,null);
+      const cKey=safeKey(classCode);
+      await dbSet(`classMembers/${cKey}/${sKey}`,null);
+      await dbSet(`pendingStudents/${cKey}/${sKey}`,null);
     }
-    // Sesli sohbet odasından çıkar
+
+    // Sesli sohbet
     if(voiceClassCode){
-      await dbSet(`voiceRooms/${safeKey(voiceClassCode)}/${safeKey(uid)}`,null);
-      await dbSet(`voiceSignals/${safeKey(voiceClassCode)}/${safeKey(uid)}`,null);
+      const vKey=safeKey(voiceClassCode);
+      await dbSet(`voiceRooms/${vKey}/${sKey}`,null);
+      await dbSet(`voiceSignals/${vKey}/${sKey}`,null);
+      // Oluşturduğu odaları kapat
+      const rooms=await dbGet(`voiceRoomMeta/${vKey}`)||{};
+      for(const[rid,r] of Object.entries(rooms)){
+        if(r.creatorUid===uid)await dbUpdate(`voiceRoomMeta/${vKey}/${rid}`,{active:false});
+        else await dbSet(`voiceRoomMeta/${vKey}/${rid}/members/${sKey}`,null);
+      }
     }
+
+    // Öğretmen ise: oluşturduğu sınıfları sil
+    if(session.role==='teacher'){
+      const classes=await dbGet('classes')||{};
+      for(const[code,cls] of Object.entries(classes)){
+        if(cls.teacherUid===uid){
+          await dbSet(`classes/${code}`,null);
+          await dbSet(`classMembers/${safeKey(code)}`,null);
+          await dbSet(`pendingStudents/${safeKey(code)}`,null);
+          // Bu sınıfın ödevlerini sil
+          const hws=await dbGet('homeworks')||{};
+          for(const[hwId,hw] of Object.entries(hws)){
+            if(hw.teacherUid===uid)await dbSet(`homeworks/${hwId}`,null);
+          }
+          // Quizleri sil
+          const quizzes=await dbGet('quizzes')||{};
+          for(const[qId,q] of Object.entries(quizzes)){
+            if(q.teacherUid===uid)await dbSet(`quizzes/${qId}`,null);
+          }
+          // Duyuruları sil
+          const anns=await dbGet('announcements')||{};
+          for(const[aId,a] of Object.entries(anns)){
+            if(a.teacherUid===uid)await dbSet(`announcements/${aId}`,null);
+          }
+          // Sohbeti sil
+          await dbSet(`chats/${safeKey(code)}`,null);
+        }
+      }
+    }
+
+    // Notları sil
+    const notes=await dbGet('notes')||{};
+    for(const[nId,n] of Object.entries(notes)){
+      if(n.authorUid===uid)await dbSet(`notes/${nId}`,null);
+    }
+
+    // PDF çizimlerini sil
+    if(window._activeRoomId&&voiceClassCode){
+      await dbSet(`pdfAnnot/${safeKey(voiceClassCode)}/${window._activeRoomId}`,null);
+    }
+
+    // Sohbet mesajlarını sil (test kullanıcısının mesajları)
+    if(classCode){
+      const msgs=await dbGet(`chats/${safeKey(classCode)}`)||{};
+      for(const[mId,m] of Object.entries(msgs)){
+        if(m.uid===uid)await dbSet(`chats/${safeKey(classCode)}/${mId}`,null);
+      }
+    }
+
+    toast('🗑️ Test verisi temizlendi.','i');
   }catch(e){console.warn('Test kullanıcı silinemedi:',e)}
 }
 
