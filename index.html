@@ -2702,159 +2702,80 @@ window.openBookReader=async function(bookId, bookTitle, pdfUrl){
   const mc=document.getElementById('main-content');
   if(!mc)return;
   window._bookAnnotKey=`bookAnnot_${safeKey(session.uid)}_${bookId}`;
-
-  // Google Drive → embed URL
-  let embedUrl=pdfUrl;
-  const gdMatch=pdfUrl.match(/\/file\/d\/([^/]+)/);
-  if(gdMatch){
-    embedUrl=`https://drive.google.com/file/d/${gdMatch[1]}/preview`;
-  } else {
-    embedUrl=`https://docs.google.com/viewer?url=${encodeURIComponent(pdfUrl)}&embedded=true`;
-  }
+  window._bookId=bookId;
 
   mc.innerHTML=`
   <div class="flex items-center gap-3 mb-3" style="flex-wrap:wrap">
     <button class="btn btn-ghost" onclick="navTo('books')" style="padding:8px 12px">← Geri</button>
     <div style="font-family:'Syne',sans-serif;font-size:1rem;font-weight:700;flex:1">📖 ${bookTitle}</div>
-    <a href="${pdfUrl}" target="_blank" class="btn btn-ghost" style="font-size:.8rem;padding:6px 12px">🔗 Yeni Sekmede Aç</a>
+    <button class="btn btn-primary" style="font-size:.82rem" onclick="document.getElementById('book-local-input').click()">📁 PDF Yükle</button>
+    <input type="file" id="book-local-input" accept=".pdf" style="display:none" onchange="openBookLocalPDF(this,'${bookId}')">
+    <a href="${pdfUrl}" target="_blank" class="btn btn-ghost" style="font-size:.8rem;padding:6px 12px">🔗 Linki Aç</a>
   </div>
-
   <div class="card" style="padding:0;overflow:hidden">
-    <!-- Araç çubuğu -->
     <div style="display:flex;align-items:center;gap:8px;padding:10px 16px;background:var(--card2);border-bottom:1px solid var(--border);flex-wrap:wrap">
-      <span style="font-size:.72rem;color:var(--dim);font-family:'Syne',sans-serif;white-space:nowrap">✏️ NOT ALANI</span>
-      <button id="tool-pen" class="btn btn-primary btn-icon" onclick="setBookTool('pen')">✏️</button>
-      <button id="tool-highlight" class="btn btn-ghost btn-icon" onclick="setBookTool('highlight')">🖊️</button>
-      <button id="tool-eraser" class="btn btn-ghost btn-icon" onclick="setBookTool('eraser')">🧹</button>
-      <input type="color" id="pen-color" value="#ff4d6d" style="width:30px;height:30px;border:none;background:none;cursor:pointer;border-radius:6px">
-      <select id="pen-size" class="input" style="width:68px;padding:4px 6px;font-size:.78rem">
+      <div style="display:flex;align-items:center;gap:6px">
+        <button class="btn btn-ghost btn-icon" onclick="pdfPrevPage()">◀</button>
+        <span id="pdf-page-info" style="font-size:.8rem;color:var(--dim);white-space:nowrap">— / —</span>
+        <button class="btn btn-ghost btn-icon" onclick="pdfNextPage()">▶</button>
+      </div>
+      <div style="width:1px;height:24px;background:var(--border)"></div>
+      <button id="tool-pen" class="btn btn-primary btn-icon" onclick="setTool('pen')">✏️</button>
+      <button id="tool-highlight" class="btn btn-ghost btn-icon" onclick="setTool('highlight')">🖊️</button>
+      <button id="tool-eraser" class="btn btn-ghost btn-icon" onclick="setTool('eraser')">🧹</button>
+      <button id="tool-text" class="btn btn-ghost btn-icon" onclick="setTool('text')">T</button>
+      <input type="color" id="pen-color" value="#ff4d6d" style="width:32px;height:32px;border:none;background:none;cursor:pointer;border-radius:6px">
+      <select id="pen-size" class="input" style="width:70px;padding:5px 8px;font-size:.78rem">
         <option value="2">İnce</option>
         <option value="4" selected>Orta</option>
         <option value="8">Kalın</option>
       </select>
-      <button class="btn btn-ghost" style="font-size:.78rem;padding:5px 10px" onclick="clearBookCanvas('${bookId}')">🗑️ Temizle</button>
+      <button class="btn btn-ghost btn-icon" onclick="clearCanvas()">🗑️</button>
     </div>
-
-    <!-- İki sütun: PDF + Not alanı -->
-    <div style="display:grid;grid-template-columns:1fr 340px;height:calc(100vh - 220px);min-height:500px">
-
-      <!-- Sol: PDF iframe -->
-      <div style="background:#525659;overflow:hidden">
-        <iframe id="book-iframe" src="${embedUrl}"
-          style="width:100%;height:100%;border:none"
-          allow="autoplay" allowfullscreen>
-        </iframe>
+    <div id="book-pdf-canvas-wrapper" style="position:relative;overflow:auto;background:#525659;padding:16px;min-height:500px;display:flex;justify-content:center;align-items:flex-start">
+      <div id="book-pdf-placeholder" style="text-align:center;padding:60px 20px;color:#aaa">
+        <div style="font-size:4rem;margin-bottom:16px">📄</div>
+        <div style="font-size:1rem;margin-bottom:20px">PDF dosyasını yükle ve üzerine not al</div>
+        <button class="btn btn-primary" onclick="document.getElementById('book-local-input').click()">📁 PDF Yükle</button>
       </div>
-
-      <!-- Sağ: Not alma alanı -->
-      <div style="border-left:1px solid var(--border);background:var(--card);display:flex;flex-direction:column;overflow:hidden">
-        <div style="padding:8px 12px;border-bottom:1px solid var(--border);font-size:.7rem;color:var(--dim)">ÇİZİM ALANI</div>
-        <div style="flex:1;position:relative;min-height:0">
-          <canvas id="book-note-canvas" style="position:absolute;inset:0;width:100%;height:100%;cursor:crosshair;touch-action:none"></canvas>
-        </div>
-        <div style="padding:8px;border-top:1px solid var(--border)">
-          <textarea id="book-text-note" class="input" placeholder="Metin notu..."
-            style="min-height:80px;font-size:.82rem;resize:vertical;width:100%"
-            oninput="saveBookTextNote('${bookId}',this.value)"></textarea>
-        </div>
+      <div id="book-pdf-canvases" style="display:none;position:relative;display:none">
+        <canvas id="pdf-render-canvas" style="display:block;box-shadow:0 4px 20px rgba(0,0,0,.5)"></canvas>
+        <canvas id="pdf-draw-canvas" style="position:absolute;top:0;left:0;cursor:crosshair"></canvas>
       </div>
     </div>
   </div>`;
-
-  setTimeout(()=>initBookCanvas(bookId), 200);
 }
 
-function initBookCanvas(bookId){
-  const canvas=document.getElementById('book-note-canvas');
-  if(!canvas)return;
-  const parent=canvas.parentElement;
-  canvas.width=parent.clientWidth||300;
-  canvas.height=parent.clientHeight||400;
+window.openBookLocalPDF=async function(input, bookId){
+  const file=input.files[0]; if(!file)return;
+  window._bookAnnotKey=`bookAnnot_${safeKey(session.uid)}_${bookId}`;
 
-  window._bookTool='pen';
-  let drawing=false,lx=0,ly=0;
+  if(!window.pdfjsLib){
+    toast('📄 Yükleniyor...','i');
+    await new Promise((res,rej)=>{
+      const s=document.createElement('script');
+      s.src='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
+      s.onload=res;s.onerror=rej;document.head.appendChild(s);
+    });
+    window.pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+  }
 
-  const getPos=(e)=>{
-    const r=canvas.getBoundingClientRect();
-    const src=e.touches?e.touches[0]:e;
-    return[src.clientX-r.left, src.clientY-r.top];
+  const reader=new FileReader();
+  reader.onload=async e=>{
+    pdfDoc=await window.pdfjsLib.getDocument(new Uint8Array(e.target.result)).promise;
+    pdfTotalPages=pdfDoc.numPages;
+    pdfPage=1;
+    document.getElementById('book-pdf-placeholder').style.display='none';
+    const cv=document.getElementById('book-pdf-canvases');
+    if(cv){cv.style.display='block';}
+    await renderPDFPage(pdfPage);
+    setupDrawCanvas();
+    toast(`📄 ${file.name} (${pdfTotalPages} sayfa)`,'s');
   };
-
-  const startDraw=(e)=>{e.preventDefault();drawing=true;[lx,ly]=getPos(e);};
-  const moveDraw=(e)=>{
-    if(!drawing)return;
-    e.preventDefault();
-    const[x,y]=getPos(e);
-    const ctx=canvas.getContext('2d');
-    const color=document.getElementById('pen-color')?.value||'#ff4d6d';
-    const size=parseInt(document.getElementById('pen-size')?.value||4);
-    const tool=window._bookTool||'pen';
-    ctx.beginPath();
-    if(tool==='eraser'){
-      ctx.globalCompositeOperation='destination-out';
-      ctx.arc(x,y,size*5,0,Math.PI*2);ctx.fill();
-      ctx.globalCompositeOperation='source-over';
-    } else {
-      ctx.strokeStyle=tool==='highlight'?color+'88':color;
-      ctx.lineWidth=tool==='highlight'?size*4:size;
-      ctx.lineCap=ctx.lineJoin='round';
-      ctx.moveTo(lx,ly);ctx.lineTo(x,y);ctx.stroke();
-    }
-    [lx,ly]=[x,y];
-  };
-  const endDraw=()=>{if(drawing){drawing=false;saveBookCanvas(bookId);}};
-
-  canvas.addEventListener('mousedown',startDraw);
-  canvas.addEventListener('mousemove',moveDraw);
-  canvas.addEventListener('mouseup',endDraw);
-  canvas.addEventListener('mouseleave',endDraw);
-  canvas.addEventListener('touchstart',startDraw,{passive:false});
-  canvas.addEventListener('touchmove',moveDraw,{passive:false});
-  canvas.addEventListener('touchend',endDraw);
-
-  // Kayıtlı notları yükle
-  dbListen(`bookNotes/${safeKey(session.uid)}/${bookId}/canvas`,data=>{
-    if(!data)return;
-    const img=new Image();
-    img.onload=()=>{
-      const ctx=canvas.getContext('2d');
-      ctx.clearRect(0,0,canvas.width,canvas.height);
-      ctx.drawImage(img,0,0);
-    };
-    img.src=data;
-  });
-  dbListen(`bookNotes/${safeKey(session.uid)}/${bookId}/text`,data=>{
-    const ta=document.getElementById('book-text-note');
-    if(ta&&data!==null&&data!==undefined)ta.value=data;
-  });
+  reader.readAsArrayBuffer(file);
+  input.value='';
 }
 
-async function saveBookCanvas(bookId){
-  const canvas=document.getElementById('book-note-canvas');
-  if(!canvas||!bookId)return;
-  try{await dbSet(`bookNotes/${safeKey(session.uid)}/${bookId}/canvas`,canvas.toDataURL('image/png',0.7));}catch(e){}
-}
-
-window.saveBookTextNote=async function(bookId,val){
-  try{await dbSet(`bookNotes/${safeKey(session.uid)}/${bookId}/text`,val);}catch(e){}
-}
-
-window.setBookTool=function(tool){
-  window._bookTool=tool;
-  ['pen','highlight','eraser'].forEach(t=>{
-    const b=document.getElementById('tool-'+t);
-    if(b)b.className=t===tool?'btn btn-primary btn-icon':'btn btn-ghost btn-icon';
-  });
-  const c=document.getElementById('book-note-canvas');
-  if(c)c.style.cursor=tool==='eraser'?'cell':'crosshair';
-}
-
-window.clearBookCanvas=async function(bookId){
-  if(!confirm('Çizimler silinsin mi?'))return;
-  const canvas=document.getElementById('book-note-canvas');
-  if(canvas)canvas.getContext('2d').clearRect(0,0,canvas.width,canvas.height);
-  try{await dbSet(`bookNotes/${safeKey(session.uid)}/${bookId}/canvas`,null);}catch(e){}
-}
 window.editBook=async function(bookId){
   await openAddBookModal(bookId);
 }
@@ -3636,7 +3557,7 @@ window.openPDF=async function(input){
 async function renderPDFPage(num){
   if(!pdfDoc)return;
   const page=await pdfDoc.getPage(num);
-  const wrapper=document.getElementById('pdf-canvas-wrapper');
+  const wrapper=document.getElementById('pdf-canvas-wrapper')||document.getElementById('book-pdf-canvas-wrapper');
   const scale=Math.min(1.5,(wrapper?.clientWidth-40||700)/page.getViewport({scale:1}).width);
   const vp=page.getViewport({scale});
   const rc=document.getElementById('pdf-render-canvas');
