@@ -2163,8 +2163,8 @@ const ICE_SERVERS={iceServers:[{urls:'stun:stun.l.google.com:19302'},{urls:'stun
 async function renderVoiceChat(){
   const mc=document.getElementById('main-content');
   if(!mc)return;
-  const classCode=session.classCode;
-  let classOptions='';
+
+  // Sınıf kodu belirle
   if(session.role==='teacher'){
     const classes=await getMyClasses();
     if(classes.length===0){
@@ -2172,39 +2172,195 @@ async function renderVoiceChat(){
       return;
     }
     voiceClassCode=voiceClassCode||classes[0].code;
-    classOptions=`<select class="input" id="voice-class-sel" onchange="voiceClassCode=this.value" style="max-width:220px;margin-bottom:16px">
-      ${classes.map(c=>`<option value="${c.code}">${c.name}</option>`).join('')}
-    </select>`;
   } else {
-    voiceClassCode=classCode;
+    voiceClassCode=session.classCode;
     if(!voiceClassCode){
       mc.innerHTML=`<div class="card text-center text-dim" style="padding:50px"><div style="font-size:3rem;margin-bottom:10px">🎤</div><div>Sesli sohbet için önce bir sınıfa katıl.</div></div>`;
       return;
     }
   }
 
+  // Aktif odaları yükle
+  const allRooms=await dbGet(`voiceRoomMeta/${safeKey(voiceClassCode)}`)||{};
+  const rooms=Object.values(allRooms).filter(r=>r.active);
+
+  // Öğretmen sınıf seçici
+  let classSelector='';
+  if(session.role==='teacher'){
+    const classes=await getMyClasses();
+    classSelector=`<select class="input" id="voice-class-sel" onchange="voiceClassCode=this.value;renderVoiceChat()" style="max-width:220px;margin-bottom:16px">
+      ${classes.map(c=>`<option value="${c.code}" ${c.code===voiceClassCode?'selected':''}>${c.name}</option>`).join('')}
+    </select>`;
+  }
+
   mc.innerHTML=`
   <div style="font-family:'Syne',sans-serif;font-size:1.3rem;font-weight:700;margin-bottom:12px">🎤 Sesli Sohbet</div>
-  ${classOptions}
-  <div class="card" style="margin-bottom:16px">
-    <div style="font-family:'Syne',sans-serif;font-size:.7rem;letter-spacing:.1em;color:var(--dim);margin-bottom:12px">ODADAKI KATILIMCILAR</div>
-    <div id="voice-participants"><div class="text-dim" style="font-size:.85rem;padding:10px 0">Henüz kimse odada değil.</div></div>
+  ${classSelector}
+
+  ${session.role==='teacher'?`
+  <!-- Oda Oluştur (Öğretmen) -->
+  <div class="card" style="margin-bottom:16px;border-left:4px solid var(--primary)">
+    <div style="font-family:'Syne',sans-serif;font-size:.75rem;letter-spacing:.1em;color:var(--dim);margin-bottom:14px">➕ YENİ ODA OLUŞTUR</div>
+    <div class="flex gap-2" style="flex-wrap:wrap">
+      <input type="text" class="input" id="voice-room-name" placeholder="Oda adı (örn: Matematik Dersi)" maxlength="40" style="flex:1;min-width:180px">
+      <button class="btn btn-primary" onclick="createVoiceRoom()">🎤 Oda Oluştur</button>
+    </div>
+  </div>`:''}
+
+  <!-- Aktif Odalar -->
+  <div style="font-family:'Syne',sans-serif;font-size:.75rem;letter-spacing:.1em;color:var(--dim);margin-bottom:12px">📋 AKTİF ODALAR</div>
+  <div id="voice-rooms-list">
+    ${rooms.length===0
+      ?`<div class="card text-center text-dim" style="padding:30px"><div style="font-size:2rem;margin-bottom:8px">🔇</div><div style="font-size:.88rem">${session.role==='teacher'?'Henüz oda yok. Yukarıdan oluştur.':'Şu an aktif oda yok. Öğretmenin oda açmasını bekle.'}</div></div>`
+      :rooms.map(r=>voiceRoomCard(r)).join('')
+    }
   </div>
-  <div style="display:flex;gap:10px;flex-wrap:wrap">
-    <button id="voice-join-btn" class="btn btn-success btn-lg" onclick="joinVoice()">🎤 Odaya Gir</button>
-    <button id="voice-mute-btn" class="btn btn-warning btn-lg" onclick="toggleMute()" style="display:none">🔇 Sustur</button>
-    <button id="voice-leave-btn" class="btn btn-danger btn-lg" onclick="leaveVoice()" style="display:none">📵 Odadan Çık</button>
+
+  <!-- Aktif oda varsa katılımcılar -->
+  <div id="voice-active-room" style="display:none;margin-top:20px">
+    <div class="card" style="margin-bottom:14px">
+      <div class="flex items-center justify-between mb-3">
+        <div>
+          <div style="font-family:'Syne',sans-serif;font-size:.75rem;letter-spacing:.1em;color:var(--dim)">ODADAKI KATILIMCILAR</div>
+          <div id="voice-room-title" style="font-weight:700;font-size:.95rem;margin-top:4px"></div>
+        </div>
+        <div class="flex gap-2">
+          <button id="voice-mute-btn" class="btn btn-warning" onclick="toggleMute()" style="display:none">🔇 Sustur</button>
+          <button id="voice-leave-btn" class="btn btn-danger" onclick="leaveVoice()" style="display:none">📵 Çık</button>
+          ${session.role==='teacher'?`<button id="voice-close-btn" class="btn btn-danger" onclick="closeVoiceRoom()" style="display:none">🗑️ Odayı Kapat</button>`:''}
+        </div>
+      </div>
+      <div id="voice-participants"><div class="text-dim" style="font-size:.85rem">Henüz kimse yok.</div></div>
+    </div>
   </div>
+
   <div style="margin-top:16px;padding:12px 16px;background:var(--bg2);border-radius:10px;font-size:.78rem;color:var(--dim);line-height:1.6">
-    ℹ️ Sesli sohbet WebRTC teknolojisi ile çalışır. Mikrofon izni gereklidir.<br>
-    Bağlantı kalitesi internet hızınıza bağlıdır. Aynı sınıftaki herkes birbirini duyabilir.
+    ℹ️ Sesli sohbet WebRTC teknolojisi ile çalışır. Mikrofon izni gereklidir.
   </div>
   <div id="voice-audio-container"></div>`;
 
-  // Odadaki katılımcıları dinle
-  dbListen(`voiceRooms/${safeKey(voiceClassCode||'')}`,data=>{
+  // Odaları gerçek zamanlı dinle
+  dbListen(`voiceRoomMeta/${safeKey(voiceClassCode)}`,data=>{
+    const rms=Object.values(data||{}).filter(r=>r.active);
+    const el=document.getElementById('voice-rooms-list');
+    if(!el)return;
+    if(rms.length===0){
+      el.innerHTML=`<div class="card text-center text-dim" style="padding:30px"><div style="font-size:2rem;margin-bottom:8px">🔇</div><div style="font-size:.88rem">${session.role==='teacher'?'Henüz oda yok.':'Şu an aktif oda yok.'}</div></div>`;
+    } else {
+      el.innerHTML=rms.map(r=>voiceRoomCard(r)).join('');
+    }
+  });
+}
+
+function voiceRoomCard(r){
+  const memberCount=r.members?Object.keys(r.members).length:0;
+  return `<div class="card card-hover" style="margin-bottom:10px;border-left:4px solid var(--success)">
+    <div class="flex items-center justify-between">
+      <div>
+        <div style="font-weight:700;font-size:.92rem">🎤 ${r.name}</div>
+        <div class="text-dim" style="font-size:.78rem;margin-top:3px">
+          👤 ${r.creatorName} · 👥 ${memberCount} kişi · ${new Date(r.createdAt).toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit'})}
+        </div>
+      </div>
+      <button class="btn btn-success" style="font-size:.82rem" onclick="joinVoiceRoom('${r.id}','${r.name.replace(/'/g,"\\'")}')">
+        🎤 Katıl
+      </button>
+    </div>
+  </div>`;
+}
+
+window.createVoiceRoom=async function(){
+  const name=document.getElementById('voice-room-name')?.value.trim();
+  if(!name){toast('Oda adı gir!','w');return}
+  if(!voiceClassCode){toast('Sınıf seç!','w');return}
+  const roomId='vroom_'+Date.now();
+  await dbSet(`voiceRoomMeta/${safeKey(voiceClassCode)}/${roomId}`,{
+    id:roomId,name,creatorName:session.name,creatorUid:session.uid,
+    classCode:voiceClassCode,active:true,createdAt:Date.now(),members:{}
+  });
+  toast(`🎤 "${name}" odası oluşturuldu!`,'s');
+  document.getElementById('voice-room-name').value='';
+  joinVoiceRoom(roomId,name);
+}
+
+window.joinVoiceRoom=async function(roomId,roomName){
+  if(voiceActive){await leaveVoice(true);}
+  try{
+    localStream=await navigator.mediaDevices.getUserMedia({audio:true,video:false});
+  }catch(e){
+    toast('❌ Mikrofon izni gerekli!','d');return;
+  }
+  voiceActive=true;
+  window._activeRoomId=roomId;
+
+  // Odaya üye olarak ekle
+  await dbUpdate(`voiceRoomMeta/${safeKey(voiceClassCode)}/${roomId}/members/${safeKey(session.uid)}`,{
+    name:session.name,uid:session.uid,role:session.role,muted:false,joinedAt:Date.now()
+  });
+  // Eski sistemi de güncelle (WebRTC için)
+  await dbSet(`voiceRooms/${safeKey(voiceClassCode)}/${safeKey(session.uid)}`,{
+    uid:session.uid,name:session.name,role:session.role,muted:false,speaking:false,roomId,joinedAt:Date.now()
+  });
+
+  // UI güncelle
+  const activeDiv=document.getElementById('voice-active-room');
+  if(activeDiv)activeDiv.style.display='block';
+  const titleEl=document.getElementById('voice-room-title');
+  if(titleEl)titleEl.textContent=roomName;
+  const joinBtn=document.querySelector(`button[onclick="joinVoiceRoom('${roomId}','${roomName.replace(/'/g,"\\'")}')"]`);
+  if(joinBtn){joinBtn.textContent='✓ Katıldın';joinBtn.disabled=true;}
+  document.getElementById('voice-mute-btn').style.display='flex';
+  document.getElementById('voice-leave-btn').style.display='flex';
+  if(session.role==='teacher'){const cb=document.getElementById('voice-close-btn');if(cb)cb.style.display='flex';}
+
+  toast(`🎤 "${roomName}" odasına katıldın!`,'s');
+
+  // Ses aktivite tespiti
+  try{
+    const audioCtx=new(window.AudioContext||window.webkitAudioContext)();
+    const analyser=audioCtx.createAnalyser();
+    const src=audioCtx.createMediaStreamSource(localStream);
+    src.connect(analyser);analyser.fftSize=512;
+    const buf=new Uint8Array(analyser.fftSize);
+    function detectSpeech(){
+      if(!voiceActive)return;
+      analyser.getByteTimeDomainData(buf);
+      let sum=0;buf.forEach(v=>{const n=v/128-1;sum+=n*n});
+      const speaking=Math.sqrt(sum/buf.length)>0.02;
+      if(speaking!==window._lastSpeaking){
+        window._lastSpeaking=speaking;
+        dbUpdate(`voiceRooms/${safeKey(voiceClassCode)}/${safeKey(session.uid)}`,{speaking:speaking&&!isMuted});
+        dbUpdate(`voiceRoomMeta/${safeKey(voiceClassCode)}/${roomId}/members/${safeKey(session.uid)}`,{speaking:speaking&&!isMuted});
+      }
+      requestAnimationFrame(detectSpeech);
+    }
+    detectSpeech();
+  }catch(e){}
+
+  // Katılımcıları dinle
+  dbListen(`voiceRoomMeta/${safeKey(voiceClassCode)}/${roomId}/members`,data=>{
     renderVoiceParticipants(data||{});
   });
+  // WebRTC
+  dbListen(`voiceRooms/${safeKey(voiceClassCode)}`,async data=>{
+    if(!data||!voiceActive)return;
+    const others=Object.values(data).filter(p=>p.uid!==session.uid&&p.roomId===roomId);
+    for(const p of others){if(!peerConnections[p.uid])await createPeerConnection(p.uid);}
+    Object.keys(peerConnections).forEach(uid=>{if(!data[safeKey(uid)])closePeer(uid)});
+  });
+  dbListen(`voiceSignals/${safeKey(voiceClassCode)}/${safeKey(session.uid)}`,async data=>{
+    if(!data)return;
+    for(const[fromUid,signals]of Object.entries(data))await handleSignals(fromUid,signals);
+  });
+}
+
+window.closeVoiceRoom=async function(){
+  if(!window._activeRoomId)return;
+  if(!confirm('Odayı kapatmak tüm katılımcıları çıkaracak. Emin misin?'))return;
+  await dbUpdate(`voiceRoomMeta/${safeKey(voiceClassCode)}/${window._activeRoomId}`,{active:false,closedAt:Date.now()});
+  await leaveVoice(true);
+  toast('🗑️ Oda kapatıldı.','w');
+  renderVoiceChat();
 }
 
 function renderVoiceParticipants(data){
@@ -2365,7 +2521,7 @@ window.toggleMute=function(){
   toast(isMuted?'🔇 Mikrofon kapatıldı.':'🎤 Mikrofon açıldı.','i');
 }
 
-window.leaveVoice=async function(){
+window.leaveVoice=async function(silent=false){
   voiceActive=false;isMuted=false;window._lastSpeaking=false;
   localStream?.getTracks().forEach(t=>t.stop());
   localStream=null;
@@ -2373,9 +2529,15 @@ window.leaveVoice=async function(){
   if(voiceClassCode){
     await dbSet(`voiceRooms/${safeKey(voiceClassCode)}/${safeKey(session.uid)}`,null);
     await dbSet(`voiceSignals/${safeKey(voiceClassCode)}/${safeKey(session.uid)}`,null);
+    if(window._activeRoomId){
+      await dbSet(`voiceRoomMeta/${safeKey(voiceClassCode)}/${window._activeRoomId}/members/${safeKey(session.uid)}`,null);
+    }
   }
-  toast('📵 Odadan çıkıldı.','i');
-  renderVoiceChat();
+  window._activeRoomId=null;
+  if(!silent){
+    toast('📵 Odadan çıkıldı.','i');
+    renderVoiceChat();
+  }
 }
 if('serviceWorker' in navigator){
   const swCode=`
