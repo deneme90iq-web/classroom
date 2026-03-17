@@ -795,9 +795,31 @@ window.doRegister=async function(){
 window.doLogout=async function(){
   if(!confirm('Çıkış yapmak istiyor musun?'))return;
   clearListeners();clearAllTimers();
+  // Test hesabı ise Firebase'den sil
+  if(session.uid&&session.uid.startsWith('test_')){
+    await deleteTestUser(session.uid,session.classCode);
+  }
   await signOut(auth);
+  session={uid:null,role:null,name:null,classCode:null,email:null};
   showScreen('screen-auth');
   toast('Çıkış yapıldı.','i');
+}
+
+async function deleteTestUser(uid,classCode){
+  try{
+    // Profil sil
+    await dbSet(`users/${safeKey(uid)}`,null);
+    // Sınıf üyeliğini sil
+    if(classCode){
+      await dbSet(`classMembers/${safeKey(classCode)}/${safeKey(uid)}`,null);
+      await dbSet(`pendingStudents/${safeKey(classCode)}/${safeKey(uid)}`,null);
+    }
+    // Sesli sohbet odasından çıkar
+    if(voiceClassCode){
+      await dbSet(`voiceRooms/${safeKey(voiceClassCode)}/${safeKey(uid)}`,null);
+      await dbSet(`voiceSignals/${safeKey(voiceClassCode)}/${safeKey(uid)}`,null);
+    }
+  }catch(e){console.warn('Test kullanıcı silinemedi:',e)}
 }
 
 // ═══════════ APP ENTRY ═══════════
