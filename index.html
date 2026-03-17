@@ -2788,48 +2788,6 @@ window.joinVoiceRoom=async function(roomId,roomName){
   startParticipantListener(roomId);
 }
 
-  // UI güncelle
-  const activeDiv=document.getElementById('voice-active-room');
-  if(activeDiv)activeDiv.style.display='block';
-  const titleEl=document.getElementById('voice-room-title');
-  if(titleEl)titleEl.textContent=roomName;
-  const joinBtn=document.querySelector(`button[onclick="joinVoiceRoom('${roomId}','${roomName.replace(/'/g,"\\'")}')"]`);
-  if(joinBtn){joinBtn.textContent='✓ Katıldın';joinBtn.disabled=true;}
-  document.getElementById('voice-mute-btn').style.display='flex';
-  document.getElementById('voice-leave-btn').style.display='flex';
-  document.getElementById('voice-screen-btn').style.display='flex';
-  document.getElementById('voice-pdf-btn').style.display='flex';
-  if(session.role==='teacher'){const cb=document.getElementById('voice-close-btn');if(cb)cb.style.display='flex';}
-
-  toast(`🎤 "${roomName}" odasına katıldın!`,'s');
-
-  // Ses aktivite tespiti
-  try{
-    const audioCtx=new(window.AudioContext||window.webkitAudioContext)();
-    const analyser=audioCtx.createAnalyser();
-    const src=audioCtx.createMediaStreamSource(localStream);
-    src.connect(analyser);analyser.fftSize=512;
-    const buf=new Uint8Array(analyser.fftSize);
-    function detectSpeech(){
-      if(!voiceActive)return;
-      analyser.getByteTimeDomainData(buf);
-      let sum=0;buf.forEach(v=>{const n=v/128-1;sum+=n*n});
-      const speaking=Math.sqrt(sum/buf.length)>0.02;
-      if(speaking!==window._lastSpeaking){
-        window._lastSpeaking=speaking;
-        dbUpdate(`voiceRooms/${safeKey(voiceClassCode)}/${safeKey(session.uid)}`,{speaking:speaking&&!isMuted});
-        dbUpdate(`voiceRoomMeta/${safeKey(voiceClassCode)}/${roomId}/members/${safeKey(session.uid)}`,{speaking:speaking&&!isMuted});
-      }
-      requestAnimationFrame(detectSpeech);
-    }
-    detectSpeech();
-  }catch(e){}
-
-  // Dinleyicileri başlat
-  startSignalListener();
-  startParticipantListener(roomId);
-}
-
 window.closeVoiceRoom=async function(){
   if(!window._activeRoomId)return;
   if(!confirm('Odayı kapatmak tüm katılımcıları çıkaracak. Emin misin?'))return;
@@ -3120,12 +3078,14 @@ function buildDrawerNav(){
     );
   }
   if(session.role==='student'){
-    items.push({page:'join-class',icon:'➕',label:'Sınıfa Katıl',action:()=>showModal('modal-join-class')});
+    items.push({page:'join-class',icon:'➕',label:'Sınıfa Katıl'});
   }
-  el.innerHTML=items.map(it=>`
-    <div class="nav-item" onclick="${it.action?`(${it.action.toString()})();closeMobileDrawer()`:`mnavTo('${it.page}')`}" style="margin-bottom:2px">
-      <span class="nav-icon">${it.icon}</span> ${it.label}
-    </div>`).join('');
+  el.innerHTML=items.map(it=>{
+    const onclick=it.page==='join-class'
+      ? "showModal('modal-join-class');closeMobileDrawer()"
+      : "mnavTo('"+it.page+"')";
+    return '<div class="nav-item" onclick="'+onclick+'" style="margin-bottom:2px"><span class="nav-icon">'+it.icon+'</span> '+it.label+'</div>';
+  }).join('');
 }
 
 // XP bar senkronizasyonu (drawer için)
