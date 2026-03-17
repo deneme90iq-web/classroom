@@ -857,7 +857,6 @@ onAuthStateChanged(auth, async user=>{
         }
         if(pending&&pending.status==='rejected'){
           hideLoading();
-          // Profildeki classCode'u temizle, yeniden sınıfa katılabilsin
           await dbUpdate(`users/${user.uid}/profile`,{classCode:null});
           showScreen('screen-auth');
           showErr('Başvurun öğretmen tarafından reddedildi. Farklı bir sınıfa katılabilirsin.');
@@ -867,7 +866,33 @@ onAuthStateChanged(auth, async user=>{
       hideLoading();
       enterApp();
     } else {hideLoading();showScreen('screen-auth')}
-  } else {hideLoading();showScreen('screen-auth')}
+  } else {
+    // Firebase user yok — test session kontrolü
+    const savedTest=localStorage.getItem('test_session');
+    if(savedTest){
+      try{
+        const s=JSON.parse(savedTest);
+        if(s.uid&&s.uid.startsWith('test_')){
+          // Firebase'de profil hâlâ var mı?
+          const profile=await dbGet(`users/${safeKey(s.uid)}/profile`);
+          if(profile){
+            session=s;
+            // classCode güncel olabilir
+            if(profile.classCode!==s.classCode){
+              session.classCode=profile.classCode;
+              localStorage.setItem('test_session',JSON.stringify(session));
+            }
+            hideLoading();
+            enterApp();
+            return;
+          }
+        }
+      }catch(e){}
+      localStorage.removeItem('test_session');
+    }
+    hideLoading();
+    showScreen('screen-auth');
+  }
 });
 
 function showPendingScreen(name,classCode){
@@ -956,6 +981,7 @@ window.doLogout=async function(){
   // Test hesabı ise Firebase'den sil
   if(session.uid&&session.uid.startsWith('test_')){
     await deleteTestUser(session.uid,session.classCode);
+    localStorage.removeItem('test_session');
   }
   await signOut(auth);
   // Tema butonu ve mobil nav gizle
@@ -3521,6 +3547,8 @@ window.doTestLogin=async function(){
     toast(`📤 Sınıfa başvuru gönderildi! Öğretmen onayını bekle.`,'i');
   }
   session={uid:testUid,role:testRole,name,classCode:profile.classCode,email:profile.email};
+  // Test session'ını localStorage'a kaydet — sayfa yenilenince geri yüklensin
+  localStorage.setItem('test_session',JSON.stringify(session));
   document.getElementById('test-expanded').style.display='none';
   toast(`✅ Test girişi: ${name} (${testRole})`,'s');
   enterApp();
