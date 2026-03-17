@@ -1816,6 +1816,7 @@ window.sendChatMsg=async function(classCode){
 
 // ═══════════ QUIZ ═══════════
 let quizQuestions=[];
+window.quizQuestions=quizQuestions;
 
 async function renderQuiz(){
   const mc=document.getElementById('main-content');
@@ -1936,31 +1937,31 @@ window.startQuiz=async function(quizId){
 }
 
 window.addQuizQuestion=function(){
-  quizQuestions.push({question:'',options:['','','',''],correct:0});
+  window.quizQuestions.push({question:'',options:['','','',''],correct:0});
   renderQuizForm();
 }
 
 function renderQuizForm(){
   const el=document.getElementById('quiz-questions-list');if(!el)return;
-  el.innerHTML=quizQuestions.map((q,qi)=>`
+  el.innerHTML=window.quizQuestions.map((q,qi)=>`
     <div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:12px">
       <div class="flex items-center justify-between mb-2">
         <span style="font-size:.75rem;font-family:'Syne',sans-serif;color:var(--dim)">SORU ${qi+1}</span>
         <button onclick="removeQ(${qi})" style="background:none;border:none;color:var(--danger);cursor:pointer;font-size:.8rem">✕ Sil</button>
       </div>
-      <input type="text" class="input mb-2" placeholder="Soru metni..." value="${q.question}" oninput="quizQuestions[${qi}].question=this.value" style="margin-bottom:8px">
+      <input type="text" class="input mb-2" placeholder="Soru metni..." value="${q.question.replace(/"/g,'&quot;')}" oninput="window.quizQuestions[${qi}].question=this.value" style="margin-bottom:8px">
       ${q.options.map((opt,oi)=>`<div class="flex items-center gap-2" style="margin-bottom:6px">
-        <input type="radio" name="correct_${qi}" ${q.correct===oi?'checked':''} onchange="quizQuestions[${qi}].correct=${oi}" style="accent-color:var(--success)">
-        <input type="text" class="input" placeholder="Seçenek ${String.fromCharCode(65+oi)}" value="${opt}" oninput="quizQuestions[${qi}].options[${oi}]=this.value" style="font-size:.85rem;padding:8px 10px">
+        <input type="radio" name="correct_${qi}" ${q.correct===oi?'checked':''} onchange="window.quizQuestions[${qi}].correct=${oi}" style="accent-color:var(--success)">
+        <input type="text" class="input" placeholder="Seçenek ${String.fromCharCode(65+oi)}" value="${opt.replace(/"/g,'&quot;')}" oninput="window.quizQuestions[${qi}].options[${oi}]=this.value" style="font-size:.85rem;padding:8px 10px">
       </div>`).join('')}
       <div style="font-size:.7rem;color:var(--dim);margin-top:4px">Radio butonu doğru cevabı işaretle</div>
     </div>`).join('');
 }
 
-window.removeQ=function(qi){quizQuestions.splice(qi,1);renderQuizForm()}
+window.removeQ=function(qi){window.quizQuestions.splice(qi,1);renderQuizForm()}
 
 async function loadTeacherClassesForQuiz(){
-  quizQuestions=[];
+  window.quizQuestions=[];
   const classes=await getMyClasses();
   ['quiz-class-sel'].forEach(id=>{
     const sel=document.getElementById(id);if(!sel)return;
@@ -1976,13 +1977,13 @@ window.publishQuiz=async function(){
   const classCode=document.getElementById('quiz-class-sel').value;
   const subjectId=document.getElementById('quiz-subject-sel').value;
   const xpPerQ=parseInt(document.getElementById('quiz-xp-per-q').value)||10;
-  if(!title||!classCode||quizQuestions.length===0){toast('Başlık, sınıf ve en az 1 soru gir!','w');return}
-  const valid=quizQuestions.every(q=>q.question&&q.options.every(o=>o));
+  if(!title||!classCode||window.quizQuestions.length===0){toast('Başlık, sınıf ve en az 1 soru gir!','w');return}
+  const valid=window.quizQuestions.every(q=>q.question&&q.options.every(o=>o));
   if(!valid){toast('Tüm soru ve seçenekleri doldur!','w');return}
   const id='quiz_'+Date.now();
-  await dbSet(`quizzes/${id}`,{id,title,classCode,subjectId,xpPerQ,questions:quizQuestions,teacherName:session.name,teacherUid:session.uid,results:{},createdAt:Date.now()});
+  await dbSet(`quizzes/${id}`,{id,title,classCode,subjectId,xpPerQ,questions:window.quizQuestions,teacherName:session.name,teacherUid:session.uid,results:{},createdAt:Date.now()});
   hideModal('modal-create-quiz');
-  quizQuestions=[];
+  window.quizQuestions=[];
   toast('🚀 Quiz yayınlandı!','s');
 }
 
