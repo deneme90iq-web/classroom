@@ -2635,7 +2635,6 @@ window.openAddBookModal=async function(bookId){
   const classes=await getMyClasses();
   if(classes.length===0){toast('Önce sınıf oluştur!','w');return;}
 
-  // Mevcut veri varsa doldur
   let book=null;
   if(bookId) book=await dbGet(`books/${bookId}`);
 
@@ -2660,11 +2659,12 @@ window.openAddBookModal=async function(bookId){
     <div class="form-group"><label class="label">EMOJİ</label>
       <input type="text" class="input" id="book-emoji" placeholder="📖" maxlength="4" value="${book?.emoji||'📖'}" style="width:80px">
     </div>
-    <div class="form-group"><label class="label">PDF LİNKİ (Google Drive, vb.)</label>
-      <input type="url" class="input" id="book-pdf" placeholder="https://drive.google.com/file/..." value="${book?.pdfUrl||''}">
+    <div class="form-group"><label class="label">PDF LİNKİ</label>
+      <input type="url" class="input" id="book-pdf-link" placeholder="https://drive.google.com/file/..." value="${book?.pdfUrl||''}">
+      <div style="font-size:.72rem;color:var(--dim);margin-top:5px">Google Drive, Yandex Disk, Dropbox vb.</div>
     </div>
     <div class="form-group"><label class="label">AÇIKLAMA (isteğe bağlı)</label>
-      <textarea class="input" id="book-desc" placeholder="Kitap hakkında kısa bilgi..." style="min-height:70px">${book?.description||''}</textarea>
+      <textarea class="input" id="book-desc" placeholder="Kitap hakkında kısa bilgi..." style="min-height:60px">${book?.description||''}</textarea>
     </div>
     <div class="flex gap-2 mt-4">
       <button class="btn btn-ghost" style="flex:1" onclick="document.getElementById('modal-add-book').remove()">İptal</button>
@@ -2679,16 +2679,18 @@ window.saveBook=async function(bookId){
   const title=document.getElementById('book-title').value.trim();
   const subject=document.getElementById('book-subject').value.trim();
   const emoji=document.getElementById('book-emoji').value.trim()||'📖';
-  const pdfUrl=document.getElementById('book-pdf').value.trim();
+  const pdfUrl=document.getElementById('book-pdf-link').value.trim();
   const description=document.getElementById('book-desc').value.trim();
 
-  if(!classCode||!title||!subject||!pdfUrl){toast('Sınıf, kitap adı, ders ve PDF linki zorunlu!','w');return;}
+  if(!classCode||!title||!subject){toast('Sınıf, kitap adı ve ders zorunlu!','w');return;}
+  if(!pdfUrl){toast('PDF linki gir!','w');return;}
 
   const id=bookId||'book_'+Date.now();
+  const existing=bookId?await dbGet(`books/${id}`):null;
   await dbSet(`books/${id}`,{
     id,classCode,title,subject,emoji,pdfUrl,description,
     teacherUid:session.uid,teacherName:session.name,
-    createdAt:bookId?(await dbGet(`books/${id}`))?.createdAt||Date.now():Date.now()
+    createdAt:existing?.createdAt||Date.now()
   });
 
   document.getElementById('modal-add-book')?.remove();
