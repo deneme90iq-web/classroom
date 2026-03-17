@@ -357,10 +357,10 @@ textarea.input{resize:vertical;min-height:80px}
 <div id="toast-root"></div>
 
 <!-- Tema butonu — sağ üst sabit -->
-<button id="global-theme-btn" onclick="toggleTheme()" title="Tema Değiştir" style="position:fixed;top:16px;right:16px;z-index:9998;width:42px;height:42px;border-radius:50%;border:1px solid var(--border2);background:var(--card2);color:var(--text);cursor:pointer;font-size:1.1rem;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 12px rgba(0,0,0,.3);transition:all .2s" onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'">🌙</button>
+<button id="global-theme-btn" onclick="toggleTheme()" title="Tema Değiştir" style="position:fixed;top:16px;right:16px;z-index:9998;width:42px;height:42px;border-radius:50%;border:1px solid var(--border2);background:var(--card2);color:var(--text);cursor:pointer;font-size:1.1rem;display:none;align-items:center;justify-content:center;box-shadow:0 2px 12px rgba(0,0,0,.3);transition:all .2s" onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'">🌙</button>
 
 <!-- Mobil Menü Butonu -->
-<button id="mobile-menu-btn" onclick="openMobileDrawer()">☰</button>
+<button id="mobile-menu-btn" onclick="openMobileDrawer()" style="display:none!important">☰</button>
 
 <!-- Mobil Sidebar Drawer -->
 <div id="mobile-sidebar-overlay" onclick="closeMobileDrawer()"></div>
@@ -956,6 +956,13 @@ window.doLogout=async function(){
     await deleteTestUser(session.uid,session.classCode);
   }
   await signOut(auth);
+  // Tema butonu ve mobil nav gizle
+  const gb=document.getElementById('global-theme-btn');
+  if(gb)gb.style.display='none';
+  const mmb=document.getElementById('mobile-menu-btn');
+  if(mmb)mmb.style.setProperty('display','none','important');
+  const mn=document.getElementById('mobile-nav');
+  if(mn)mn.style.display='none';
   session={uid:null,role:null,name:null,classCode:null,email:null};
   showScreen('screen-auth');
   toast('Çıkış yapıldı.','i');
@@ -1042,6 +1049,16 @@ async function deleteTestUser(uid,classCode){
 // ═══════════ APP ENTRY ═══════════
 function enterApp(){
   showScreen('screen-app');
+  // Tema butonu ve mobil nav göster
+  const gb=document.getElementById('global-theme-btn');
+  if(gb)gb.style.display='flex';
+  applyStoredTheme();
+  if(window.innerWidth<=768){
+    const mmb=document.getElementById('mobile-menu-btn');
+    if(mmb)mmb.style.removeProperty('display');
+    const mn=document.getElementById('mobile-nav');
+    if(mn)mn.style.display='block';
+  }
   // Sidebar setup
   document.getElementById('sb-name').textContent=session.name;
   const roleLabels={teacher:'Öğretmen',student:'Öğrenci'};
