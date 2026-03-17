@@ -340,8 +340,8 @@ textarea.input{resize:vertical;min-height:80px}
 #mobile-sidebar-drawer.open{transform:translateX(0)}
 
 @media(max-width:768px){
-  #mobile-nav{display:block}
-  #mobile-menu-btn{display:flex}
+  #mobile-nav{display:none} /* JS enterApp'te gösterir */
+  #mobile-menu-btn{display:none!important} /* JS enterApp'te gösterir */
   #global-theme-btn{top:14px;right:62px}
   .main-content{padding-top:60px}
 }
