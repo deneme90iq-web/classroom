@@ -1106,17 +1106,7 @@ function updateSidebarXP(s){
   document.getElementById('sb-xp-text').textContent=`Sev.${s.lvl||1} · ${s.xp||0}/${xpNext} XP · ${getRank(s.lvl||1)}`;
 }
 
-function updateHwBadge(hws){
-  const myHws=Object.values(hws).filter(h=>
-    h.classCode===session.classCode&&
-    Array.isArray(h.assignedTo)&&h.assignedTo.includes(session.uid)&&
-    !h.submittedBy?.includes(session.uid)&&
-    new Date(h.dueDate)>=new Date()
-  );
-  const badge=document.getElementById('hw-badge');
-  if(myHws.length>0){badge.textContent=myHws.length;badge.style.display='inline'}
-  else badge.style.display='none';
-}
+
 
 async function checkBadges(s){
   const prevBadges=[...(s.earnedBadges||[])];
@@ -3152,7 +3142,6 @@ function updateDrawerXP(s){
 }
 
 // HW badge mobil için de güncelle
-const _origUpdateHwBadge=window.updateHwBadge||function(){};
 function updateHwBadge(hws){
   const myHws=Object.values(hws).filter(h=>
     h.classCode===session.classCode&&
