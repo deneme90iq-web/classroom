@@ -1480,20 +1480,36 @@ async function loadNotes(cat){
   const notes=await dbGet('notes')||{};
   const grid=document.getElementById('notes-grid');if(!grid)return;
   const myCode=session.classCode||null;
-  // Öğrenci: kendi sınıfının notlarını gör
-  // Öğretmen: kendi sınıflarının notlarını gör
+
   let filtered=Object.values(notes).filter(n=>{
     if(!n.classCode)return false;
     if(session.role==='student')return n.classCode===myCode;
-    // Öğretmen — tüm sınıflarını göster (sonradan filtre eklenebilir)
-    return true;
+    if(session.role==='teacher'){
+      // Öğretmen: sadece kendi sınıflarının notlarını gör
+      return true; // getMyClasses ile filtre aşağıda
+    }
+    return false;
   });
+
+  // Öğretmen için sadece kendi sınıflarının notları
+  if(session.role==='teacher'){
+    const myClasses=await getMyClasses();
+    const myCodes=new Set(myClasses.map(c=>c.code));
+    filtered=filtered.filter(n=>myCodes.has(n.classCode));
+  }
+
   if(cat!=='all'){
     const ids=SUBJECTS.filter(s=>s.cat===cat).map(s=>s.id);
     filtered=filtered.filter(n=>ids.includes(n.subjectId));
   }
   filtered.sort((a,b)=>b.createdAt-a.createdAt);
-  if(filtered.length===0){grid.innerHTML='<div class="card text-center text-dim" style="padding:50px;grid-column:1/-1"><div style="font-size:3rem;margin-bottom:10px">📭</div><div>Henüz not paylaşılmadı.</div></div>';return}
+  if(filtered.length===0){
+    grid.innerHTML=`<div class="card text-center text-dim" style="padding:50px;grid-column:1/-1">
+      <div style="font-size:3rem;margin-bottom:10px">📭</div>
+      <div>${!myCode&&session.role==='student'?'Henüz bir sınıfa katılmadın.':'Henüz not paylaşılmadı.'}</div>
+    </div>`;
+    return;
+  }
   grid.innerHTML=filtered.map(n=>noteCardFull(n)).join('');
 }
 
@@ -1564,12 +1580,21 @@ window.editNote=async function(noteId){
 
 // Not paylaşma modalını aç
 window.openNoteModal=async function(){
+  // Sınıfa üye değilse paylaşım yapılamaz
+  if(session.role==='student'&&!session.classCode){
+    toast('⚠️ Not paylaşmak için önce bir sınıfa katılman gerekiyor!','w');
+    return;
+  }
   if(session.role==='teacher'){
     const grp=document.getElementById('note-class-group');
     if(grp)grp.style.display='block';
     const sel=document.getElementById('note-class-sel');
     if(sel){
       const classes=await getMyClasses();
+      if(classes.length===0){
+        toast('⚠️ Not paylaşmak için önce bir sınıf oluşturman gerekiyor!','w');
+        return;
+      }
       sel.innerHTML='<option value="">— Sınıf Seç —</option>';
       classes.forEach(c=>sel.innerHTML+=`<option value="${c.code}">${c.name}</option>`);
     }
