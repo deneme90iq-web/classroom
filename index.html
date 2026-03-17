@@ -2565,6 +2565,7 @@ window.publishQuiz=async function(){
 
 // ═══════════ KİTAPLARIM ═══════════
 async function renderBooks(){
+  window._bookAnnotKey=null; // Kitap okuyucusundan çıkınca temizle
   const mc=document.getElementById('main-content');
   if(!mc)return;
   mc.innerHTML=`
@@ -2616,7 +2617,8 @@ async function loadBooks(){
         ${b.description?`<div class="text-dim" style="font-size:.78rem;margin-top:6px;line-height:1.4">${b.description}</div>`:''}
       </div>
       <div style="margin-top:auto;display:flex;flex-direction:column;gap:6px">
-        <a href="${b.pdfUrl}" target="_blank" class="btn btn-primary btn-block" style="text-decoration:none;text-align:center;font-size:.85rem">📄 PDF Aç</a>
+        <button class="btn btn-primary btn-block" style="font-size:.85rem" onclick="openBookReader('${b.id}','${b.title.replace(/'/g,"\\'")}','${b.pdfUrl.replace(/'/g,"\\'")}')">📖 Oku & Not Al</button>
+        <a href="${b.pdfUrl}" target="_blank" class="btn btn-ghost btn-block" style="text-decoration:none;text-align:center;font-size:.8rem">🔗 PDF Linkini Aç</a>
         ${isOwner?`
         <div class="flex gap-2">
           <button class="btn btn-ghost" style="flex:1;font-size:.78rem" onclick="editBook('${b.id}')">✏️ Düzenle</button>
@@ -2692,7 +2694,111 @@ window.saveBook=async function(bookId){
   loadBooks();
 }
 
-window.editBook=async function(bookId){
+window.openBookReader=async function(bookId, bookTitle, pdfUrl){
+  const mc=document.getElementById('main-content');
+  if(!mc)return;
+
+  // PDF.js yükle
+  if(!window.pdfjsLib){
+    toast('📚 PDF yükleniyor...','i');
+    await new Promise((res,rej)=>{
+      const s=document.createElement('script');
+      s.src='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
+      s.onload=res;s.onerror=rej;
+      document.head.appendChild(s);
+    });
+    window.pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+  }
+
+  mc.innerHTML=`
+  <div class="flex items-center gap-3 mb-3">
+    <button class="btn btn-ghost" onclick="navTo('books')" style="padding:8px 12px">← Geri</button>
+    <div style="font-family:'Syne',sans-serif;font-size:1rem;font-weight:700;flex:1;overflow:hidden;white-space:nowrap;text-overflow:ellipsis">📖 ${bookTitle}</div>
+  </div>
+
+  <!-- PDF Toolbar -->
+  <div class="card" style="padding:0;overflow:hidden">
+    <div style="display:flex;align-items:center;gap:8px;padding:10px 16px;background:var(--card2);border-bottom:1px solid var(--border);flex-wrap:wrap">
+      <div style="display:flex;align-items:center;gap:6px">
+        <button class="btn btn-ghost btn-icon" onclick="pdfPrevPage()" title="Önceki">◀</button>
+        <span id="pdf-page-info" style="font-size:.8rem;color:var(--dim);white-space:nowrap">1 / 1</span>
+        <button class="btn btn-ghost btn-icon" onclick="pdfNextPage()" title="Sonraki">▶</button>
+      </div>
+      <div style="width:1px;height:24px;background:var(--border)"></div>
+      <button id="tool-pen" class="btn btn-primary btn-icon" onclick="setTool('pen')" title="Kalem">✏️</button>
+      <button id="tool-highlight" class="btn btn-ghost btn-icon" onclick="setTool('highlight')" title="İşaretçi">🖊️</button>
+      <button id="tool-eraser" class="btn btn-ghost btn-icon" onclick="setTool('eraser')" title="Silgi">🧹</button>
+      <button id="tool-text" class="btn btn-ghost btn-icon" onclick="setTool('text')" title="Metin">T</button>
+      <input type="color" id="pen-color" value="#ff4d6d" style="width:32px;height:32px;border:none;background:none;cursor:pointer;border-radius:6px" title="Renk">
+      <select id="pen-size" class="input" style="width:70px;padding:5px 8px;font-size:.78rem">
+        <option value="2">İnce</option>
+        <option value="4" selected>Orta</option>
+        <option value="8">Kalın</option>
+      </select>
+      <button class="btn btn-ghost btn-icon" onclick="clearCanvas()" title="Temizle">🗑️</button>
+    </div>
+
+    <!-- PDF Canvas -->
+    <div id="pdf-canvas-wrapper" style="position:relative;overflow:auto;background:#525659;padding:16px;min-height:500px;display:flex;justify-content:center">
+      <div style="position:relative;display:inline-block">
+        <canvas id="pdf-render-canvas" style="display:block;box-shadow:0 4px 20px rgba(0,0,0,.5)"></canvas>
+        <canvas id="pdf-draw-canvas" style="position:absolute;top:0;left:0;cursor:crosshair"></canvas>
+      </div>
+    </div>
+  </div>`;
+
+  // PDF'i URL'den yükle
+  try{
+    // Google Drive linkini direkt erişim formatına çevir
+    let loadUrl=pdfUrl;
+    const gdMatch=pdfUrl.match(/\/file\/d\/([^/]+)/);
+    if(gdMatch){
+      loadUrl=`https://drive.google.com/uc?export=download&id=${gdMatch[1]}`;
+    }
+
+    pdfDoc=await window.pdfjsLib.getDocument({url:loadUrl,withCredentials:false}).promise;
+    pdfTotalPages=pdfDoc.numPages;
+    pdfPage=1;
+
+    // Kitap için ayrı annotation key kullan
+    window._bookAnnotKey=`bookAnnot_${safeKey(session.uid)}_${bookId}`;
+
+    await renderPDFPage(pdfPage);
+    setupDrawCanvas();
+    toast(`📖 ${bookTitle} açıldı (${pdfTotalPages} sayfa)`,'s');
+  }catch(e){
+    console.error('[PDF load]',e);
+    // CORS hatası — direkt link göster
+    mc.querySelector('#pdf-canvas-wrapper').innerHTML=`
+    <div class="card text-center" style="padding:40px;margin:20px">
+      <div style="font-size:3rem;margin-bottom:12px">📄</div>
+      <div style="font-weight:700;margin-bottom:8px">${bookTitle}</div>
+      <div class="text-dim" style="font-size:.85rem;margin-bottom:20px">PDF tarayıcıda doğrudan yüklenemiyor (CORS kısıtlaması).<br>Google Drive linklerini şu formatta paylaş:<br><code style="background:var(--bg2);padding:4px 8px;border-radius:6px;font-size:.8rem">drive.google.com/file/d/ID/view</code></div>
+      <a href="${pdfUrl}" target="_blank" class="btn btn-primary">🔗 PDF'i Yeni Sekmede Aç</a>
+    </div>`;
+  }
+}
+
+// PDF kalem aracı — kitap için özel kayıt yolu
+const _origSaveAnnot=window.saveAnnot;
+async function saveBookAnnot(){
+  if(!window._bookAnnotKey)return;
+  const dc=document.getElementById('pdf-draw-canvas');if(!dc)return;
+  try{
+    await dbSet(`${window._bookAnnotKey}/p${pdfPage}`,{d:dc.toDataURL(),t:Date.now()});
+  }catch(e){}
+}
+
+function loadBookAnnotations(num){
+  if(!window._bookAnnotKey)return;
+  dbListen(`${window._bookAnnotKey}/p${num}`,data=>{
+    if(!data?.d)return;
+    const dc=document.getElementById('pdf-draw-canvas');if(!dc)return;
+    const img=new Image();
+    img.onload=()=>{dc.getContext('2d').clearRect(0,0,dc.width,dc.height);dc.getContext('2d').drawImage(img,0,0);};
+    img.src=data.d;
+  });
+}
   await openAddBookModal(bookId);
 }
 
@@ -3515,11 +3621,33 @@ function addTextAnnot(e,dc){
   saveAnnot();
 }
 async function saveAnnot(){
-  if(!window._activeRoomId||!voiceClassCode)return;
   const dc=document.getElementById('pdf-draw-canvas');if(!dc)return;
-  try{await dbSet(`pdfAnnot/${safeKey(voiceClassCode)}/${window._activeRoomId}/p${pdfPage}`,{d:dc.toDataURL(),by:session.name,t:Date.now()});}catch(e){}
+  try{
+    // Kitap okuyucu modu
+    if(window._bookAnnotKey){
+      await dbSet(`${window._bookAnnotKey}/p${pdfPage}`,{d:dc.toDataURL(),t:Date.now()});
+      return;
+    }
+    // Sesli oda modu
+    if(window._activeRoomId&&voiceClassCode){
+      await dbSet(`pdfAnnot/${safeKey(voiceClassCode)}/${window._activeRoomId}/p${pdfPage}`,{d:dc.toDataURL(),by:session.name,t:Date.now()});
+    }
+  }catch(e){}
 }
+
 function loadPageAnnotations(num){
+  // Kitap okuyucu modu
+  if(window._bookAnnotKey){
+    dbListen(`${window._bookAnnotKey}/p${num}`,data=>{
+      if(!data?.d)return;
+      const dc=document.getElementById('pdf-draw-canvas');if(!dc)return;
+      const img=new Image();
+      img.onload=()=>{dc.getContext('2d').clearRect(0,0,dc.width,dc.height);dc.getContext('2d').drawImage(img,0,0);};
+      img.src=data.d;
+    });
+    return;
+  }
+  // Sesli oda modu
   if(!window._activeRoomId||!voiceClassCode)return;
   dbListen(`pdfAnnot/${safeKey(voiceClassCode)}/${window._activeRoomId}/p${num}`,data=>{
     if(!data?.d)return;
