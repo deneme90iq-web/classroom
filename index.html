@@ -603,6 +603,23 @@ if(!window.toggleTheme){
         <div class="nav-item" onclick="toggleTheme()" id="theme-toggle"><span class="nav-icon">🌙</span> <span id="theme-label">Aydınlık Mod</span></div>
         <div class="nav-item" id="pwa-install-btn" onclick="installPWA()" style="display:none;color:var(--accent)"><span class="nav-icon">📱</span> Uygulamayı Yükle</div>
         <div class="nav-item" onclick="doLogout()" style="color:var(--danger)"><span class="nav-icon">🚪</span> Çıkış Yap</div>
+
+        <!-- Katkıda Bulunanlar -->
+        <div style="margin-top:16px;padding:12px;background:rgba(255,255,255,.03);border-radius:10px;border:1px solid var(--border)">
+          <div style="font-family:'Syne',sans-serif;font-size:.6rem;letter-spacing:.12em;color:var(--dim2);margin-bottom:10px">KATKIDA BULUNANLAR</div>
+          ${[
+            {name:'Haydar Baştürk', role:'Geliştirici', icon:'💻'},
+            {name:'Samet Duru', role:'Pazarlama Müdürü', icon:'📣'},
+            {name:'Muhammet Yunus Yüksel', role:'Tester', icon:'🧪'},
+          ].map(p=>`
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+            <div style="width:28px;height:28px;border-radius:50%;background:var(--primary-dim);border:1px solid var(--primary);display:flex;align-items:center;justify-content:center;font-size:.75rem;flex-shrink:0">${p.icon}</div>
+            <div>
+              <div style="font-size:.72rem;font-weight:600;color:var(--dim);line-height:1.2">${p.name}</div>
+              <div style="font-size:.62rem;color:var(--dim2)">${p.role}</div>
+            </div>
+          </div>`).join('')}
+        </div>
       </div>
     </div>
 
@@ -872,27 +889,38 @@ onAuthStateChanged(auth, async user=>{
     } else {hideLoading();showScreen('screen-auth')}
   } else {
     // Firebase user yok — test session kontrolü
-    const savedTest=sessionStorage.getItem('test_session')||localStorage.getItem('test_session');
+    let savedTest=null;
+    try{savedTest=localStorage.getItem('test_session');}catch(e){}
+    if(!savedTest){try{savedTest=sessionStorage.getItem('test_session');}catch(e){}}
+
     if(savedTest){
       try{
         const s=JSON.parse(savedTest);
-        if(s.uid&&s.uid.startsWith('test_')){
-          // Firebase'de profil hâlâ var mı?
-          const profile=await dbGet(`users/${safeKey(s.uid)}/profile`);
+        if(s&&s.uid&&s.uid.startsWith('test_')){
+          // Profili Firebase'den oku — 3 kez dene
+          let profile=null;
+          for(let attempt=0;attempt<3;attempt++){
+            try{
+              profile=await dbGet(`users/${safeKey(s.uid)}/profile`);
+              if(profile)break;
+            }catch(e){}
+            await new Promise(r=>setTimeout(r,500));
+          }
           if(profile){
-            session=s;
-            // classCode güncel olabilir
-            if(profile.classCode!==s.classCode){
-              session.classCode=profile.classCode;
-              try{localStorage.setItem('test_session',JSON.stringify(session));}catch(e){} sessionStorage.setItem('test_session',JSON.stringify(session));
-            }
+            session={...s,role:profile.role,name:profile.name,classCode:profile.classCode||null};
+            // Her iki storage'a da kaydet
+            const sessionStr=JSON.stringify(session);
+            try{localStorage.setItem('test_session',sessionStr);}catch(e){}
+            try{sessionStorage.setItem('test_session',sessionStr);}catch(e){}
             hideLoading();
             enterApp();
             return;
           }
         }
-      }catch(e){}
-      try{localStorage.removeItem('test_session');}catch(e){} sessionStorage.removeItem('test_session');
+      }catch(e){console.warn('[test restore]',e);}
+      // Geçersiz — temizle
+      try{localStorage.removeItem('test_session');}catch(e){}
+      try{sessionStorage.removeItem('test_session');}catch(e){}
     }
     hideLoading();
     showScreen('screen-auth');
