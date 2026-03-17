@@ -199,6 +199,15 @@ textarea.input{resize:vertical;min-height:80px}
 .float{animation:float 3s ease-in-out infinite}
 .particle{position:fixed;pointer-events:none;z-index:9997;font-size:1.2rem;animation:particleFly 1.2s ease forwards}
 
+/* ── VOICE CHAT ── */
+.voice-participant{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;background:var(--bg2);border:1px solid var(--border);transition:all .3s;margin-bottom:8px}
+.voice-participant.speaking{border-color:var(--success);background:var(--success-dim);box-shadow:0 0 10px rgba(0,214,143,.15)}
+.voice-avatar{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.85rem;flex-shrink:0;background:var(--primary-dim);color:var(--primary)}
+.voice-wave{display:flex;align-items:center;gap:2px;height:18px;margin-left:auto}
+.voice-wave span{display:block;width:3px;background:var(--success);border-radius:2px;animation:vwave .7s ease-in-out infinite}
+.voice-wave span:nth-child(2){animation-delay:.15s}.voice-wave span:nth-child(3){animation-delay:.3s}.voice-wave span:nth-child(4){animation-delay:.45s}
+@keyframes vwave{0%,100%{height:3px}50%{height:15px}}
+
 @media(max-width:768px){
   .app-layout{grid-template-columns:1fr}
   .sidebar{display:none}
@@ -388,6 +397,7 @@ if(!window.toggleTheme){
       <div class="nav-item" id="nav-notes" onclick="navTo('notes')"><span class="nav-icon">📝</span> Ders Notları</div>
       <div class="nav-item" id="nav-announcements" onclick="navTo('announcements')"><span class="nav-icon">📢</span> Duyurular <span class="nav-badge" id="ann-badge" style="display:none">!</span></div>
       <div class="nav-item" id="nav-chat" onclick="navTo('chat')"><span class="nav-icon">💬</span> Sınıf Sohbeti</div>
+      <div class="nav-item" id="nav-voice" onclick="navTo('voice')"><span class="nav-icon">🎤</span> Sesli Sohbet</div>
       <div class="nav-item" id="nav-quiz" onclick="navTo('quiz')"><span class="nav-icon">📝</span> Quiz</div>
       <div class="nav-item" id="nav-classes" onclick="navTo('classes')"><span class="nav-icon">🏫</span> Sınıflarım</div>
       <div class="nav-item" id="nav-join-class" onclick="showModal('modal-join-class')" style="display:none"><span class="nav-icon">➕</span> Sınıfa Katıl</div>
@@ -633,7 +643,7 @@ function fmtDate(dateStr){return new Date(dateStr).toLocaleDateString('tr-TR',{d
 
 // populate subject selects
 function populateSubjectSelects(){
-  ['hw-subject-sel','note-subject-sel'].forEach(id=>{
+  ['hw-subject-sel','note-subject-sel','quiz-subject-sel'].forEach(id=>{
     const sel=document.getElementById(id);if(!sel)return;
     sel.innerHTML='<option value="">— Ders seç —</option>';
     const cats={};
@@ -917,6 +927,7 @@ window.navTo=function(page){
     case 'notes': renderNotes();break;
     case 'announcements': renderAnnouncements();break;
     case 'chat': renderChat();break;
+    case 'voice': renderVoiceChat();break;
     case 'quiz': renderQuiz();break;
     case 'quiz-create': showModal('modal-create-quiz');loadTeacherClassesForQuiz();break;
     case 'classes': renderClasses();break;
@@ -2091,7 +2102,231 @@ async function renderAnalytics(){
   },500);
 }
 
-// ═══════════ PWA SERVICE WORKER ═══════════
+// ═══════════ VOICE CHAT (WebRTC) ═══════════
+let localStream=null;
+let peerConnections={};
+let voiceClassCode=null;
+let isMuted=false;
+let voiceActive=false;
+const ICE_SERVERS={iceServers:[{urls:'stun:stun.l.google.com:19302'},{urls:'stun:stun1.l.google.com:19302'}]};
+
+async function renderVoiceChat(){
+  const mc=document.getElementById('main-content');
+  if(!mc)return;
+  const classCode=session.classCode;
+  let classOptions='';
+  if(session.role==='teacher'){
+    const classes=await getMyClasses();
+    if(classes.length===0){
+      mc.innerHTML=`<div class="card text-center text-dim" style="padding:50px"><div style="font-size:3rem;margin-bottom:10px">🎤</div><div>Sesli sohbet için önce sınıf oluştur.</div></div>`;
+      return;
+    }
+    voiceClassCode=voiceClassCode||classes[0].code;
+    classOptions=`<select class="input" id="voice-class-sel" onchange="voiceClassCode=this.value" style="max-width:220px;margin-bottom:16px">
+      ${classes.map(c=>`<option value="${c.code}">${c.name}</option>`).join('')}
+    </select>`;
+  } else {
+    voiceClassCode=classCode;
+    if(!voiceClassCode){
+      mc.innerHTML=`<div class="card text-center text-dim" style="padding:50px"><div style="font-size:3rem;margin-bottom:10px">🎤</div><div>Sesli sohbet için önce bir sınıfa katıl.</div></div>`;
+      return;
+    }
+  }
+
+  mc.innerHTML=`
+  <div style="font-family:'Syne',sans-serif;font-size:1.3rem;font-weight:700;margin-bottom:12px">🎤 Sesli Sohbet</div>
+  ${classOptions}
+  <div class="card" style="margin-bottom:16px">
+    <div style="font-family:'Syne',sans-serif;font-size:.7rem;letter-spacing:.1em;color:var(--dim);margin-bottom:12px">ODADAKI KATILIMCILAR</div>
+    <div id="voice-participants"><div class="text-dim" style="font-size:.85rem;padding:10px 0">Henüz kimse odada değil.</div></div>
+  </div>
+  <div style="display:flex;gap:10px;flex-wrap:wrap">
+    <button id="voice-join-btn" class="btn btn-success btn-lg" onclick="joinVoice()">🎤 Odaya Gir</button>
+    <button id="voice-mute-btn" class="btn btn-warning btn-lg" onclick="toggleMute()" style="display:none">🔇 Sustur</button>
+    <button id="voice-leave-btn" class="btn btn-danger btn-lg" onclick="leaveVoice()" style="display:none">📵 Odadan Çık</button>
+  </div>
+  <div style="margin-top:16px;padding:12px 16px;background:var(--bg2);border-radius:10px;font-size:.78rem;color:var(--dim);line-height:1.6">
+    ℹ️ Sesli sohbet WebRTC teknolojisi ile çalışır. Mikrofon izni gereklidir.<br>
+    Bağlantı kalitesi internet hızınıza bağlıdır. Aynı sınıftaki herkes birbirini duyabilir.
+  </div>
+  <div id="voice-audio-container"></div>`;
+
+  // Odadaki katılımcıları dinle
+  dbListen(`voiceRooms/${safeKey(voiceClassCode||'')}`,data=>{
+    renderVoiceParticipants(data||{});
+  });
+}
+
+function renderVoiceParticipants(data){
+  const el=document.getElementById('voice-participants');if(!el)return;
+  const participants=Object.values(data);
+  if(participants.length===0){el.innerHTML='<div class="text-dim" style="font-size:.85rem;padding:10px 0">Henüz kimse odada değil.</div>';return}
+  el.innerHTML=participants.map(p=>{
+    const isMe=p.uid===session.uid;
+    const isSpeaking=p.speaking&&!p.muted;
+    return `<div class="voice-participant ${isSpeaking?'speaking':''}">
+      <div class="voice-avatar" style="background:${isMe?'var(--primary-dim)':'var(--card2)'};color:${isMe?'var(--primary)':'var(--dim)'}">
+        ${p.name.charAt(0).toUpperCase()}
+      </div>
+      <div>
+        <div style="font-weight:600;font-size:.88rem">${p.name}${isMe?' (Sen)':''}</div>
+        <div style="font-size:.72rem;color:var(--dim)">${p.role==='teacher'?'👨‍🏫 Öğretmen':'🎓 Öğrenci'}${p.muted?' · 🔇 Sessiz':''}</div>
+      </div>
+      ${isSpeaking?`<div class="voice-wave"><span></span><span></span><span></span><span></span></div>`:''}
+    </div>`;
+  }).join('');
+}
+
+window.joinVoice=async function(){
+  if(!voiceClassCode){toast('Sınıf seç!','w');return}
+  try{
+    localStream=await navigator.mediaDevices.getUserMedia({audio:true,video:false});
+  }catch(e){
+    toast('❌ Mikrofon izni gerekli! Tarayıcı ayarlarından izin ver.','d');
+    return;
+  }
+  voiceActive=true;
+  // Odaya katıl
+  await dbSet(`voiceRooms/${safeKey(voiceClassCode)}/${safeKey(session.uid)}`,{
+    uid:session.uid,name:session.name,role:session.role,
+    muted:false,speaking:false,joinedAt:Date.now()
+  });
+  document.getElementById('voice-join-btn').style.display='none';
+  document.getElementById('voice-mute-btn').style.display='flex';
+  document.getElementById('voice-leave-btn').style.display='flex';
+  toast('🎤 Odaya katıldın!','s');
+
+  // Ses aktivite tespiti
+  const audioCtx=new(window.AudioContext||window.webkitAudioContext)();
+  const analyser=audioCtx.createAnalyser();
+  const src=audioCtx.createMediaStreamSource(localStream);
+  src.connect(analyser);
+  analyser.fftSize=512;
+  const buf=new Uint8Array(analyser.fftSize);
+  let speakingTimeout;
+  function detectSpeech(){
+    if(!voiceActive)return;
+    analyser.getByteTimeDomainData(buf);
+    let sum=0;buf.forEach(v=>{const n=v/128-1;sum+=n*n});
+    const rms=Math.sqrt(sum/buf.length);
+    const speaking=rms>0.02;
+    if(speaking!==window._lastSpeaking){
+      window._lastSpeaking=speaking;
+      dbUpdate(`voiceRooms/${safeKey(voiceClassCode)}/${safeKey(session.uid)}`,{speaking:speaking&&!isMuted});
+    }
+    requestAnimationFrame(detectSpeech);
+  }
+  detectSpeech();
+
+  // Diğer katılımcıları dinle ve WebRTC bağlantı kur
+  dbListen(`voiceRooms/${safeKey(voiceClassCode)}`,async data=>{
+    if(!data||!voiceActive)return;
+    const others=Object.values(data).filter(p=>p.uid!==session.uid);
+    for(const p of others){
+      if(!peerConnections[p.uid]){
+        await createPeerConnection(p.uid);
+      }
+    }
+    // Giden katılımcıları temizle
+    Object.keys(peerConnections).forEach(uid=>{
+      if(!data[safeKey(uid)]){closePeer(uid)}
+    });
+  });
+
+  // ICE ve offer/answer sinyalleri dinle
+  dbListen(`voiceSignals/${safeKey(voiceClassCode)}/${safeKey(session.uid)}`,async data=>{
+    if(!data)return;
+    for(const [fromUid,signals] of Object.entries(data)){
+      const realUid=fromUid.replace(/_/g,' ');// rough reverse
+      await handleSignals(fromUid,signals);
+    }
+  });
+}
+
+async function createPeerConnection(remoteUid){
+  const pc=new RTCPeerConnection(ICE_SERVERS);
+  peerConnections[remoteUid]=pc;
+  localStream.getTracks().forEach(t=>pc.addTrack(t,localStream));
+  pc.onicecandidate=e=>{
+    if(e.candidate){
+      dbUpdate(`voiceSignals/${safeKey(voiceClassCode)}/${safeKey(remoteUid)}/${safeKey(session.uid)}`,{
+        ice:JSON.stringify(e.candidate)
+      });
+    }
+  };
+  pc.ontrack=e=>{
+    let audio=document.getElementById('audio-'+remoteUid);
+    if(!audio){
+      audio=document.createElement('audio');
+      audio.id='audio-'+remoteUid;
+      audio.autoplay=true;
+      document.getElementById('voice-audio-container')?.appendChild(audio);
+    }
+    audio.srcObject=e.streams[0];
+  };
+  // Offer gönder
+  const offer=await pc.createOffer();
+  await pc.setLocalDescription(offer);
+  await dbUpdate(`voiceSignals/${safeKey(voiceClassCode)}/${safeKey(remoteUid)}/${safeKey(session.uid)}`,{
+    offer:JSON.stringify(offer)
+  });
+}
+
+async function handleSignals(fromUid,signals){
+  let pc=peerConnections[fromUid];
+  if(signals.offer&&!pc){
+    pc=new RTCPeerConnection(ICE_SERVERS);
+    peerConnections[fromUid]=pc;
+    localStream?.getTracks().forEach(t=>pc.addTrack(t,localStream));
+    pc.onicecandidate=e=>{
+      if(e.candidate){
+        dbUpdate(`voiceSignals/${safeKey(voiceClassCode)}/${safeKey(fromUid)}/${safeKey(session.uid)}`,{ice:JSON.stringify(e.candidate)});
+      }
+    };
+    pc.ontrack=e=>{
+      let audio=document.getElementById('audio-'+fromUid);
+      if(!audio){audio=document.createElement('audio');audio.id='audio-'+fromUid;audio.autoplay=true;document.getElementById('voice-audio-container')?.appendChild(audio)}
+      audio.srcObject=e.streams[0];
+    };
+    await pc.setRemoteDescription(JSON.parse(signals.offer));
+    const answer=await pc.createAnswer();
+    await pc.setLocalDescription(answer);
+    await dbUpdate(`voiceSignals/${safeKey(voiceClassCode)}/${safeKey(fromUid)}/${safeKey(session.uid)}`,{answer:JSON.stringify(answer)});
+  }
+  if(signals.answer&&pc&&pc.signalingState==='have-local-offer'){
+    try{await pc.setRemoteDescription(JSON.parse(signals.answer))}catch(e){}
+  }
+  if(signals.ice&&pc){
+    try{await pc.addIceCandidate(JSON.parse(signals.ice))}catch(e){}
+  }
+}
+
+function closePeer(uid){
+  if(peerConnections[uid]){peerConnections[uid].close();delete peerConnections[uid]}
+  const audio=document.getElementById('audio-'+uid);if(audio)audio.remove();
+}
+
+window.toggleMute=function(){
+  isMuted=!isMuted;
+  localStream?.getAudioTracks().forEach(t=>t.enabled=!isMuted);
+  dbUpdate(`voiceRooms/${safeKey(voiceClassCode)}/${safeKey(session.uid)}`,{muted:isMuted,speaking:false});
+  const btn=document.getElementById('voice-mute-btn');
+  if(btn){btn.textContent=isMuted?'🎤 Susturmayı Kaldır':'🔇 Sustur';btn.className=isMuted?'btn btn-success btn-lg':'btn btn-warning btn-lg'}
+  toast(isMuted?'🔇 Mikrofon kapatıldı.':'🎤 Mikrofon açıldı.','i');
+}
+
+window.leaveVoice=async function(){
+  voiceActive=false;isMuted=false;window._lastSpeaking=false;
+  localStream?.getTracks().forEach(t=>t.stop());
+  localStream=null;
+  Object.keys(peerConnections).forEach(uid=>closePeer(uid));
+  if(voiceClassCode){
+    await dbSet(`voiceRooms/${safeKey(voiceClassCode)}/${safeKey(session.uid)}`,null);
+    await dbSet(`voiceSignals/${safeKey(voiceClassCode)}/${safeKey(session.uid)}`,null);
+  }
+  toast('📵 Odadan çıkıldı.','i');
+  renderVoiceChat();
+}
 if('serviceWorker' in navigator){
   const swCode=`
     const CACHE='classroom-v1';
