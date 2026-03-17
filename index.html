@@ -705,6 +705,7 @@ if(!window.toggleTheme){
 <div id="modal-share-note" class="modal-overlay" style="display:none">
   <div class="modal">
     <div class="modal-title">📝 Not Paylaş</div>
+    <div id="note-class-group" style="display:none" class="form-group"><label class="label">SINIF</label><select class="input" id="note-class-sel"><option value="">— Seç —</option></select></div>
     <div class="form-group"><label class="label">DERS</label><select class="input" id="note-subject-sel"><option value="">— Seç —</option></select></div>
     <div class="form-group"><label class="label">BAŞLIK</label><input type="text" class="input" id="note-title" placeholder="Not başlığı" maxlength="80"></div>
     <div class="form-group"><label class="label">İÇERİK</label><textarea class="input" id="note-content" placeholder="Ders notun..." style="min-height:120px"></textarea></div>
@@ -1263,7 +1264,7 @@ async function renderDashboard(){
   if(session.role==='student'){
     const btn=document.createElement('button');
     btn.className='btn btn-primary';btn.style.cssText='position:fixed;bottom:24px;right:24px;border-radius:50%;width:56px;height:56px;font-size:1.4rem;box-shadow:0 4px 20px var(--primary-glow)';
-    btn.textContent='📝';btn.title='Not Paylaş';btn.onclick=()=>showModal('modal-share-note');
+    btn.textContent='📝';btn.title='Not Paylaş';btn.onclick=()=>openShareNoteModal();
     mc.appendChild(btn);
   }
 }
@@ -1313,7 +1314,7 @@ async function renderHomework(){
   mc.innerHTML=`<div class="flex items-center justify-between mb-4">
     <div style="font-family:'Syne',sans-serif;font-size:1.3rem;font-weight:700">📋 Ödevler</div>
     ${session.role==='teacher'?`<button class="btn btn-primary" onclick="showModal('modal-assign-hw');loadTeacherClassesForHw()">+ Ödev Ver</button>`
-    :`<button class="btn btn-success" onclick="showModal('modal-share-note')">+ Not Paylaş</button>`}
+    :`<button class="btn btn-success" onclick="openShareNoteModal()">+ Not Paylaş</button>`}
   </div>
   <div class="tabs">
     <div class="tab active" id="hw-tab-pending" onclick="hwTab('pending')">Bekleyen</div>
@@ -1458,7 +1459,7 @@ async function renderNotes(){
   const mc=document.getElementById('main-content');
   mc.innerHTML=`<div class="flex items-center justify-between mb-4">
     <div style="font-family:'Syne',sans-serif;font-size:1.3rem;font-weight:700">📝 Ders Notları</div>
-    <button class="btn btn-success" onclick="showModal('modal-share-note')">+ Not Paylaş</button>
+    <button class="btn btn-success" onclick="openShareNoteModal()">+ Not Paylaş</button>
   </div>
   <div class="flex gap-2 mb-4" style="flex-wrap:wrap">
     <button class="btn btn-ghost" style="font-size:.8rem" id="note-filter-all" onclick="filterNotes('all')">Tümü</button>
@@ -1477,7 +1478,15 @@ window.filterNotes=async function(cat){
 async function loadNotes(cat){
   const notes=await dbGet('notes')||{};
   const grid=document.getElementById('notes-grid');if(!grid)return;
-  let filtered=Object.values(notes).filter(n=>n.classCode===(session.classCode||'_ind'));
+  const myCode=session.classCode||null;
+  // Öğrenci: kendi sınıfının notlarını gör
+  // Öğretmen: kendi sınıflarının notlarını gör
+  let filtered=Object.values(notes).filter(n=>{
+    if(!n.classCode)return false;
+    if(session.role==='student')return n.classCode===myCode;
+    // Öğretmen — tüm sınıflarını göster (sonradan filtre eklenebilir)
+    return true;
+  });
   if(cat!=='all'){
     const ids=SUBJECTS.filter(s=>s.cat===cat).map(s=>s.id);
     filtered=filtered.filter(n=>ids.includes(n.subjectId));
@@ -1503,14 +1512,34 @@ function noteCardFull(n){
   </div>`;
 }
 
+// Not paylaşma modalını aç
+window.openShareNoteModal=async function(){
+  if(session.role==='teacher'){
+    const grp=document.getElementById('note-class-group');
+    if(grp)grp.style.display='block';
+    const sel=document.getElementById('note-class-sel');
+    if(sel){
+      const classes=await getMyClasses();
+      sel.innerHTML='<option value="">— Sınıf Seç —</option>';
+      classes.forEach(c=>sel.innerHTML+=`<option value="${c.code}">${c.name}</option>`);
+    }
+  }
+  openShareNoteModal();
+}
+
 window.shareNote=async function(){
   const subjectId=document.getElementById('note-subject-sel').value;
   const title=document.getElementById('note-title').value.trim();
   const content=document.getElementById('note-content').value.trim();
   const link=document.getElementById('note-link').value.trim();
+  // Sınıf kodu: öğretmen için seçilen, öğrenci için kendi sınıfı
+  const classCode=session.role==='teacher'
+    ?(document.getElementById('note-class-sel')?.value||null)
+    :(session.classCode||null);
   if(!subjectId||!title||!content){toast('Ders, başlık ve içerik zorunlu!','w');return}
+  if(!classCode){toast('Sınıf seç!','w');return}
   const noteId='note_'+Date.now();
-  await dbSet(`notes/${noteId}`,{id:noteId,subjectId,title,content,link,authorName:session.name,authorUid:session.uid,classCode:session.classCode||'_ind',createdAt:Date.now()});
+  await dbSet(`notes/${noteId}`,{id:noteId,subjectId,title,content,link,authorName:session.name,authorUid:session.uid,classCode,createdAt:Date.now()});
   // XP ver
   const path=`users/${session.uid}/gameState`;
   const s=await dbGet(path)||defaultState();
@@ -1522,6 +1551,7 @@ window.shareNote=async function(){
   document.getElementById('note-title').value='';
   document.getElementById('note-content').value='';
   document.getElementById('note-link').value='';
+  if(document.getElementById('note-class-sel'))document.getElementById('note-class-sel').value='';
   toast('📝 Not paylaşıldı! +20 XP','s');
   if(currentNav==='notes')renderNotes();
 }
