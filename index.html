@@ -2533,23 +2533,36 @@ function startSignalListener(){
 
 // ── Katılımcı dinleyici ──
 function startParticipantListener(roomId){
+  // Mevcut üyeleri takip et
+  const knownMembers=new Set();
+
   voiceListen(`vc/${safeKey(voiceClassCode||'')}/members`,async data=>{
     if(!data||!voiceActive)return;
     const others=Object.entries(data)
       .filter(([k,v])=>k!==myVoiceKey()&&v&&v.roomId===roomId);
 
-    // Yeni gelenlere offer at
-    for(const[key]of others){
-      if(!peerConnections[key])makePeer(key,true);
+    for(const[key,member] of others){
+      const joinedAt=member.joinedAt||0;
+      const prevJoinedAt=knownMembers[key];
+      // Yeni üye veya yeniden katılan (joinedAt değişmiş)
+      if(!peerConnections[key]||prevJoinedAt!==joinedAt){
+        knownMembers[key]=joinedAt;
+        // Eski sinyali temizle
+        await dbSet(`vc/${safeKey(voiceClassCode)}/sig/${myVoiceKey()}/${key}`,null);
+        await dbSet(`vc/${safeKey(voiceClassCode)}/sig/${key}/${myVoiceKey()}`,null);
+        // Peer kur — uid karşılaştırması ile sadece bir taraf initiator olsun
+        const iAmInitiator=myVoiceKey()<key;
+        makePeer(key,iAmInitiator);
+      }
     }
 
     // Gidenler
     const activeKeys=new Set(others.map(([k])=>k));
     Object.keys(peerConnections).forEach(k=>{
-      if(!activeKeys.has(k))closePeer(k);
+      if(!activeKeys.has(k)){closePeer(k);delete knownMembers[k];}
     });
 
-    // Katılımcılar UI
+    // UI güncelle
     renderVoiceParticipants(Object.fromEntries(
       Object.entries(data).filter(([,v])=>v&&v.roomId===roomId)
     ));
@@ -2739,8 +2752,15 @@ window.joinVoiceRoom=async function(roomId,roomName){
   voiceActive=true;
   window._activeRoomId=roomId;
 
+  // Eski sinyalleri tamamen temizle — stale data'yı önlemek için kritik
+  await dbSet(`vc/${safeKey(voiceClassCode)}/sig/${myVoiceKey()}`,null);
+  // Diğer kişilerin bize gönderdiği sinyalleri de sil
+  const allSigs=await dbGet(`vc/${safeKey(voiceClassCode)}/sig`)||{};
+  for(const fromKey of Object.keys(allSigs)){
+    await dbSet(`vc/${safeKey(voiceClassCode)}/sig/${fromKey}/${myVoiceKey()}`,null);
+  }
+
   // Odaya üye kaydet
-  await dbSet(`vc/${safeKey(voiceClassCode)}/${myVoiceKey()}`,null); // sinyalleri temizle
   await dbSet(`vc/${safeKey(voiceClassCode)}/members/${myVoiceKey()}`,{
     uid:session.uid,name:session.name,role:session.role,
     muted:false,speaking:false,roomId,joinedAt:Date.now()
@@ -2859,32 +2879,65 @@ window.toggleScreenShare=async function(){
   try{
     screenStream=await navigator.mediaDevices.getDisplayMedia({video:true,audio:false});
     isSharing=true;
+    // Kendi ekranını göster
     const videoEl=document.getElementById('screen-video');
     const area=document.getElementById('screen-share-area');
     if(videoEl){videoEl.srcObject=screenStream;area.style.display='block';}
     const btn=document.getElementById('voice-screen-btn');
     if(btn){btn.textContent='⏹️ Paylaşımı Durdur';btn.className='btn btn-danger';}
+
     const videoTrack=screenStream.getVideoTracks()[0];
-    // Mevcut bağlantılara video track ekle veya değiştir
-    for(const pc of Object.values(peerConnections)){
+
+    // Her peer bağlantısına video track ekle ve renegotiation yap
+    for(const[remoteKey,pc] of Object.entries(peerConnections)){
       try{
         const sender=pc.getSenders().find(s=>s.track?.kind==='video');
-        if(sender)await sender.replaceTrack(videoTrack);
-        else pc.addTrack(videoTrack,screenStream);
-      }catch(e){}
+        if(sender){
+          await sender.replaceTrack(videoTrack);
+        } else {
+          pc.addTrack(videoTrack,screenStream);
+        }
+        // Yeni offer gönder — diğer tarafın video track'i alması için gerekli
+        const offer=await pc.createOffer();
+        await pc.setLocalDescription(offer);
+        await dbSet(`vc/${safeKey(voiceClassCode)}/sig/${remoteKey}/${myVoiceKey()}/offer`,
+          JSON.stringify({type:offer.type,sdp:offer.sdp}));
+      }catch(e){console.warn('screen share renegotiation err',e);}
     }
-    screenStream.getVideoTracks()[0].onended=()=>stopScreenShare();
+
+    videoTrack.onended=()=>stopScreenShare();
     toast('🖥️ Ekran paylaşımı başladı','s');
-  }catch(e){if(e.name!=='NotAllowedError')toast('❌ Ekran paylaşılamadı','d');}
+  }catch(e){
+    if(e.name!=='NotAllowedError')toast('❌ Ekran paylaşılamadı: '+e.message,'d');
+  }
 }
+
 async function stopScreenShare(){
   isSharing=false;
+  const videoTrack=screenStream?.getVideoTracks()[0];
   screenStream?.getTracks().forEach(t=>t.stop());
   screenStream=null;
+
+  // Video track'i kaldır ve renegotiate
+  for(const[remoteKey,pc] of Object.entries(peerConnections)){
+    try{
+      const sender=pc.getSenders().find(s=>s.track?.kind==='video');
+      if(sender){
+        pc.removeTrack(sender);
+        const offer=await pc.createOffer();
+        await pc.setLocalDescription(offer);
+        await dbSet(`vc/${safeKey(voiceClassCode)}/sig/${remoteKey}/${myVoiceKey()}/offer`,
+          JSON.stringify({type:offer.type,sdp:offer.sdp}));
+      }
+    }catch(e){}
+  }
+
   const area=document.getElementById('screen-share-area');
   const video=document.getElementById('screen-video');
   if(area)area.style.display='none';
   if(video)video.srcObject=null;
+  // Uzak ekran elementlerini temizle
+  document.querySelectorAll('[id^="vv-"]').forEach(el=>el.remove());
   const btn=document.getElementById('voice-screen-btn');
   if(btn){btn.textContent='🖥️ Ekran Paylaş';btn.className='btn btn-accent';}
   toast('⏹️ Ekran paylaşımı durduruldu','i');
