@@ -2421,15 +2421,23 @@ async function renderCalendar(){
     const hws=await dbGet('homeworks')||{};
     const quizzes=await dbGet('quizzes')||{};
 
-    // Bu sınıfın ödevleri
+    // Bu sınıfın ödevleri — tamamlananları gösterme
     const myHws=Object.values(hws).filter(h=>{
       if(h.status==='cancelled')return false;
-      if(session.role==='student')return h.classCode===session.classCode&&h.assignedTo?.includes(session.uid);
+      if(session.role==='student'){
+        if(!h.classCode===session.classCode||!h.assignedTo?.includes(session.uid))return false;
+        if(h.submittedBy?.includes(session.uid))return false; // tamamlandı, kaldır
+        return true;
+      }
       return h.teacherUid===session.uid;
     });
     const myQuizzes=Object.values(quizzes).filter(q=>{
       if(q.status==='cancelled')return false;
-      if(session.role==='student')return q.classCode===session.classCode;
+      if(session.role==='student'){
+        if(q.classCode!==session.classCode)return false;
+        if(q.results?.[session.uid])return false; // çözüldü, kaldır
+        return true;
+      }
       return q.teacherUid===session.uid;
     });
 
