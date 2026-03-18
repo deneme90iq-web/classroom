@@ -379,10 +379,9 @@ textarea.input{resize:vertical;min-height:80px}
   <!-- Menü itemları JS ile doldurulur -->
   <div id="mobile-drawer-nav"></div>
   <div style="margin-top:20px;border-top:1px solid var(--border);padding-top:14px">
-    <div class="nav-item" onclick="toggleTheme();closeMobileDrawer()" id="mdr-theme"><span class="nav-icon">🌙</span> <span id="mdr-theme-label">Light Mode</span></div>
-    <div class="nav-item" onclick="showLangPicker();closeMobileDrawer()" style="color:var(--dim)"><span class="nav-icon" id="mdr-lang-flag">🇬🇧</span> <span id="mdr-lang-label">English</span></div>
+    <div class="nav-item" onclick="toggleTheme();closeMobileDrawer()" id="mdr-theme"><span class="nav-icon">🌙</span> <span id="mdr-theme-label">Aydınlık Mod</span></div>
     <div class="nav-item" onclick="showContributors()" style="color:var(--accent)"><span class="nav-icon">⭐</span> Contributors</div>
-    <div class="nav-item" onclick="doLogout()" style="color:var(--danger)"><span class="nav-icon">🚪</span> Log Out</div>
+    <div class="nav-item" onclick="doLogout()" style="color:var(--danger)"><span class="nav-icon">🚪</span> Çıkış Yap</div>
   </div>
 </div>
 
@@ -391,24 +390,24 @@ textarea.input{resize:vertical;min-height:80px}
   <div class="mnav-items">
     <div class="mnav-item active" id="mnav-dashboard" onclick="mnavTo('dashboard')">
       <div class="mnav-icon">🏠</div>
-      <span data-i18n="dashboard">Home</span>
+      <span data-i18n="dashboard">Ana Sayfa</span>
     </div>
     <div class="mnav-item" id="mnav-homework" onclick="mnavTo('homework')">
       <div class="mnav-icon">📋</div>
       <span class="nav-badge" id="mnav-hw-badge" style="display:none"></span>
-      <span data-i18n="homework">Homework</span>
+      <span data-i18n="homework">Ödevler</span>
     </div>
     <div class="mnav-item" id="mnav-notes" onclick="mnavTo('notes')">
       <div class="mnav-icon">📝</div>
-      <span data-i18n="notes">Notes</span>
+      <span data-i18n="notes">Notlar</span>
     </div>
     <div class="mnav-item" id="mnav-chat" onclick="mnavTo('chat')">
       <div class="mnav-icon">💬</div>
-      <span data-i18n="chat">Chat</span>
+      <span data-i18n="chat">Sohbet</span>
     </div>
     <div class="mnav-item" id="mnav-more" onclick="openMobileDrawer()">
       <div class="mnav-icon">☰</div>
-      <span data-i18n="more">More</span>
+      <span data-i18n="more">Daha</span>
     </div>
   </div>
 </div>
@@ -463,31 +462,31 @@ window._deferred=function(fn,args){
 
     <div class="auth-box">
       <div class="auth-tabs">
-        <div class="auth-tab active" id="tab-login" onclick="switchAuthTab('login')" data-i18n="loginTab">Log In</div>
-        <div class="auth-tab" id="tab-register" onclick="switchAuthTab('register')" data-i18n="registerTab">Sign Up</div>
+        <div class="auth-tab active" id="tab-login" onclick="switchAuthTab('login')" data-i18n="loginTab">Giriş Yap</div>
+        <div class="auth-tab" id="tab-register" onclick="switchAuthTab('register')" data-i18n="registerTab">Kayıt Ol</div>
       </div>
       <div id="auth-error" class="err-msg"></div>
 
       <!-- LOGIN -->
       <div id="form-login">
-        <div class="form-group"><label class="label" data-i18n="emailLabel">EMAIL</label><input type="email" class="input" id="login-email" placeholder="example@mail.com"></div>
-        <div class="form-group"><label class="label" data-i18n="passLabel">PASSWORD</label><input type="password" class="input" id="login-pass" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()"></div>
-        <button class="btn btn-primary btn-block btn-lg mt-3" onclick="doLogin()" id="login-btn" data-i18n="loginBtn">Log In →</button>
-        <div class="text-center mt-3" style="font-size:.8rem;color:var(--dim)"><span data-i18n="noAccount">No account?</span> <span style="color:var(--primary);cursor:pointer" onclick="switchAuthTab('register')" data-i18n="registerLink">Sign up</span></div>
+        <div class="form-group"><label class="label" data-i18n="emailLabel">E-POSTA</label><input type="email" class="input" id="login-email" placeholder="ornek@mail.com"></div>
+        <div class="form-group"><label class="label" data-i18n="passLabel">ŞİFRE</label><input type="password" class="input" id="login-pass" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()"></div>
+        <button class="btn btn-primary btn-block btn-lg mt-3" onclick="doLogin()" id="login-btn" data-i18n="loginBtn">Giriş Yap →</button>
+        <div class="text-center mt-3" style="font-size:.8rem;color:var(--dim)"><span data-i18n="noAccount">Hesabın yok mu?</span> <span style="color:var(--primary);cursor:pointer" onclick="switchAuthTab('register')" data-i18n="registerLink">Kayıt ol</span></div>
       </div>
 
       <!-- REGISTER -->
       <div id="form-register" style="display:none">
-        <div class="form-group"><label class="label" data-i18n="nameLabel">FULL NAME</label><input type="text" class="input" id="reg-name" placeholder="Full name" maxlength="40"></div>
+        <div class="form-group"><label class="label" data-i18n="nameLabel">AD SOYAD</label><input type="text" class="input" id="reg-name" placeholder="Adın ve soyadın" maxlength="40"></div>
         <div class="form-group">
-          <label class="label" data-i18n="roleLabel">ROLE</label>
+          <label class="label" data-i18n="roleLabel">ROL</label>
           <div class="role-grid" style="grid-template-columns:1fr 1fr">
-            <button class="role-btn sel-teacher" id="role-teacher" onclick="selectRole('teacher')">👨‍🏫<br><span data-i18n="teacher">Teacher</span></button>
-            <button class="role-btn" id="role-student" onclick="selectRole('student')">🎓<br><span data-i18n="student">Student</span></button>
+            <button class="role-btn sel-teacher" id="role-teacher" onclick="selectRole('teacher')">👨‍🏫<br><span data-i18n="teacher">Öğretmen</span></button>
+            <button class="role-btn" id="role-student" onclick="selectRole('student')">🎓<br><span data-i18n="student">Öğrenci</span></button>
           </div>
         </div>
         <div id="reg-branch-group" class="form-group">
-          <label class="label" data-i18n="branchLabel">SUBJECT</label>
+          <label class="label" data-i18n="branchLabel">BRANŞ</label>
           <select class="input" id="reg-branch">
             <option value="genel">🏫 General (All Subjects)</option>
             <option value="math">📐 Mathematics</option>
@@ -506,10 +505,10 @@ window._deferred=function(fn,args){
             <option value="siyer">📿 Siyer</option>
           </select>
         </div>
-        <div class="form-group"><label class="label" data-i18n="emailLabel">EMAIL</label><input type="email" class="input" id="reg-email" placeholder="example@mail.com"></div>
-        <div class="form-group"><label class="label" data-i18n="passHint">PASSWORD (min 6 chars)</label><input type="password" class="input" id="reg-pass" placeholder="••••••••" onkeydown="if(event.key==='Enter')doRegister()"></div>
-        <button class="btn btn-success btn-block btn-lg mt-3" onclick="doRegister()" id="register-btn" data-i18n="registerBtn">Create Account →</button>
-        <div class="text-center mt-3" style="font-size:.8rem;color:var(--dim)"><span data-i18n="hasAccount">Have an account?</span> <span style="color:var(--primary);cursor:pointer" onclick="switchAuthTab('login')" data-i18n="loginLink">Log in</span></div>
+        <div class="form-group"><label class="label" data-i18n="emailLabel">E-POSTA</label><input type="email" class="input" id="reg-email" placeholder="ornek@mail.com"></div>
+        <div class="form-group"><label class="label" data-i18n="passHint">ŞİFRE (en az 6 karakter)</label><input type="password" class="input" id="reg-pass" placeholder="••••••••" onkeydown="if(event.key==='Enter')doRegister()"></div>
+        <button class="btn btn-success btn-block btn-lg mt-3" onclick="doRegister()" id="register-btn" data-i18n="registerBtn">Hesap Oluştur →</button>
+        <div class="text-center mt-3" style="font-size:.8rem;color:var(--dim)"><span data-i18n="hasAccount">Hesabın var mı?</span> <span style="color:var(--primary);cursor:pointer" onclick="switchAuthTab('login')" data-i18n="loginLink">Giriş yap</span></div>
       </div>
     </div>
   </div>
@@ -536,7 +535,7 @@ window._deferred=function(fn,args){
       <div style="font-size:.75rem;color:var(--dim);margin-bottom:14px;line-height:1.5">Ad soyad gir, rol seç. Firebase hesabı gerekmez — veriler ayrı saklanır.</div>
       <div style="margin-bottom:10px">
         <label style="font-size:.65rem;font-family:'Syne',sans-serif;letter-spacing:.1em;color:var(--dim);display:block;margin-bottom:5px">FULL NAME</label>
-        <input type="text" id="test-name" class="input" placeholder="Full name" maxlength="40" style="padding:9px 12px;font-size:.85rem" onkeydown="if(event.key==='Enter')doTestLogin()">
+        <input type="text" id="test-name" class="input" placeholder="Adın ve soyadın" maxlength="40" style="padding:9px 12px;font-size:.85rem" onkeydown="if(event.key==='Enter')doTestLogin()">
       </div>
       <div style="margin-bottom:14px">
         <label style="font-size:.65rem;font-family:'Syne',sans-serif;letter-spacing:.1em;color:var(--dim);display:block;margin-bottom:6px">ROLE</label>
@@ -618,11 +617,10 @@ window._deferred=function(fn,args){
       </div>
 
       <div style="margin-top:auto;padding-top:20px;border-top:1px solid var(--border);margin-top:16px">
-        <div class="nav-item" onclick="toggleTheme()" id="theme-toggle"><span class="nav-icon">🌙</span> <span id="theme-label">Light Mode</span></div>
-        <div class="nav-item" id="pwa-install-btn" onclick="installPWA()" style="display:none;color:var(--accent)"><span class="nav-icon">📱</span> Install App</div>
-        <div class="nav-item" onclick="showLangPicker()" style="color:var(--dim)"><span class="nav-icon" id="lang-flag">🇬🇧</span> <span id="lang-label">English</span></div>
+        <div class="nav-item" onclick="toggleTheme()" id="theme-toggle"><span class="nav-icon">🌙</span> <span id="theme-label">Aydınlık Mod</span></div>
+        <div class="nav-item" id="pwa-install-btn" onclick="installPWA()" style="display:none;color:var(--accent)"><span class="nav-icon">📱</span> Uygulamayı Yükle</div>
         <div class="nav-item" onclick="showContributors()" style="color:var(--accent)"><span class="nav-icon">⭐</span> Contributors</div>
-        <div class="nav-item" onclick="doLogout()" style="color:var(--danger)"><span class="nav-icon">🚪</span> Log Out</div>
+        <div class="nav-item" onclick="doLogout()" style="color:var(--danger)"><span class="nav-icon">🚪</span> Çıkış Yap</div>
       </div>
     </div>
 
@@ -659,8 +657,8 @@ window._deferred=function(fn,args){
 <div id="modal-contributors" class="modal-overlay" style="display:none" onclick="if(event.target===this)hideModal('modal-contributors')">
   <div class="modal" style="max-width:420px;text-align:center">
     <div style="font-size:2.5rem;margin-bottom:8px">⭐</div>
-    <div class="modal-title" style="margin-bottom:4px">Contributors</div>
-    <div style="font-size:.82rem;color:var(--dim);margin-bottom:24px">The team behind this project</div>
+    <div class="modal-title" style="margin-bottom:4px">Katkıda Bulunanlar</div>
+    <div style="font-size:.82rem;color:var(--dim);margin-bottom:24px">Bu projeyi hayata geçiren ekip</div>
 
     <div style="display:flex;align-items:center;gap:14px;padding:14px 16px;background:var(--bg2);border-radius:12px;border:1px solid var(--border);margin-bottom:10px;text-align:left">
       <div style="width:44px;height:44px;border-radius:50%;background:rgba(108,99,255,.15);border:2px solid #6c63ff;display:flex;align-items:center;justify-content:center;font-size:1.3rem;flex-shrink:0">💻</div>
@@ -1177,7 +1175,7 @@ function enterApp(){
   const gb=document.getElementById('global-theme-btn');
   if(gb)gb.style.display='flex';
   applyStoredTheme();
-  setTimeout(()=>applyLang(currentLang),100);
+  
   if(window.innerWidth<=768){
     const mmb=document.getElementById('mobile-menu-btn');
     if(mmb)mmb.style.removeProperty('display');
@@ -2214,12 +2212,12 @@ var LANGUAGES={
     chat:'Class Chat',voice:'Voice Chat',quiz:'Quiz',classes:'My Classes',
     books:'My Books',store:'Store',leaderboard:'Leaderboard',
     assign:'Assign HW',quizCreate:'Create Quiz',students:'My Students',analytics:'Analytics',
-    logout:'Log Out',theme:'Light Mode',themeD:'Dark Mode',install:'Install App',
+    logout:'Log Out',theme:'Light Mode',themeD:'Dark Mode',install:'Uygulamayı Yükle',
     contributors:'Contributors',language:'English',joinClass:'Join Class',newClass:'New Class',
     tagline:'Smart Classroom Management Platform',loginTab:'Log In',registerTab:'Sign Up',
     emailLabel:'EMAIL',passLabel:'PASSWORD',loginBtn:'Log In →',noAccount:'No account?',
     registerLink:'Sign up',nameLabel:'FULL NAME',roleLabel:'ROLE',branchLabel:'SUBJECT',
-    passHint:'PASSWORD (min 6 chars)',registerBtn:'Create Account →',hasAccount:'Have an account?',
+    passHint:'ŞİFRE (en az 6 karakter)',registerBtn:'Create Account →',hasAccount:'Have an account?',
     loginLink:'Log in',teacher:'Teacher',student:'Student',
     hello:'Hello',level:'LEVEL',totalXp:'TOTAL XP',streak:'STREAK',
     recentHw:'UPCOMING HW',recentNotes:'RECENT NOTES',badges:'BADGES',
@@ -2275,108 +2273,6 @@ function tr_(key){
 }
 window.tr_=tr_;
 window.t=tr_;
-
-function applyLang(lang){
-  if(!LANGUAGES[lang])return;
-  currentLang=lang;
-  try{localStorage.setItem('classroom_lang',lang);}catch(e){}
-  const tr=LANGUAGES[lang].t;
-  const flag=LANGUAGES[lang].flag;
-
-  // ── Sidebar nav ──
-  const navMap={
-    'nav-dashboard':tr.dashboard,'nav-homework':tr.homework,'nav-notes':tr.notes,
-    'nav-announcements':tr.announcements,'nav-chat':tr.chat,'nav-voice':tr.voice,
-    'nav-quiz':tr.quiz,'nav-classes':tr.classes,'nav-books':tr.books,
-    'nav-store':tr.store,'nav-leaderboard':tr.leaderboard,
-    'nav-assign':tr.assign,'nav-quiz-create':tr.quizCreate,
-    'nav-students':tr.students,'nav-analytics':tr.analytics,
-    'nav-join-class':tr.joinClass,'nav-newclass':tr.newClass,
-  };
-  Object.entries(navMap).forEach(([id,txt])=>{
-    const el=document.getElementById(id);if(!el)return;
-    const icon=el.querySelector('.nav-icon');
-    const badge=el.querySelector('.nav-badge');
-    el.innerHTML=(icon?icon.outerHTML:'')+' '+txt+' '+(badge?badge.outerHTML:'');
-  });
-
-  // ── Lang buttons ──
-  ['lang-flag','mdr-lang-flag','auth-lang-flag'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent=flag;});
-  ['lang-label','mdr-lang-label','auth-lang-label'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent=tr.language;});
-
-  // ── Auth page ──
-  const authTagline=document.querySelector('#screen-auth .auth-wrap .text-center div:last-child');
-  if(authTagline)authTagline.textContent=tr.tagline;
-  const tabLogin=document.getElementById('tab-login');if(tabLogin)tabLogin.textContent=tr.loginTab;
-  const tabReg=document.getElementById('tab-register');if(tabReg)tabReg.textContent=tr.registerTab;
-  const loginBtn=document.getElementById('login-btn');if(loginBtn)loginBtn.textContent=tr.loginBtn;
-  const regBtn=document.getElementById('register-btn');if(regBtn)regBtn.textContent=tr.registerBtn;
-
-  // data-i18n elements
-  document.querySelectorAll('[data-i18n]').forEach(el=>{
-    const key=el.getAttribute('data-i18n');
-    if(tr[key])el.textContent=tr[key];
-  });
-
-  document.title='classroom — '+tr.tagline;
-
-  // ── Mobile bottom nav labels ──
-  const mnavMap={
-    'mnav-dashboard':tr.dashboard,
-    'mnav-homework':tr.homework,
-    'mnav-notes':tr.notes,
-    'mnav-chat':tr.chat,
-  };
-  Object.entries(mnavMap).forEach(([id,txt])=>{
-    const el=document.getElementById(id);if(!el)return;
-    const icon=el.querySelector('.mnav-icon');
-    const span=el.querySelector('span:last-child');
-    if(span)span.textContent=txt;
-  });
-  // "More" button
-  const moreBtn=document.querySelector('.mnav-item[onclick*="toggleMobileDrawer"] span:last-child, .mnav-item[onclick*="openDrawer"] span:last-child');
-  if(moreBtn)moreBtn.textContent=tr.more||'More';
-
-  // ── Contributors modal description ──
-  const teamDesc=document.querySelector('#modal-contributors .modal + div, #modal-contributors [style*="margin-bottom:24px"]');
-
-  // ── Re-render current page ──
-  if(typeof currentNav!=='undefined'&&currentNav&&typeof navTo==='function'){
-    navTo(currentNav);
-  }
-}
-
-window.showLangPicker=function(){
-  const existing=document.getElementById('modal-lang');
-  if(existing){existing.remove();return;}
-  const modal=document.createElement('div');
-  modal.className='modal-overlay';
-  modal.id='modal-lang';
-  modal.style.display='flex';
-  modal.onclick=e=>{if(e.target===modal)modal.remove();};
-  modal.innerHTML=`<div class="modal" style="max-width:360px">
-    <div class="modal-title">🌐 Language / Dil</div>
-    <div style="display:flex;flex-direction:column;gap:8px;margin-top:8px">
-      ${Object.entries(LANGUAGES).map(([code,lang])=>`
-      <button onclick="applyLang('${code}');document.getElementById('modal-lang').remove()"
-        style="display:flex;align-items:center;gap:14px;padding:14px 16px;background:${currentLang===code?'var(--primary-dim)':'var(--bg2)'};border:1px solid ${currentLang===code?'var(--primary)':'var(--border)'};border-radius:12px;cursor:pointer;color:var(--text);font-size:.95rem;font-family:'DM Sans',sans-serif">
-        <span style="font-size:1.6rem">${lang.flag}</span>
-        <span style="font-weight:${currentLang===code?700:400}">${lang.name}</span>
-        ${currentLang===code?'<span style="margin-left:auto;color:var(--primary)">✓</span>':''}
-      </button>`).join('')}
-    </div>
-  </div>`;
-  document.body.appendChild(modal);
-}
-window.applyLang=applyLang;
-
-// Auth sayfası dil butonu — module yüklendikten sonra bağla
-document.addEventListener('DOMContentLoaded',()=>{
-  const authLangBtn=document.getElementById('auth-lang-btn');
-  if(authLangBtn)authLangBtn.addEventListener('click',()=>window.showLangPicker());
-});
-
-
 
 // ═══════════ ANNOUNCEMENTS ═══════════
 async function renderAnnouncements(){
@@ -4279,4 +4175,6 @@ function applyLang(l){if(window.applyLang)window.applyLang(l);}
 </script>
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
 </body>
-</html>
+</html>const LANGUAGES={
+  
+};
