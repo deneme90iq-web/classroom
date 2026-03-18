@@ -1634,6 +1634,7 @@ async function renderClassProfiles(){
   const sorted=uids.map((uid,i)=>({uid,html:cards[i]}));
   grid.innerHTML=sorted.map(s=>s.html).join('');
 }
+async function loadWeatherWidget(){
   const el=document.getElementById('weather-widget');
   if(!el)return;
   try{
