@@ -399,9 +399,9 @@ textarea.input{resize:vertical;min-height:80px}
       <span class="nav-badge" id="mnav-hw-badge" style="display:none"></span>
       <span>Ödevler</span>
     </div>
-    <div class="mnav-item" id="mnav-calendar" onclick="mnavTo('calendar')">
-      <div class="mnav-icon">📅</div>
-      <span>Takvim</span>
+    <div class="mnav-item" id="mnav-classprofiles" onclick="mnavTo('classprofiles')" style="display:none">
+      <div class="mnav-icon">👥</div>
+      <span>Sınıfım</span>
     </div>
     <div class="mnav-item" id="mnav-profile" onclick="mnavTo('profile')">
       <div class="mnav-icon" id="mnav-profile-icon">👤</div>
@@ -1208,10 +1208,12 @@ function enterApp(){
   if(session.role==='student'){
     const joinBtn=document.getElementById('nav-join-class');
     if(joinBtn)joinBtn.style.display='flex';
-    // Sınıfa üyeyse "Sınıfım" butonunu göster
+    // Sınıfa üyeyse "Sınıfım" butonunu göster (sidebar + mobil)
     if(session.classCode && session.approved){
       const cpBtn=document.getElementById('nav-classprofiles');
       if(cpBtn)cpBtn.style.display='flex';
+      const mCpBtn=document.getElementById('mnav-classprofiles');
+      if(mCpBtn)mCpBtn.style.removeProperty('display');
     }
   }
   // Listen to game state
