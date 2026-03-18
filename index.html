@@ -2301,7 +2301,7 @@ async function renderAI(){
 
     try{
       // Gemini API - tarayıcıdan CORS destekli
-      const GEMINI_KEY='AIzaSyB8xBDRKGD9ZY5AyJtOhqC7aSFqLa7QASM';
+      const GEMINI_KEY='AIzaSyD0wnzIQaqjU5UpOCzHhowfKC7oiNackOM';
       const contents=aiHistory.slice(-10).map(m=>({
         role:m.role==='assistant'?'model':'user',
         parts:[{text:m.content}]
