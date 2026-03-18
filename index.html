@@ -1573,7 +1573,7 @@ async function renderHomework(){
   mc.innerHTML=`<div class="flex items-center justify-between mb-4">
     <div style="font-family:'Syne',sans-serif;font-size:1.3rem;font-weight:700">📋 Ödevler</div>
     ${session.role==='teacher'?`<button class="btn btn-primary" onclick="showModal('modal-assign-hw');loadTeacherClassesForHw()">Ödev Ver</button>`
-    :`<button class="btn btn-success" onclick="openNoteModal()">+ Paylaş</button>`}
+    :`<button class="btn btn-success" onclick="openNoteModal()">+ Not Paylaş</button>`}
   </div>
   <div class="tabs">
     <div class="tab active" id="hw-tab-pending" onclick="hwTab('pending')"><span data-tab-i18n='pending'>Bekleyen</span></div>
@@ -1718,7 +1718,7 @@ async function renderNotes(){
   const mc=document.getElementById('main-content');
   mc.innerHTML=`<div class="flex items-center justify-between mb-4">
     <div style="font-family:'Syne',sans-serif;font-size:1.3rem;font-weight:700">📝 Ders Notları</div>
-    <button class="btn btn-success" onclick="openNoteModal()">+ Paylaş</button>
+    <button class="btn btn-success" onclick="openNoteModal()">+ Not Paylaş</button>
   </div>
   <div class="flex gap-2 mb-4" style="flex-wrap:wrap">
     <button class="btn btn-ghost" style="font-size:.8rem" id="note-filter-all" onclick="filterNotes('all')">Tümü</button>
@@ -1838,7 +1838,6 @@ window.editNote=async function(noteId){
 
 // Not paylaşma modalını aç
 window.openNoteModal=async function(){
-  // Sınıfa üye değilse paylaşım yapılamaz
   if(session.role==='student'&&!session.classCode){
     toast('⚠️ Not paylaşmak için önce bir sınıfa katılman gerekiyor!','w');
     return;
