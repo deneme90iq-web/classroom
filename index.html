@@ -235,6 +235,8 @@ textarea.input{resize:vertical;min-height:80px}
 .voice-wave span:nth-child(2){animation-delay:.15s}.voice-wave span:nth-child(3){animation-delay:.3s}.voice-wave span:nth-child(4){animation-delay:.45s}
 @keyframes vwave{0%,100%{height:3px}50%{height:15px}}
 @keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.85;transform:scale(1.02)}}
+@keyframes dotPulse{0%,100%{opacity:.3;transform:scale(.8)}50%{opacity:1;transform:scale(1)}}
+.dot-pulse{display:inline-block;animation:dotPulse 1s infinite;font-size:.5rem;color:var(--dim)}
 
 /* ══════════ MOBİL ══════════ */
 @media(max-width:768px){
@@ -589,6 +591,8 @@ if(!window.toggleTheme){
       <div class="nav-item" id="nav-join-class" onclick="showModal('modal-join-class')" style="display:none"><span class="nav-icon">➕</span> Sınıfa Katıl</div>
 
       <div class="sidebar-section">ARAÇLAR</div>
+      <div class="nav-item" id="nav-calendar" onclick="navTo('calendar')"><span class="nav-icon">📅</span> Takvim</div>
+      <div class="nav-item" id="nav-ai" onclick="navTo('ai')"><span class="nav-icon">🤖</span> AI Asistan</div>
       <div class="nav-item" id="nav-books" onclick="navTo('books')"><span class="nav-icon">📚</span> Kitaplarım</div>
       <div class="nav-item" id="nav-store" onclick="navTo('store')"><span class="nav-icon">🛒</span> Mağaza</div>
       <div class="nav-item" id="nav-leaderboard" onclick="navTo('leaderboard')"><span class="nav-icon">🏆</span> Liderboard</div>
@@ -1224,6 +1228,7 @@ function enterApp(){
     });
   }
   navTo('dashboard');
+  initPushNotifications();
 }
 
 function updateSidebarXP(s){
@@ -1325,6 +1330,8 @@ window.navTo=function(page){
   if(navEl)navEl.classList.add('active');
   const mc=document.getElementById('main-content');
   switch(page){
+    case 'calendar': renderCalendar();break;
+    case 'ai': renderAI();break;
     case 'dashboard': renderDashboard();break;
     case 'homework': renderHomework();break;
     case 'notes': renderNotes();break;
@@ -1352,22 +1359,62 @@ async function renderDashboard(){
   const myHws=session.role==='student'
     ?Object.values(hws).filter(h=>h.classCode===session.classCode&&Array.isArray(h.assignedTo)&&h.assignedTo.includes(session.uid))
     :session.role==='teacher'?Object.values(hws).filter(h=>h.teacherUid===session.uid):[];
-  const pendingHws=myHws.filter(h=>!h.submittedBy?.includes(session.uid)&&new Date(h.dueDate)>=new Date());
+  const pendingHws=myHws.filter(h=>!h.submittedBy?.includes(session.uid)&&new Date(h.dueDate)>=new Date()&&h.status!=='cancelled');
   const notes=await dbGet('notes')||{};
-  const recentNotes=Object.values(notes).filter(n=>n.classCode===(session.classCode||'_ind')).slice(0,3);
+  const recentNotes=Object.values(notes).filter(n=>n.classCode===session.classCode).slice(0,3);
+
+  // Hızlı not
+  const quickNote=await dbGet(`quickNotes/${session.uid}`)||'';
+
+  // Günün sözü
+  const quotes=[
+    {text:'Başarı tesadüf değil, hazırlık, sıkı çalışma ve hatalardan öğrenmenin sonucudur.',author:'Colin Powell'},
+    {text:'Eğitim, geleceğe açılan en güçlü silahınızdır.',author:'Nelson Mandela'},
+    {text:'Hayal kurmak için zeka, hayal gerçekleştirmek için ise yetenek yetmez; azim gerekir.',author:'Einstein'},
+    {text:'Her gün biraz daha iyi olmaya çalış.',author:''},
+    {text:'Zorluklar olmadan başarı olmaz.',author:''},
+  ];
+  const todayQ=quotes[new Date().getDate()%quotes.length];
 
   mc.innerHTML=`
-    <div style="margin-bottom:24px">
+    <div style="margin-bottom:20px">
       <div style="font-family:'Syne',sans-serif;font-size:1.5rem;font-weight:700">Merhaba, ${session.name}! 👋</div>
       <div class="text-dim" style="font-size:.9rem;margin-top:4px">${new Date().toLocaleDateString('tr-TR',{weekday:'long',day:'numeric',month:'long'})}</div>
     </div>
 
+    <!-- Stat Cards -->
     <div class="grid-3 mb-4" style="margin-bottom:20px">
       <div class="stat-card"><div class="lbl">SEVİYE</div><div class="val text-primary">${state.lvl||1}</div><div style="font-size:.72rem;color:var(--dim)">${getRank(state.lvl||1)}</div></div>
       <div class="stat-card"><div class="lbl">TOPLAM XP</div><div class="val text-accent">${state.totalXp||0}</div></div>
       <div class="stat-card"><div class="lbl">SERİ</div><div class="val text-warning">${state.streak||0} 🔥</div></div>
     </div>
 
+    <!-- Widgets Row -->
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:20px">
+
+      <!-- Hava Durumu Widget -->
+      <div class="card" style="padding:16px">
+        <div style="font-family:'Syne',sans-serif;font-size:.7rem;letter-spacing:.1em;color:var(--dim);margin-bottom:10px">🌤️ HAVA DURUMU</div>
+        <div id="weather-widget"><div class="text-dim" style="font-size:.8rem">Yükleniyor...</div></div>
+      </div>
+
+      <!-- Hızlı Not Widget -->
+      <div class="card" style="padding:16px">
+        <div style="font-family:'Syne',sans-serif;font-size:.7rem;letter-spacing:.1em;color:var(--dim);margin-bottom:8px">📝 HIZLI NOT</div>
+        <textarea id="quick-note-area" class="input" placeholder="Aklındaki not..."
+          style="width:100%;min-height:80px;font-size:.8rem;resize:none;padding:8px"
+          oninput="saveQuickNote(this.value)">${quickNote}</textarea>
+      </div>
+
+      <!-- Günün Sözü Widget -->
+      <div class="card" style="padding:16px;display:flex;flex-direction:column;justify-content:center">
+        <div style="font-family:'Syne',sans-serif;font-size:.7rem;letter-spacing:.1em;color:var(--dim);margin-bottom:10px">💬 GÜNÜN SÖZÜ</div>
+        <div style="font-size:.82rem;color:var(--text);line-height:1.5;font-style:italic">"${todayQ.text}"</div>
+        ${todayQ.author?`<div style="font-size:.72rem;color:var(--dim);margin-top:8px;text-align:right">— ${todayQ.author}</div>`:''}
+      </div>
+    </div>
+
+    <!-- Main Content Grid -->
     <div class="grid-2" style="margin-bottom:20px">
       <div>
         <div style="font-family:'Syne',sans-serif;font-size:.85rem;font-weight:700;margin-bottom:12px;color:var(--dim)">📋 YAKIN ÖDEVLER</div>
@@ -1375,6 +1422,7 @@ async function renderDashboard(){
           ?`<div class="card text-center text-dim" style="padding:30px">Bekleyen ödev yok ✓</div>`
           :pendingHws.sort((a,b)=>new Date(a.dueDate)-new Date(b.dueDate)).slice(0,4).map(h=>miniHwCard(h)).join('')
         }
+        ${pendingHws.length>0?`<button class="btn btn-ghost btn-block mt-2" style="font-size:.78rem" onclick="navTo('calendar')">📅 Takvimde Gör</button>`:''}
       </div>
       <div>
         <div style="font-family:'Syne',sans-serif;font-size:.85rem;font-weight:700;margin-bottom:12px;color:var(--dim)">📝 SON NOTLAR</div>
@@ -1385,17 +1433,99 @@ async function renderDashboard(){
       </div>
     </div>
 
+    <!-- Kişisel İstatistik Grafiği -->
+    ${session.role==='student'?`
+    <div style="margin-bottom:20px">
+      <div style="font-family:'Syne',sans-serif;font-size:.85rem;font-weight:700;margin-bottom:12px;color:var(--dim)">📊 KİŞİSEL GELİŞİM</div>
+      <div class="card" style="padding:20px">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+          <div>
+            <div style="font-size:.75rem;color:var(--dim);margin-bottom:6px">Tamamlanan Ödevler</div>
+            <div style="display:flex;align-items:center;gap:10px">
+              <div style="font-size:1.8rem;font-weight:700;color:var(--success)">${state.totalCompleted||0}</div>
+              <div style="flex:1;background:var(--bg2);border-radius:6px;height:8px"><div style="height:8px;border-radius:6px;background:var(--success);width:${Math.min(100,(state.totalCompleted||0)*5)}%"></div></div>
+            </div>
+          </div>
+          <div>
+            <div style="font-size:.75rem;color:var(--dim);margin-bottom:6px">Paylaşılan Notlar</div>
+            <div style="display:flex;align-items:center;gap:10px">
+              <div style="font-size:1.8rem;font-weight:700;color:var(--primary)">${state.totalNotes||0}</div>
+              <div style="flex:1;background:var(--bg2);border-radius:6px;height:8px"><div style="height:8px;border-radius:6px;background:var(--primary);width:${Math.min(100,(state.totalNotes||0)*10)}%"></div></div>
+            </div>
+          </div>
+          <div>
+            <div style="font-size:.75rem;color:var(--dim);margin-bottom:6px">En Uzun Seri</div>
+            <div style="display:flex;align-items:center;gap:10px">
+              <div style="font-size:1.8rem;font-weight:700;color:var(--warning)">${state.bestStreak||0} 🔥</div>
+              <div style="flex:1;background:var(--bg2);border-radius:6px;height:8px"><div style="height:8px;border-radius:6px;background:var(--warning);width:${Math.min(100,(state.bestStreak||0)*10)}%"></div></div>
+            </div>
+          </div>
+          <div>
+            <div style="font-size:.75rem;color:var(--dim);margin-bottom:6px">XP İlerlemesi</div>
+            <div style="display:flex;align-items:center;gap:10px">
+              <div style="font-size:1.8rem;font-weight:700;color:var(--accent)">${state.xp||0}/${(state.lvl||1)*150}</div>
+              <div style="flex:1;background:var(--bg2);border-radius:6px;height:8px"><div style="height:8px;border-radius:6px;background:var(--accent);width:${Math.min(100,((state.xp||0)/((state.lvl||1)*150))*100)}%"></div></div>
+            </div>
+          </div>
+        </div>
+        <div style="margin-top:16px;text-align:center">
+          <button class="btn btn-ghost" style="font-size:.78rem" onclick="navTo('ai')">🤖 AI Asistanla Çalış</button>
+          <button class="btn btn-ghost" style="font-size:.78rem" onclick="navTo('calendar')">📅 Takvimi Gör</button>
+        </div>
+      </div>
+    </div>`:''}
+
     <div>
       <div style="font-family:'Syne',sans-serif;font-size:.85rem;font-weight:700;margin-bottom:12px;color:var(--dim)">🏆 ROZETLER</div>
       <div class="card"><div style="display:grid;grid-template-columns:repeat(7,1fr);gap:10px">${renderBadgesHTML(state)}</div></div>
     </div>
   `;
+
+  // Hava durumu yükle
+  loadWeatherWidget();
+
   if(session.role==='student'){
     const btn=document.createElement('button');
-    btn.className='btn btn-primary';btn.style.cssText='position:fixed;bottom:24px;right:24px;border-radius:50%;width:56px;height:56px;font-size:1.4rem;box-shadow:0 4px 20px var(--primary-glow)';
+    btn.className='btn btn-primary';
+    btn.style.cssText='position:fixed;bottom:24px;right:24px;border-radius:50%;width:56px;height:56px;font-size:1.4rem;box-shadow:0 4px 20px var(--primary-glow);z-index:100';
     btn.textContent='📝';btn.title='Not Paylaş';btn.onclick=()=>openNoteModal();
     mc.appendChild(btn);
   }
+
+  // Push bildirim kontrolü
+  checkHwNotifications();
+}
+
+async function loadWeatherWidget(){
+  const el=document.getElementById('weather-widget');
+  if(!el)return;
+  try{
+    const pos=await new Promise((res,rej)=>navigator.geolocation.getCurrentPosition(res,rej,{timeout:5000}));
+    const {latitude:lat,longitude:lon}=pos.coords;
+    const resp=await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,weather_code,wind_speed_10m&wind_speed_unit=kmh`);
+    const d=await resp.json();
+    const temp=Math.round(d.current.temperature_2m);
+    const code=d.current.weather_code;
+    const wind=Math.round(d.current.wind_speed_10m);
+    const icons={0:'☀️',1:'🌤️',2:'⛅',3:'☁️',45:'🌫️',48:'🌫️',51:'🌦️',61:'🌧️',71:'❄️',80:'🌦️',95:'⛈️'};
+    const icon=icons[code]||icons[Math.floor(code/10)*10]||'🌡️';
+    el.innerHTML=`
+      <div style="display:flex;align-items:center;gap:12px">
+        <span style="font-size:2.5rem">${icon}</span>
+        <div>
+          <div style="font-size:1.6rem;font-weight:700;color:var(--text)">${temp}°C</div>
+          <div style="font-size:.72rem;color:var(--dim)">💨 ${wind} km/s</div>
+        </div>
+      </div>`;
+  }catch(e){
+    el.innerHTML=`<div style="font-size:.78rem;color:var(--dim)">📍 Konum erişimi gerekli</div>`;
+  }
+}
+
+let _quickNoteTimer=null;
+window.saveQuickNote=function(val){
+  clearTimeout(_quickNoteTimer);
+  _quickNoteTimer=setTimeout(()=>dbSet(`quickNotes/${session.uid}`,val),600);
 }
 
 function miniHwCard(hw){
@@ -1974,6 +2104,272 @@ window.removeStudent=async function(uid,classCode,name){
   await dbUpdate(`users/${uid}/profile`,{approved:false});
   toast(`🗑️ ${name} sınıftan çıkarıldı.`,'w');
   loadStuTab('approved');
+}
+
+// ═══════════ TAKVİM ═══════════
+async function renderCalendar(){
+  const mc=document.getElementById('main-content');
+  if(!mc)return;
+
+  const now=new Date();
+  let viewYear=now.getFullYear();
+  let viewMonth=now.getMonth();
+
+  async function buildCalendar(){
+    const hws=await dbGet('homeworks')||{};
+    const quizzes=await dbGet('quizzes')||{};
+
+    // Bu sınıfın ödevleri
+    const myHws=Object.values(hws).filter(h=>{
+      if(h.status==='cancelled')return false;
+      if(session.role==='student')return h.classCode===session.classCode&&h.assignedTo?.includes(session.uid);
+      return h.teacherUid===session.uid;
+    });
+    const myQuizzes=Object.values(quizzes).filter(q=>{
+      if(q.status==='cancelled')return false;
+      if(session.role==='student')return q.classCode===session.classCode;
+      return q.teacherUid===session.uid;
+    });
+
+    // Tarihe göre event map
+    const events={};
+    myHws.forEach(h=>{
+      const d=h.dueDate?.split('T')[0]||h.dueDate;
+      if(!events[d])events[d]=[];
+      events[d].push({type:'hw',title:h.title,subj:getSubject(h.subjectId),obj:h});
+    });
+    myQuizzes.forEach(q=>{
+      const d=q.createdAt?new Date(q.createdAt).toISOString().split('T')[0]:'';
+      if(d){if(!events[d])events[d]=[];events[d].push({type:'quiz',title:q.title,subj:getSubject(q.subjectId),obj:q});}
+    });
+
+    const monthNames=['Ocak','Şubat','Mart','Nisan','Mayıs','Haziran','Temmuz','Ağustos','Eylül','Ekim','Kasım','Aralık'];
+    const dayNames=['Pzt','Sal','Çar','Per','Cum','Cmt','Paz'];
+    const firstDay=new Date(viewYear,viewMonth,1);
+    const lastDay=new Date(viewYear,viewMonth+1,0);
+    const startDow=(firstDay.getDay()+6)%7; // Pazartesi=0
+    const todayStr=now.toISOString().split('T')[0];
+
+    let cells='';
+    for(let i=0;i<startDow;i++) cells+=`<div></div>`;
+    for(let d=1;d<=lastDay.getDate();d++){
+      const dateStr=`${viewYear}-${String(viewMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+      const dayEvents=events[dateStr]||[];
+      const isToday=dateStr===todayStr;
+      const isPast=dateStr<todayStr;
+      cells+=`<div onclick="showCalendarDay('${dateStr}')" style="
+        min-height:72px;padding:6px;border:1px solid var(--border);border-radius:10px;cursor:pointer;
+        background:${isToday?'var(--primary-dim)':'var(--card)'};
+        border-color:${isToday?'var(--primary)':'var(--border)'};
+        opacity:${isPast?.7:1};transition:all .15s"
+        onmouseover="this.style.borderColor='var(--primary)'" onmouseout="this.style.borderColor='${isToday?'var(--primary)':'var(--border)'}'">
+        <div style="font-weight:${isToday?700:400};font-size:.85rem;color:${isToday?'var(--primary)':'var(--text)'};margin-bottom:3px">${d}</div>
+        ${dayEvents.slice(0,2).map(e=>`
+          <div style="font-size:.65rem;padding:2px 5px;border-radius:4px;margin-bottom:2px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;
+            background:${e.type==='hw'?'rgba(108,99,255,.2)':'rgba(255,170,0,.2)'};
+            color:${e.type==='hw'?'var(--primary)':'var(--warning)'}">
+            ${e.type==='hw'?'📋':'📝'} ${e.title}
+          </div>`).join('')}
+        ${dayEvents.length>2?`<div style="font-size:.6rem;color:var(--dim)">+${dayEvents.length-2} daha</div>`:''}
+      </div>`;
+    }
+
+    mc.innerHTML=`
+    <div class="flex items-center justify-between mb-4">
+      <div style="font-family:'Syne',sans-serif;font-size:1.3rem;font-weight:700">📅 Takvim</div>
+      <div class="flex items-center gap-2">
+        <button class="btn btn-ghost btn-icon" onclick="calNav(-1)">◀</button>
+        <span style="font-weight:600;min-width:140px;text-align:center">${monthNames[viewMonth]} ${viewYear}</span>
+        <button class="btn btn-ghost btn-icon" onclick="calNav(1)">▶</button>
+      </div>
+    </div>
+    <!-- Legend -->
+    <div class="flex gap-3 mb-3" style="font-size:.78rem">
+      <span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;border-radius:3px;background:rgba(108,99,255,.4);display:inline-block"></span> Ödev</span>
+      <span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;border-radius:3px;background:rgba(255,170,0,.4);display:inline-block"></span> Quiz</span>
+    </div>
+    <div class="card" style="padding:12px">
+      <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-bottom:6px">
+        ${dayNames.map(d=>`<div style="text-align:center;font-size:.72rem;font-weight:700;color:var(--dim);padding:4px">${d}</div>`).join('')}
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px">${cells}</div>
+    </div>
+    <div id="cal-day-detail" style="margin-top:16px"></div>`;
+  }
+
+  window.calNav=function(dir){viewMonth+=dir;if(viewMonth>11){viewMonth=0;viewYear++;}else if(viewMonth<0){viewMonth=11;viewYear--;}buildCalendar();}
+  window.showCalendarDay=async function(dateStr){
+    const hws=await dbGet('homeworks')||{};
+    const detail=document.getElementById('cal-day-detail');if(!detail)return;
+    const dayHws=Object.values(hws).filter(h=>{
+      const d=h.dueDate?.split('T')[0]||h.dueDate;
+      return d===dateStr&&h.status!=='cancelled';
+    });
+    if(dayHws.length===0){detail.innerHTML='';return;}
+    const [y,m,d]=dateStr.split('-');
+    detail.innerHTML=`<div class="card"><div style="font-family:'Syne',sans-serif;font-size:.8rem;font-weight:700;margin-bottom:10px;color:var(--dim)">${d}/${m}/${y} — ETKİNLİKLER</div>
+      ${dayHws.map(h=>{const s=getSubject(h.subjectId);return`<div class="hw-card normal" style="margin-bottom:8px;cursor:pointer" onclick="navTo('homework')">
+        <div style="font-weight:600">${h.title}</div>
+        <div class="flex items-center gap-2 mt-1"><span style="color:${s.color};font-size:.8rem">${s.icon} ${s.name}</span><span class="badge badge-primary">+${h.xp||50} XP</span></div>
+      </div>`;}).join('')}
+    </div>`;
+  };
+
+  await buildCalendar();
+}
+
+// ═══════════ AI ASİSTAN ═══════════
+async function renderAI(){
+  const mc=document.getElementById('main-content');
+  if(!mc)return;
+
+  mc.innerHTML=`
+  <div class="flex items-center gap-3 mb-4">
+    <div style="font-family:'Syne',sans-serif;font-size:1.3rem;font-weight:700">🤖 AI Asistan</div>
+    <span class="badge badge-primary">Claude Sonnet</span>
+  </div>
+  <div class="card" style="padding:0;overflow:hidden;display:flex;flex-direction:column;height:calc(100vh - 200px);min-height:500px">
+    <!-- Chat history -->
+    <div id="ai-messages" style="flex:1;overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:12px">
+      <div style="text-align:center;color:var(--dim);font-size:.85rem;padding:20px">
+        <div style="font-size:3rem;margin-bottom:12px">🤖</div>
+        <div style="font-weight:600;margin-bottom:6px">Merhaba! Ben AI Asistanın.</div>
+        <div style="font-size:.8rem">Ders soruları, ödev yardımı veya konu anlatımı için buradayım.</div>
+        <div style="display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:16px">
+          ${['📐 Matematik sorusu sor','🔬 Fen konusunu anlat','📖 Türkçe kompozisyon yaz','🌍 Tarih olayını açıkla','💡 Ödev fikirlerim var'].map(s=>
+            `<button onclick="aiQuickAsk('${s.substring(2).trim()}')" class="btn btn-ghost" style="font-size:.78rem;padding:6px 12px">${s}</button>`
+          ).join('')}
+        </div>
+      </div>
+    </div>
+    <!-- Input -->
+    <div style="border-top:1px solid var(--border);padding:16px;background:var(--card2)">
+      <div class="flex gap-2">
+        <textarea id="ai-input" class="input" placeholder="Sorunuzu yazın... (Shift+Enter ile yeni satır, Enter ile gönder)" 
+          style="flex:1;min-height:44px;max-height:120px;resize:none;font-size:.9rem;line-height:1.5"
+          onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendAIMessage();}"></textarea>
+        <button class="btn btn-primary" onclick="sendAIMessage()" style="padding:10px 18px;align-self:flex-end">
+          <span id="ai-send-icon">→</span>
+        </button>
+      </div>
+      <div style="font-size:.72rem;color:var(--dim2);margin-top:6px">Bu asistan Claude AI tarafından desteklenmektedir. Yanıtlar eğitim amaçlıdır.</div>
+    </div>
+  </div>`;
+
+  let aiHistory=[];
+
+  window.aiQuickAsk=function(text){
+    document.getElementById('ai-input').value=text;
+    sendAIMessage();
+  };
+
+  window.sendAIMessage=async function(){
+    const input=document.getElementById('ai-input');
+    const text=input?.value.trim();
+    if(!text)return;
+    input.value='';
+
+    const msgs=document.getElementById('ai-messages');
+    if(!msgs)return;
+
+    // Remove welcome screen on first message
+    const welcome=msgs.querySelector('[style*="text-align:center"]');
+    if(welcome)welcome.remove();
+
+    // User bubble
+    msgs.innerHTML+=`<div style="display:flex;justify-content:flex-end">
+      <div style="max-width:75%;background:var(--primary);color:#fff;padding:10px 14px;border-radius:16px 16px 4px 16px;font-size:.88rem;line-height:1.5">${text.replace(/\n/g,'<br>')}</div>
+    </div>`;
+    msgs.scrollTop=msgs.scrollHeight;
+
+    // Loading
+    const loadId='ai-load-'+Date.now();
+    msgs.innerHTML+=`<div id="${loadId}" style="display:flex;gap:10px;align-items:flex-start">
+      <div style="width:32px;height:32px;border-radius:50%;background:var(--primary-dim);border:1px solid var(--primary);display:flex;align-items:center;justify-content:center;font-size:.9rem;flex-shrink:0">🤖</div>
+      <div style="background:var(--card2);padding:10px 14px;border-radius:16px 16px 16px 4px;border:1px solid var(--border)">
+        <span style="display:inline-flex;gap:4px"><span class="dot-pulse">●</span><span class="dot-pulse" style="animation-delay:.2s">●</span><span class="dot-pulse" style="animation-delay:.4s">●</span></span>
+      </div>
+    </div>`;
+    msgs.scrollTop=msgs.scrollHeight;
+
+    const sendBtn=document.getElementById('ai-send-icon');
+    if(sendBtn)sendBtn.textContent='⏳';
+
+    // Build context
+    aiHistory.push({role:'user',content:text});
+    const systemPrompt=`Sen classroom platformunda çalışan yardımsever bir eğitim asistanısın. ${session.name} adlı bir ${session.role==='teacher'?'öğretmen':'öğrenci'} ile konuşuyorsun. Türkçe yanıt ver. Kısa, net ve eğitici ol.`;
+
+    try{
+      const resp=await fetch('https://api.anthropic.com/v1/messages',{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({
+          model:'claude-sonnet-4-20250514',
+          max_tokens:1000,
+          system:systemPrompt,
+          messages:aiHistory.slice(-10)
+        })
+      });
+      const data=await resp.json();
+      const reply=data.content?.[0]?.text||'Yanıt alınamadı.';
+      aiHistory.push({role:'assistant',content:reply});
+
+      // Format reply: bold, code blocks
+      let formatted=reply
+        .replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>')
+        .replace(/`([^`]+)`/g,'<code style="background:var(--bg2);padding:1px 4px;border-radius:4px;font-size:.85em">$1</code>')
+        .replace(/\n/g,'<br>');
+
+      const loadEl=document.getElementById(loadId);
+      if(loadEl)loadEl.outerHTML=`<div style="display:flex;gap:10px;align-items:flex-start">
+        <div style="width:32px;height:32px;border-radius:50%;background:var(--primary-dim);border:1px solid var(--primary);display:flex;align-items:center;justify-content:center;font-size:.9rem;flex-shrink:0">🤖</div>
+        <div style="max-width:80%;background:var(--card2);padding:10px 14px;border-radius:16px 16px 16px 4px;border:1px solid var(--border);font-size:.88rem;line-height:1.6">${formatted}</div>
+      </div>`;
+    }catch(e){
+      const loadEl=document.getElementById(loadId);
+      if(loadEl)loadEl.innerHTML=`<div style="color:var(--danger);font-size:.85rem">❌ Bağlantı hatası. Tekrar dene.</div>`;
+    }
+
+    if(sendBtn)sendBtn.textContent='→';
+    msgs.scrollTop=msgs.scrollHeight;
+  };
+}
+
+// ═══════════ PUSH BİLDİRİMLER ═══════════
+async function initPushNotifications(){
+  if(!('Notification' in window))return;
+  if(Notification.permission==='default'){
+    // Sessizce izin iste — kullanıcı etkileşimini bekle
+    document.addEventListener('click',async function askOnce(){
+      document.removeEventListener('click',askOnce);
+      try{await Notification.requestPermission();}catch(e){}
+    },{once:true});
+  }
+}
+
+async function checkHwNotifications(){
+  if(Notification.permission!=='granted')return;
+  if(session.role!=='student'||!session.classCode)return;
+  const hws=await dbGet('homeworks')||{};
+  const now=new Date();
+  Object.values(hws).forEach(hw=>{
+    if(hw.status==='cancelled')return;
+    if(!hw.assignedTo?.includes(session.uid))return;
+    if(hw.submittedBy?.includes(session.uid))return;
+    const due=new Date(hw.dueDate);
+    const diff=Math.round((due-now)/(1000*60*60*24));
+    const notifKey=`notif_${hw.id}_${diff}`;
+    if((diff===1||diff===0)&&!sessionStorage.getItem(notifKey)){
+      sessionStorage.setItem(notifKey,'1');
+      try{
+        new Notification('⏰ Ödev Hatırlatması — classroom',{
+          body:`"${hw.title}" ${diff===0?'BUGÜN':'yarın'} teslim!`,
+          icon:'/favicon.ico',
+          badge:'/favicon.ico'
+        });
+      }catch(e){}
+    }
+  });
 }
 
 // ═══════════ LEADERBOARD ═══════════
