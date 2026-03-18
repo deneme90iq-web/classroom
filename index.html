@@ -1573,7 +1573,7 @@ async function renderHomework(){
   mc.innerHTML=`<div class="flex items-center justify-between mb-4">
     <div style="font-family:'Syne',sans-serif;font-size:1.3rem;font-weight:700">📋 Ödevler</div>
     ${session.role==='teacher'?`<button class="btn btn-primary" onclick="showModal('modal-assign-hw');loadTeacherClassesForHw()">Ödev Ver</button>`
-    :`<button class="btn btn-success" onclick="openNoteModal()">+ Not Paylaş</button>`}
+    :''}
   </div>
   <div class="tabs">
     <div class="tab active" id="hw-tab-pending" onclick="hwTab('pending')"><span data-tab-i18n='pending'>Bekleyen</span></div>
