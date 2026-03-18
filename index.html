@@ -403,9 +403,9 @@ textarea.input{resize:vertical;min-height:80px}
       <div class="mnav-icon">📅</div>
       <span>Takvim</span>
     </div>
-    <div class="mnav-item" id="mnav-ai" onclick="mnavTo('ai')">
-      <div class="mnav-icon">🤖</div>
-      <span>AI</span>
+    <div class="mnav-item" id="mnav-profile" onclick="mnavTo('profile')">
+      <div class="mnav-icon" id="mnav-profile-icon">👤</div>
+      <span>Profil</span>
     </div>
     <div class="mnav-item" id="mnav-more" onclick="openMobileDrawer()">
       <div class="mnav-icon">☰</div>
@@ -591,6 +591,7 @@ if(!window.toggleTheme){
       <div class="nav-item" id="nav-join-class" onclick="showModal('modal-join-class')" style="display:none"><span class="nav-icon">➕</span> Sınıfa Katıl</div>
 
       <div class="sidebar-section">ARAÇLAR</div>
+      <div class="nav-item" id="nav-profile" onclick="navTo('profile')"><span class="nav-icon">👤</span> Profilim</div>
       <div class="nav-item" id="nav-calendar" onclick="navTo('calendar')"><span class="nav-icon">📅</span> Takvim</div>
       <div class="nav-item" id="nav-ai" onclick="navTo('ai')"><span class="nav-icon">🤖</span> AI Asistan</div>
       <div class="nav-item" id="nav-books" onclick="navTo('books')"><span class="nav-icon">📚</span> Kitaplarım</div>
@@ -1229,6 +1230,7 @@ function enterApp(){
   }
   navTo('dashboard');
   initPushNotifications();
+  loadProfilePhoto();
 }
 
 function updateSidebarXP(s){
@@ -1330,6 +1332,7 @@ window.navTo=function(page){
   if(navEl)navEl.classList.add('active');
   const mc=document.getElementById('main-content');
   switch(page){
+    case 'profile': renderProfile();break;
     case 'calendar': renderCalendar();break;
     case 'ai': renderAI();break;
     case 'dashboard': renderDashboard();break;
@@ -2103,6 +2106,134 @@ window.removeStudent=async function(uid,classCode,name){
   await dbUpdate(`users/${uid}/profile`,{approved:false});
   toast(`🗑️ ${name} sınıftan çıkarıldı.`,'w');
   loadStuTab('approved');
+}
+
+// ═══════════ PROFİL ═══════════
+async function renderProfile(){
+  const mc=document.getElementById('main-content');
+  if(!mc)return;
+
+  const state=await dbGet(`users/${session.uid}/gameState`)||defaultState();
+  const profile=await dbGet(`users/${session.uid}/profile`)||{};
+  const photoKey=`profilePhoto_${session.uid}`;
+  const savedPhoto=await dbGet(photoKey)||null;
+
+  mc.innerHTML=`
+  <div style="max-width:600px;margin:0 auto">
+
+    <!-- Profil Kartı -->
+    <div class="card" style="padding:28px;text-align:center;margin-bottom:16px;position:relative">
+      <!-- Fotoğraf -->
+      <div style="position:relative;display:inline-block;margin-bottom:16px">
+        <div id="profile-photo-wrap" style="width:100px;height:100px;border-radius:50%;overflow:hidden;border:3px solid var(--primary);background:var(--bg2);display:flex;align-items:center;justify-content:center;margin:0 auto">
+          ${savedPhoto
+            ?`<img id="profile-photo-img" src="${savedPhoto}" style="width:100%;height:100%;object-fit:cover">`
+            :`<span style="font-size:2.8rem">👤</span>`}
+        </div>
+        <button onclick="document.getElementById('photo-file-input').click()"
+          style="position:absolute;bottom:0;right:0;width:30px;height:30px;border-radius:50%;background:var(--primary);border:2px solid var(--bg);cursor:pointer;font-size:.85rem;display:flex;align-items:center;justify-content:center">✏️</button>
+        <input type="file" id="photo-file-input" accept="image/*" style="display:none" onchange="uploadProfilePhoto(this)">
+      </div>
+
+      <div style="font-family:'Syne',sans-serif;font-size:1.4rem;font-weight:700">${session.name}</div>
+      <div style="font-size:.85rem;color:var(--dim);margin-top:4px">${session.role==='teacher'?'👨‍🏫 Öğretmen':'🎓 Öğrenci'}</div>
+      ${session.classCode?`<div style="font-size:.78rem;color:var(--primary);margin-top:4px">Sınıf: ${session.classCode}</div>`:''}
+
+      <!-- XP Bar -->
+      <div style="margin-top:16px">
+        <div class="flex items-center justify-between mb-1" style="font-size:.75rem;color:var(--dim)">
+          <span>${getRank(state.lvl||1)}</span>
+          <span>${state.xp||0} / ${(state.lvl||1)*150} XP</span>
+        </div>
+        <div class="xp-bar-bg">
+          <div class="xp-bar-fill" style="width:${Math.min(100,((state.xp||0)/((state.lvl||1)*150))*100)}%"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- İstatistikler -->
+    <div class="grid-3 mb-4" style="margin-bottom:14px">
+      <div class="stat-card"><div class="lbl">SEVİYE</div><div class="val text-primary">${state.lvl||1}</div></div>
+      <div class="stat-card"><div class="lbl">TOPLAM XP</div><div class="val text-accent">${state.totalXp||0}</div></div>
+      <div class="stat-card"><div class="lbl">SERİ</div><div class="val text-warning">${state.streak||0} 🔥</div></div>
+    </div>
+    <div class="grid-3 mb-4" style="margin-bottom:16px">
+      <div class="stat-card"><div class="lbl">ÖDEV</div><div class="val text-success">${state.totalCompleted||0}</div></div>
+      <div class="stat-card"><div class="lbl">NOT</div><div class="val text-primary">${state.totalNotes||0}</div></div>
+      <div class="stat-card"><div class="lbl">EN UZUN SERİ</div><div class="val text-warning">${state.bestStreak||0} 🔥</div></div>
+    </div>
+
+    <!-- Rozetler -->
+    <div class="card" style="margin-bottom:16px">
+      <div style="font-family:'Syne',sans-serif;font-size:.75rem;letter-spacing:.1em;color:var(--dim);margin-bottom:16px">🏆 ROZETLER</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(80px,1fr));gap:12px">
+        ${BADGES_DEF.map(b=>{
+          const earned=(state.earnedBadges||[]).includes(b.id)||b.check(state);
+          return `<div title="${b.name}" style="text-align:center;padding:12px 6px;border-radius:12px;
+            background:${earned?'rgba(255,184,0,.08)':'rgba(255,255,255,.02)'};
+            border:1px solid ${earned?'rgba(255,184,0,.3)':'rgba(255,255,255,.06)'}">
+            <div style="font-size:1.8rem;margin-bottom:6px">${earned?b.icon:'🔒'}</div>
+            <div style="font-size:.62rem;color:${earned?'var(--warning)':'var(--dim2)'};line-height:1.3">${b.name}</div>
+          </div>`;
+        }).join('')}
+      </div>
+    </div>
+
+    <!-- Mağaza Ürünleri -->
+    ${(state.storeItems||[]).length>0?`
+    <div class="card">
+      <div style="font-family:'Syne',sans-serif;font-size:.75rem;letter-spacing:.1em;color:var(--dim);margin-bottom:12px">🛒 SAHİP OLUNAN EŞYALAR</div>
+      <div class="flex gap-2" style="flex-wrap:wrap">
+        ${(state.storeItems||[]).map(id=>{
+          const item=STORE_ITEMS?.find(s=>s.id===id);
+          return item?`<span class="badge badge-primary">${item.icon} ${item.name}</span>`:'';
+        }).join('')}
+      </div>
+    </div>`:''}
+
+  </div>`;
+
+  // Profil fotoğrafını mobil nav'da da göster
+  updateProfileNavIcon(savedPhoto);
+}
+
+window.uploadProfilePhoto=async function(input){
+  const file=input.files[0];if(!file)return;
+  if(file.size>2*1024*1024){toast('❌ Fotoğraf max 2MB olabilir.','d');return;}
+  toast('📸 Yükleniyor...','i');
+  const reader=new FileReader();
+  reader.onload=async e=>{
+    const dataUrl=e.target.result;
+    // Firebase'e kaydet
+    try{
+      await dbSet(`profilePhoto_${session.uid}`,dataUrl);
+      // Göster
+      const wrap=document.getElementById('profile-photo-wrap');
+      if(wrap)wrap.innerHTML=`<img src="${dataUrl}" style="width:100%;height:100%;object-fit:cover">`;
+      updateProfileNavIcon(dataUrl);
+      toast('✅ Fotoğraf güncellendi!','s');
+    }catch(e){
+      toast('❌ Kaydetme hatası','d');
+    }
+  };
+  reader.readAsDataURL(file);
+  input.value='';
+}
+
+async function updateProfileNavIcon(photoUrl){
+  const icon=document.getElementById('mnav-profile-icon');
+  if(!icon)return;
+  if(photoUrl){
+    icon.innerHTML=`<img src="${photoUrl}" style="width:28px;height:28px;border-radius:50%;object-fit:cover;border:2px solid var(--primary)">`;
+  } else {
+    icon.textContent='👤';
+  }
+}
+
+// Profil fotoğrafını app açılışında yükle
+async function loadProfilePhoto(){
+  const photo=await dbGet(`profilePhoto_${session.uid}`);
+  if(photo)updateProfileNavIcon(photo);
 }
 
 // ═══════════ TAKVİM ═══════════
@@ -4283,6 +4414,7 @@ function buildDrawerNav(){
     {page:'voice',icon:'🎤',label:'Sesli Sohbet'},
     {page:'quiz',icon:'📝',label:'Quiz'},
     {page:'classes',icon:'🏫',label:'Sınıflarım'},
+    {page:'profile',icon:'👤',label:'Profilim'},
     {page:'calendar',icon:'📅',label:'Takvim'},
     {page:'ai',icon:'🤖',label:'AI Asistan'},
     {page:'books',icon:'📚',label:'Kitaplarım'},
