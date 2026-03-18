@@ -2727,10 +2727,13 @@ window.saveBook=async function(bookId){
 
   const id=bookId||'book_'+Date.now();
 
-  // PDF'i Firebase'e base64 olarak kaydet — 5MB chunk'lara böl
+  // PDF'i Firebase'e base64 olarak kaydet — her parçayı ayrı ayrı yaz
   if(hasNewPdf){
     const btn=document.getElementById('book-save-btn');
+    const statusEl=document.querySelector('#book-upload-progress #book-upload-status');
+    const barEl=document.querySelector('#book-upload-progress #book-upload-bar');
     if(btn){btn.disabled=true;btn.textContent='Kaydediliyor...';}
+
     // ArrayBuffer → base64
     const arr=new Uint8Array(window._bookPdfData);
     let b64='';
@@ -2740,17 +2743,21 @@ window.saveBook=async function(bookId){
     }
     const b64Final=btoa(b64);
 
-    // 500KB'lık parçalara böl (Firebase 10MB limiti için güvenli)
-    const partSize=500000;
-    const parts={};
-    let partIdx=0;
-    for(let i=0;i<b64Final.length;i+=partSize){
-      parts['p'+partIdx]=b64Final.slice(i,i+partSize);
-      partIdx++;
-    }
+    // 256KB parçalara böl ve her birini AYRI AYRI kaydet
+    const partSize=256000;
+    const totalParts=Math.ceil(b64Final.length/partSize);
 
     try{
-      await dbSet(`bookFiles/${id}`,{parts,partCount:partIdx,savedAt:Date.now()});
+      // Önce metadata kaydet
+      await dbSet(`bookFiles/${id}/meta`,{partCount:totalParts,savedAt:Date.now()});
+      // Her parçayı sırayla kaydet
+      for(let i=0;i<totalParts;i++){
+        const part=b64Final.slice(i*partSize,(i+1)*partSize);
+        await dbSet(`bookFiles/${id}/p${i}`,part);
+        const pct=Math.round((i+1)/totalParts*100);
+        if(statusEl)statusEl.textContent=`Kaydediliyor... %${pct} (${i+1}/${totalParts})`;
+        if(barEl)barEl.style.width=pct+'%';
+      }
     }catch(e){
       toast('❌ PDF kaydedilemedi: '+e.message,'d');
       if(btn){btn.disabled=false;btn.textContent='💾 Kaydet';}
@@ -2830,24 +2837,19 @@ window.openBookReader=async function(bookId, bookTitle){
     }
     if(bar)bar.style.width='40%';
 
-    const fileData=await dbGet(`bookFiles/${bookId}`);
-    if(!fileData){
+    const meta=await dbGet(`bookFiles/${bookId}/meta`);
+    if(!meta?.partCount){
       document.getElementById('book-pdf-loading').innerHTML=`<div style="font-size:2rem;margin-bottom:12px">⚠️</div><div>PDF bulunamadı.<br><span style="font-size:.82rem;color:var(--dim)">Kitabı düzenleyip yeniden yükle.</span></div>`;
       return;
     }
-    if(bar)bar.style.width='70%';
+    if(bar)bar.style.width='50%';
 
-    // Parçaları birleştir
+    // Parçaları sırayla oku ve birleştir
     let b64Final='';
-    if(fileData.parts){
-      for(let i=0;i<fileData.partCount;i++){
-        b64Final+=fileData.parts['p'+i]||'';
-      }
-    } else if(fileData.data){
-      b64Final=fileData.data; // eski format
-    } else {
-      document.getElementById('book-pdf-loading').innerHTML=`<div style="font-size:2rem">⚠️</div><div>PDF verisi bozuk. Yeniden yükle.</div>`;
-      return;
+    for(let i=0;i<meta.partCount;i++){
+      const part=await dbGet(`bookFiles/${bookId}/p${i}`);
+      b64Final+=part||'';
+      if(bar)bar.style.width=Math.round(50+((i+1)/meta.partCount)*40)+'%';
     }
 
     // base64 → Uint8Array
