@@ -2731,9 +2731,16 @@ window.saveBook=async function(bookId){
   if(hasNewPdf){
     const btn=document.getElementById('book-save-btn');
     if(btn){btn.disabled=true;btn.textContent='Kaydediliyor...';}
-    const b64=btoa(String.fromCharCode(...new Uint8Array(window._bookPdfData)));
+    // Chunk'lara bölerek base64'e çevir — büyük dosyalarda stack overflow önler
+    const arr=new Uint8Array(window._bookPdfData);
+    let b64='';
+    const chunk=8192;
+    for(let i=0;i<arr.length;i+=chunk){
+      b64+=String.fromCharCode(...arr.subarray(i,i+chunk));
+    }
+    const b64Final=btoa(b64);
     try{
-      await dbSet(`bookFiles/${id}`,{data:b64,savedAt:Date.now()});
+      await dbSet(`bookFiles/${id}`,{data:b64Final,savedAt:Date.now()});
     }catch(e){
       toast('❌ PDF kaydedilemedi: '+e.message,'d');
       if(btn){btn.disabled=false;btn.textContent='💾 Kaydet';}
@@ -2820,7 +2827,7 @@ window.openBookReader=async function(bookId, bookTitle){
     }
     if(bar)bar.style.width='70%';
 
-    // base64 → Uint8Array
+    // base64 → Uint8Array (chunk'lara bölerek — stack overflow önler)
     const bin=atob(fileData.data);
     const arr=new Uint8Array(bin.length);
     for(let i=0;i<bin.length;i++)arr[i]=bin.charCodeAt(i);
