@@ -640,7 +640,7 @@ if(!window.toggleTheme){
     <div id="join-class-error" style="display:none;font-size:.82rem;color:var(--danger);margin-bottom:10px"></div>
     <div id="join-class-info" style="display:none;background:var(--success-dim);border:1px solid rgba(0,214,143,.3);border-radius:10px;padding:12px;margin-bottom:14px;font-size:.85rem"></div>
     <div class="flex gap-2 mt-2">
-      <button class="btn btn-ghost" style="flex:1" onclick="hideModal('modal-join-class')">İptal</button>
+      <button class="btn btn-ghost" style="flex:1" onclick="hideModal('modal-join-class')"> ${t('cancel')}</button>
       <button class="btn btn-primary" style="flex:2" onclick="joinClass()" id="join-btn">Sınıfa Başvur →</button>
     </div>
   </div>
@@ -677,7 +677,7 @@ if(!window.toggleTheme){
       </div>
     </div>
 
-    <button class="btn btn-primary btn-block mt-4" onclick="hideModal('modal-contributors')">Kapat</button>
+    <button class="btn btn-primary btn-block mt-4" onclick="hideModal('modal-contributors')"> ${t('close')}</button>
   </div>
 </div>
 
@@ -697,7 +697,7 @@ if(!window.toggleTheme){
       </div>
       <div class="form-group"><label class="label">SINIF</label><select class="input" id="ann-class-sel"><option value="">— Seç —</option></select></div>
     </div>
-    <div class="flex gap-2 mt-4"><button class="btn btn-ghost" style="flex:1" onclick="hideModal('modal-create-ann')">İptal</button><button class="btn btn-primary" style="flex:2" onclick="createAnnouncement()">📢 Yayınla</button></div>
+    <div class="flex gap-2 mt-4"><button class="btn btn-ghost" style="flex:1" onclick="hideModal('modal-create-ann')"> ${t('cancel')}</button><button class="btn btn-primary" style="flex:2" onclick="createAnnouncement()">📢 Yayınla</button></div>
   </div>
 </div>
 
@@ -721,7 +721,7 @@ if(!window.toggleTheme){
       <button class="btn btn-ghost" onclick="addQuizQuestion('fill')" style="font-size:.82rem">+ Boşluk Doldurma</button>
       <button class="btn btn-ghost" onclick="addQuizQuestion('open')" style="font-size:.82rem">+ Açık Uçlu</button>
     </div>
-    <div class="flex gap-2 mt-4"><button class="btn btn-ghost" style="flex:1" onclick="hideModal('modal-create-quiz')">İptal</button><button class="btn btn-primary" style="flex:2" onclick="publishQuiz()">🚀 Quiz Yayınla</button></div>
+    <div class="flex gap-2 mt-4"><button class="btn btn-ghost" style="flex:1" onclick="hideModal('modal-create-quiz')"> ${t('cancel')}</button><button class="btn btn-primary" style="flex:2" onclick="publishQuiz()">🚀 Quiz Yayınla</button></div>
   </div>
 </div>
 
@@ -731,7 +731,7 @@ if(!window.toggleTheme){
     <div class="modal-title">🏫 Yeni Sınıf Oluştur</div>
     <div class="form-group"><label class="label">SINIF ADI</label><input type="text" class="input" id="cls-name" placeholder="Örn: 11-A Fen Grubu" maxlength="50"></div>
     <div class="form-group"><label class="label">AÇIKLAMA</label><input type="text" class="input" id="cls-desc" placeholder="İsteğe bağlı" maxlength="100"></div>
-    <div class="flex gap-2 mt-4"><button class="btn btn-ghost" style="flex:1" onclick="hideModal('modal-create-class')">İptal</button><button class="btn btn-primary" style="flex:2" onclick="createClass()">Oluştur</button></div>
+    <div class="flex gap-2 mt-4"><button class="btn btn-ghost" style="flex:1" onclick="hideModal('modal-create-class')"> ${t('cancel')}</button><button class="btn btn-primary" style="flex:2" onclick="createClass()">Oluştur</button></div>
   </div>
 </div>
 
@@ -748,7 +748,7 @@ if(!window.toggleTheme){
       <div class="form-group"><label class="label">XP ÖDÜLÜ</label><input type="number" class="input" id="hw-xp" value="50" min="10" max="300"></div>
     </div>
     <div class="form-group"><label class="label">CEZA XP (geç teslim)</label><input type="number" class="input" id="hw-penalty" value="20" min="0" max="100"></div>
-    <div class="flex gap-2 mt-4"><button class="btn btn-ghost" style="flex:1" onclick="hideModal('modal-assign-hw')">İptal</button><button class="btn btn-primary" style="flex:2" onclick="assignHomework()">📤 Ödevi Gönder</button></div>
+    <div class="flex gap-2 mt-4"><button class="btn btn-ghost" style="flex:1" onclick="hideModal('modal-assign-hw')"> ${t('cancel')}</button><button class="btn btn-primary" style="flex:2" onclick="assignHomework()">📤 Ödevi ${t('submit')}</button></div>
   </div>
 </div>
 
@@ -761,7 +761,7 @@ if(!window.toggleTheme){
     <div class="form-group"><label class="label">BAŞLIK</label><input type="text" class="input" id="note-title" placeholder="Not başlığı" maxlength="80"></div>
     <div class="form-group"><label class="label">İÇERİK</label><textarea class="input" id="note-content" placeholder="Ders notun..." style="min-height:120px"></textarea></div>
     <div class="form-group"><label class="label">DOSYA LİNKİ (Google Drive, vb.)</label><input type="url" class="input" id="note-link" placeholder="https://drive.google.com/..."></div>
-    <div class="flex gap-2 mt-4"><button class="btn btn-ghost" style="flex:1" onclick="hideModal('modal-share-note')">İptal</button><button class="btn btn-success" style="flex:2" onclick="shareNote()">📤 Paylaş</button></div>
+    <div class="flex gap-2 mt-4"><button class="btn btn-ghost" style="flex:1" onclick="hideModal('modal-share-note')"> ${t('cancel')}</button><button class="btn btn-success" style="flex:2" onclick="shareNote()">📤 ${t('share')}</button></div>
   </div>
 </div>
 
@@ -772,7 +772,7 @@ if(!window.toggleTheme){
     <div id="submit-hw-info" style="background:var(--bg2);border-radius:10px;padding:14px;margin-bottom:16px;font-size:.88rem"></div>
     <div class="form-group"><label class="label">AÇIKLAMA / NOT</label><textarea class="input" id="submit-note" placeholder="Ödev hakkında not..."></textarea></div>
     <div class="form-group"><label class="label">DOSYA / LİNK (Google Drive vb.)</label><input type="url" class="input" id="submit-link" placeholder="https://drive.google.com/..."></div>
-    <div class="flex gap-2 mt-4"><button class="btn btn-ghost" style="flex:1" onclick="hideModal('modal-submit-hw')">İptal</button><button class="btn btn-success" style="flex:2" onclick="submitHomework()">✅ Teslim Et</button></div>
+    <div class="flex gap-2 mt-4"><button class="btn btn-ghost" style="flex:1" onclick="hideModal('modal-submit-hw')"> ${t('cancel')}</button><button class="btn btn-success" style="flex:2" onclick="submitHomework()">✅ ${t('submit')}</button></div>
   </div>
 </div>
 
@@ -1448,18 +1448,18 @@ function renderBadgesHTML(state){
 async function renderHomework(){
   const mc=document.getElementById('main-content');
   mc.innerHTML=`<div class="flex items-center justify-between mb-4">
-    <div style="font-family:'Syne',sans-serif;font-size:1.3rem;font-weight:700">📋 Ödevler</div>
-    ${session.role==='teacher'?`<button class="btn btn-primary" onclick="showModal('modal-assign-hw');loadTeacherClassesForHw()">+ Ödev Ver</button>`
-    :`<button class="btn btn-success" onclick="openNoteModal()">+ Not Paylaş</button>`}
+    <div style="font-family:'Syne',sans-serif;font-size:1.3rem;font-weight:700">📋 ${t('homework')}</div>
+    ${session.role==='teacher'?`<button class="btn btn-primary" onclick="showModal('modal-assign-hw');loadTeacherClassesForHw()">${t('assign')}</button>`
+    :`<button class="btn btn-success" onclick="openNoteModal()">+ ${t('share')}</button>`}
   </div>
   <div class="tabs">
-    <div class="tab active" id="hw-tab-pending" onclick="hwTab('pending')">Bekleyen</div>
-    <div class="tab" id="hw-tab-done" onclick="hwTab('done')">Tamamlanan</div>
-    <div class="tab" id="hw-tab-overdue" onclick="hwTab('overdue')">Geçmiş</div>
+    <div class="tab active" id="hw-tab-pending" onclick="hwTab('pending')"><span data-tab-i18n='pending'>${t('pending')}</span></div>
+    <div class="tab" id="hw-tab-done" onclick="hwTab('done')"><span data-tab-i18n='done'>${t('completed')}</span></div>
+    <div class="tab" id="hw-tab-overdue" onclick="hwTab('overdue')"><span data-tab-i18n='past'>${t('past')}</span></div>
     ${session.role==='teacher'?`
-      <div class="tab" id="hw-tab-given" onclick="hwTab('given')">Verdiğim</div>
-      <div class="tab" id="hw-tab-cancelled" onclick="hwTab('cancelled')">🚫 İptal</div>
-    `:'<div class="tab" id="hw-tab-cancelled" onclick="hwTab(\'cancelled\')">🚫 İptal</div>'}
+      <div class="tab" id="hw-tab-given" onclick="hwTab('given')"><span data-tab-i18n='mine'>${t('mine')}</span></div>
+      <div class="tab" id="hw-tab-cancelled" onclick="hwTab('cancelled')">🚫 ${t('cancelled')}</div>
+    `:'<div class="tab" id="hw-tab-cancelled" onclick="hwTab(\'cancelled\')">🚫 ${t('cancelled')}</div>'}
   </div>
   <div id="hw-list"></div>`;
   await loadHwTab('pending');
@@ -1490,7 +1490,7 @@ async function loadHwTab(tab){
     else filtered=all.filter(h=>h.status!=='cancelled');
   }
   filtered.sort((a,b)=>new Date(a.dueDate)-new Date(b.dueDate));
-  if(filtered.length===0){list.innerHTML=`<div class="card text-center text-dim" style="padding:50px"><div style="font-size:3rem;margin-bottom:10px">📭</div><div>${tab==='cancelled'?'İptal edilmiş ödev yok.':'Burada ödev yok.'}</div></div>`;return}
+  if(filtered.length===0){list.innerHTML=`<div class="card text-center text-dim" style="padding:50px"><div style="font-size:3rem;margin-bottom:10px">📭</div><div>${tab==='cancelled'?t('cancelled')+' - ' +t('noHw'):t('noHw')}</div></div>`;return}
   list.innerHTML=filtered.map(h=>hwCard(h,tab)).join('');
 }
 
@@ -1509,31 +1509,31 @@ function hwCard(hw,tab){
   return `<div class="hw-card ${urgency}" style="${isCancelled?'opacity:.65;border-left-color:var(--danger)':''}">
     <div class="flex items-center justify-between mb-2">
       <div>
-        <div style="font-weight:700;font-size:.95rem;margin-bottom:4px">${hw.title}${isCancelled?` <span class="badge badge-danger">🚫 İptal</span>`:''}</div>
+        <div style="font-weight:700;font-size:.95rem;margin-bottom:4px">${hw.title}${isCancelled?` <span class="badge badge-danger">🚫 ${t('cancelled')}</span>`:''}</div>
         <div class="flex items-center gap-2">
           <span style="color:${subj.color};font-size:.8rem">${subj.icon} ${subj.name}</span>
           <span class="text-dim" style="font-size:.75rem">· ${fmtDate(hw.dueDate)}</span>
-          ${session.role==='teacher'?`<span class="badge badge-accent">${submittedCount}/${assignedCount} teslim</span>`:''}
+          ${session.role==='teacher'?`<span class="badge badge-accent">${submittedCount}/${assignedCount} ${t('submit')}</span>`:''}
         </div>
       </div>
       <div class="flex items-center gap-2">
         ${isCancelled
-          ?`<span class="badge badge-danger">🚫 İptal Edildi</span>`
-          :isDone?`<span class="badge badge-success">✓ Teslim</span>`
+          ?`<span class="badge badge-danger">🚫 ${t('cancelled')}</span>`
+          :isDone?`<span class="badge badge-success">✓ ${t('submit')}</span>`
           :days<0?`<span class="badge badge-danger">Geçti</span>`
-          :days===0?`<span class="badge badge-danger">Bugün!</span>`
-          :days<=3?`<span class="badge badge-warning">${days} gün</span>`
-          :`<span class="badge badge-primary">${days} gün</span>`
+          :days===0?`<span class="badge badge-danger">${t('today')}!</span>`
+          :days<=3?`<span class="badge badge-warning">${days} ${t('days')}</span>`
+          :`<span class="badge badge-primary">${days} ${t('days')}</span>`
         }
-        ${!isCancelled&&!isDone&&days>=0&&session.role==='student'?`<button class="btn btn-success" style="padding:6px 14px;font-size:.78rem" onclick="openSubmitHw('${hw.id}')">Teslim Et</button>`:''}
-        ${session.role==='teacher'&&!isCancelled?`<button class="btn btn-danger" style="padding:6px 12px;font-size:.75rem" onclick="cancelHomework('${hw.id}','${hw.title.replace(/'/g,"\\'")}')">🚫 İptal</button>`:''}
-        ${session.role==='teacher'&&isCancelled?`<button class="btn btn-ghost" style="padding:6px 12px;font-size:.75rem" onclick="restoreHomework('${hw.id}','${hw.title.replace(/'/g,"\\'")}')">↩ Geri Al</button>`:''}
+        ${!isCancelled&&!isDone&&days>=0&&session.role==='student'?`<button class="btn btn-success" style="padding:6px 14px;font-size:.78rem" onclick="openSubmitHw('${hw.id}')">${t('submit')}</button>`:''}
+        ${session.role==='teacher'&&!isCancelled?`<button class="btn btn-danger" style="padding:6px 12px;font-size:.75rem" onclick="cancelHomework('${hw.id}','${hw.title.replace(/'/g,"\\'")}')">🚫 ${t('cancelled')}</button>`:''}
+        ${session.role==='teacher'&&isCancelled?`<button class="btn btn-ghost" style="padding:6px 12px;font-size:.75rem" onclick="restoreHomework('${hw.id}','${hw.title.replace(/'/g,"\\'")}')">${t('back')}</button>`:''}
       </div>
     </div>
     ${hw.description?`<div class="text-dim" style="font-size:.82rem;margin-bottom:8px">${hw.description}</div>`:''}
     <div class="deadline-bar"><div class="deadline-fill" style="width:${pct}%;background:${barColor}"></div></div>
     <div class="flex items-center justify-between">
-      <span class="text-dim2" style="font-size:.72rem">+${hw.xp||50} XP ödül · −${hw.penalty||20} XP ceza</span>
+      <span class="text-dim2" style="font-size:.72rem">+${hw.xp||50} XP ${t('xpReward')} · −${hw.penalty||20} XP ${t('latePenalty')}</span>
       ${isCancelled&&hw.cancelledAt?`<span class="text-dim2" style="font-size:.72rem">İptal: ${new Date(hw.cancelledAt).toLocaleDateString('tr-TR')}</span>`:''}
     </div>
   </div>`;
@@ -1594,8 +1594,8 @@ window.restoreHomework=async function(hwId,title){
 async function renderNotes(){
   const mc=document.getElementById('main-content');
   mc.innerHTML=`<div class="flex items-center justify-between mb-4">
-    <div style="font-family:'Syne',sans-serif;font-size:1.3rem;font-weight:700">📝 Ders Notları</div>
-    <button class="btn btn-success" onclick="openNoteModal()">+ Not Paylaş</button>
+    <div style="font-family:'Syne',sans-serif;font-size:1.3rem;font-weight:700">📝 ${t('notes')}</div>
+    <button class="btn btn-success" onclick="openNoteModal()">+ ${t('share')}</button>
   </div>
   <div class="flex gap-2 mb-4" style="flex-wrap:wrap">
     <button class="btn btn-ghost" style="font-size:.8rem" id="note-filter-all" onclick="filterNotes('all')">Tümü</button>
@@ -1641,7 +1641,7 @@ async function loadNotes(cat){
   if(filtered.length===0){
     grid.innerHTML=`<div class="card text-center text-dim" style="padding:50px;grid-column:1/-1">
       <div style="font-size:3rem;margin-bottom:10px">📭</div>
-      <div>${!myCode&&session.role==='student'?'Henüz bir sınıfa katılmadın.':'Henüz not paylaşılmadı.'}</div>
+      <div>${!myCode&&session.role==='student'?'Henüz bir sınıfa katılmadın.':'t('noNotes')'}</div>
     </div>`;
     return;
   }
@@ -1771,15 +1771,15 @@ window.shareNote=async function(){
 async function renderClasses(){
   const mc=document.getElementById('main-content');
   mc.innerHTML=`<div class="flex items-center justify-between mb-4">
-    <div style="font-family:'Syne',sans-serif;font-size:1.3rem;font-weight:700">🏫 Sınıflarım</div>
-    ${session.role==='teacher'?`<button class="btn btn-primary" onclick="showModal('modal-create-class')">+ Yeni Sınıf</button>`:''}
+    <div style="font-family:'Syne',sans-serif;font-size:1.3rem;font-weight:700">🏫 ${t('classes')}</div>
+    ${session.role==='teacher'?`<button class="btn btn-primary" onclick="showModal('modal-create-class')">+ ${t('newClass')}</button>`:''}
   </div><div id="classes-list"></div>`;
   const classes=await dbGet('classes')||{};
   const el=document.getElementById('classes-list');
   let myClasses=[];
   if(session.role==='teacher')myClasses=Object.values(classes).filter(c=>c.teacherUid===session.uid);
   else if(session.role==='student'&&session.classCode)myClasses=Object.values(classes).filter(c=>c.code===session.classCode);
-  if(myClasses.length===0){el.innerHTML=`<div class="card text-center text-dim" style="padding:60px"><div style="font-size:3rem;margin-bottom:12px">🏫</div><div>${session.role==='teacher'?'Henüz sınıf yok. Sağ üstten oluştur.':'Henüz bir sınıfa kayıtlı değilsin.'}</div></div>`;return}
+  if(myClasses.length===0){el.innerHTML=`<div class="card text-center text-dim" style="padding:60px"><div style="font-size:3rem;margin-bottom:12px">🏫</div><div>${session.role==='teacher'?'${t('classes')} - ${t('noHw')} Sağ üstten oluştur.':'Henüz bir sınıfa kayıtlı değilsin.'}</div></div>`;return}
   el.innerHTML='';
   for(const cls of myClasses){
     const members=await dbGet(`classMembers/${safeKey(cls.code)}`)||{};
@@ -1875,7 +1875,7 @@ window.assignHomework=async function(){
 // ═══════════ STUDENTS (Teacher) ═══════════
 async function renderStudents(){
   const mc=document.getElementById('main-content');
-  mc.innerHTML=`<div style="font-family:'Syne',sans-serif;font-size:1.3rem;font-weight:700;margin-bottom:20px">👥 Öğrencilerim</div>
+  mc.innerHTML=`<div style="font-family:'Syne',sans-serif;font-size:1.3rem;font-weight:700;margin-bottom:20px">👥 ${t('students')}</div>
   <div class="tabs">
     <div class="tab active" id="stu-tab-pending" onclick="stuTab('pending')">⏳ Bekleyenler <span id="pending-count-tab" class="nav-badge" style="display:inline;margin-left:4px">0</span></div>
     <div class="tab" id="stu-tab-approved" onclick="stuTab('approved')">✅ Onaylananlar</div>
@@ -1987,7 +1987,7 @@ window.removeStudent=async function(uid,classCode,name){
 async function renderLeaderboard(){
   const mc=document.getElementById('main-content');
   if(!mc)return;
-  mc.innerHTML=`<div style="font-family:'Syne',sans-serif;font-size:1.3rem;font-weight:700;margin-bottom:20px">🏆 Liderboard</div>
+  mc.innerHTML=`<div style="font-family:'Syne',sans-serif;font-size:1.3rem;font-weight:700;margin-bottom:20px">🏆 ${t('leaderboard')}</div>
   <div id="lb-content"></div>`;
   const classes=await dbGet('classes')||{};
   const myClassCodes=session.role==='teacher'
@@ -2222,7 +2222,7 @@ const LANGUAGES={
     // Buttons
     submit:'Gönder',cancel:'İptal',save:'Kaydet',close:'Kapat',delete:'Sil',edit:'Düzenle',
     publish:'Yayınla',create:'Oluştur',add:'Ekle',share:'Paylaş',upload:'Yükle',
-    back:'← Geri',loading:'Yükleniyor...',
+    back:'← Geri',loading:'${t('loading')}',
     // Homework
     pending:'Bekleyen',completed:'Tamamlanan',past:'Geçmiş',mine:'Verdiğim',cancelled:'İptal',
     dueDate:'Son Teslim',xpReward:'XP Ödülü',latePenalty:'Geç Teslim Cezası',
@@ -2446,15 +2446,15 @@ window.applyLang=applyLang;
 async function renderAnnouncements(){
   const mc=document.getElementById('main-content');
   mc.innerHTML=`<div class="flex items-center justify-between mb-4">
-    <div style="font-family:'Syne',sans-serif;font-size:1.3rem;font-weight:700">📢 Duyurular</div>
-    ${session.role==='teacher'?`<button class="btn btn-primary" onclick="openAnnModal()">+ Duyuru Ekle</button>`:''}
+    <div style="font-family:'Syne',sans-serif;font-size:1.3rem;font-weight:700">📢 ${t('announcements')}</div>
+    ${session.role==='teacher'?`<button class="btn btn-primary" onclick="openAnnModal()">+ ${t('add')}</button>`:''}
   </div><div id="ann-list"></div>`;
   const anns=await dbGet('announcements')||{};
   const myClassCode=session.classCode||'';
   let list=Object.values(anns).filter(a=>a.classCode===myClassCode||(session.role==='teacher'&&a.teacherUid===session.uid));
   list.sort((a,b)=>{if(a.type==='pinned'&&b.type!=='pinned')return -1;if(b.type==='pinned'&&a.type!=='pinned')return 1;return b.createdAt-a.createdAt});
   const el=document.getElementById('ann-list');
-  if(list.length===0){el.innerHTML=`<div class="card text-center text-dim" style="padding:50px"><div style="font-size:3rem;margin-bottom:10px">📢</div><div>Henüz duyuru yok.</div></div>`;return}
+  if(list.length===0){el.innerHTML=`<div class="card text-center text-dim" style="padding:50px"><div style="font-size:3rem;margin-bottom:10px">📢</div><div>t('noHw').replace('ödev','duyuru')</div></div>`;return}
   el.innerHTML=list.map(a=>{
     const typeColor=a.type==='important'?'var(--danger)':a.type==='pinned'?'var(--warning)':'var(--primary)';
     const typeIcon=a.type==='important'?'⚠️':a.type==='pinned'?'📌':'📢';
@@ -2570,12 +2570,12 @@ async function renderChat(){
     mc.innerHTML=`<div class="card text-center text-dim" style="padding:50px"><div style="font-size:3rem;margin-bottom:10px">💬</div><div>Sohbet için önce bir sınıfa katıl.</div></div>`;
     return;
   }
-  mc.innerHTML=`<div style="font-family:'Syne',sans-serif;font-size:1.3rem;font-weight:700;margin-bottom:12px">💬 Sınıf Sohbeti</div>
+  mc.innerHTML=`<div style="font-family:'Syne',sans-serif;font-size:1.3rem;font-weight:700;margin-bottom:12px">💬 ${t('chat')}</div>
   ${classOptions}
   <div style="display:flex;flex-direction:column;height:calc(100vh - ${session.role==='teacher'?'230':'190'}px)">
     <div id="chat-messages" class="scroll-y" style="flex:1;background:var(--card);border:1px solid var(--border);border-radius:16px 16px 0 0;padding:16px;overflow-y:auto;display:flex;flex-direction:column;gap:10px"></div>
     <div style="display:flex;gap:10px;background:var(--card2);border:1px solid var(--border);border-top:none;border-radius:0 0 16px 16px;padding:12px">
-      <input type="text" class="input" id="chat-input" placeholder="Mesaj yaz..." onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendChatMsg('${chatClassCode}')}" style="flex:1">
+      <input type="text" class="input" id="chat-input" placeholder="${t('chat')}..." onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendChatMsg('${chatClassCode}')}" style="flex:1">
       <button class="btn btn-primary" onclick="sendChatMsg('${chatClassCode}')">Gönder →</button>
     </div>
   </div>`;
@@ -2639,8 +2639,8 @@ async function renderQuiz(){
   const mc=document.getElementById('main-content');
   mc.innerHTML=`<div style="font-family:'Syne',sans-serif;font-size:1.3rem;font-weight:700;margin-bottom:16px">📝 Quizler</div>
   <div class="tabs">
-    <div class="tab active" id="quiz-tab-active" onclick="quizTab('active')">Aktif</div>
-    <div class="tab" id="quiz-tab-cancelled" onclick="quizTab('cancelled')">🚫 İptal</div>
+    <div class="tab active" id="quiz-tab-active" onclick="quizTab('active')">${t('pending')}</div>
+    <div class="tab" id="quiz-tab-cancelled" onclick="quizTab('cancelled')">🚫 ${t('cancelled')}</div>
   </div>
   <div id="quiz-list"></div>`;
   await loadQuizTab('active');
@@ -2669,7 +2669,7 @@ async function loadQuizTab(tab){
     return `<div class="card card-hover mb-3" style="margin-bottom:12px;${isCancelled?'opacity:.65;border-left:4px solid var(--danger)':''}">
       <div class="flex items-center justify-between mb-2">
         <div>
-          <div style="font-weight:700;font-size:.95rem">${q.title}${isCancelled?` <span class="badge badge-danger">🚫 İptal</span>`:''}</div>
+          <div style="font-weight:700;font-size:.95rem">${q.title}${isCancelled?` <span class="badge badge-danger">🚫 ${t('cancelled')}</span>`:''}</div>
           <div class="flex items-center gap-2 mt-1">
             <span style="color:${subj.color};font-size:.8rem">${subj.icon} ${subj.name}</span>
             <span class="badge badge-primary">${q.questions?.length||0} soru</span>
@@ -2678,13 +2678,13 @@ async function loadQuizTab(tab){
         </div>
         <div class="flex items-center gap-2">
           ${session.role==='student'
-            ?isCancelled?`<span class="badge badge-danger">İptal</span>`
+            ?isCancelled?`<span class="badge badge-danger"> ${t('cancel')}</span>`
             :myResult?`<span class="badge badge-success">✓ ${myResult.score}/${q.questions?.length||0} · +${myResult.xp}XP</span>`
-            :`<button class="btn btn-primary" onclick="startQuiz('${q.id}')">Quize Gir →</button>`
-            :`<span class="badge badge-accent">${Object.keys(q.results||{}).length} tamamladı</span>`
+            :`<button class="btn btn-primary" onclick="startQuiz('${q.id}')">${t('quiz')} →</button>`
+            :`<span class="badge badge-accent">${Object.keys(q.results||{}).length} ${t('completed')}</span>`
           }
-          ${session.role==='teacher'&&!isCancelled?`<button class="btn btn-danger" style="padding:6px 12px;font-size:.75rem" onclick="cancelQuiz('${q.id}','${q.title.replace(/'/g,"\\'")}')">🚫 İptal</button>`:''}
-          ${session.role==='teacher'&&isCancelled?`<button class="btn btn-ghost" style="padding:6px 12px;font-size:.75rem" onclick="restoreQuiz('${q.id}','${q.title.replace(/'/g,"\\'")}')">↩ Geri Al</button>`:''}
+          ${session.role==='teacher'&&!isCancelled?`<button class="btn btn-danger" style="padding:6px 12px;font-size:.75rem" onclick="cancelQuiz('${q.id}','${q.title.replace(/'/g,"\\'")}')">🚫 ${t('cancelled')}</button>`:''}
+          ${session.role==='teacher'&&isCancelled?`<button class="btn btn-ghost" style="padding:6px 12px;font-size:.75rem" onclick="restoreQuiz('${q.id}','${q.title.replace(/'/g,"\\'")}')">${t('back')}</button>`:''}
         </div>
       </div>
       <div class="text-dim" style="font-size:.75rem">${new Date(q.createdAt).toLocaleDateString('tr-TR')} · ${q.teacherName}${isCancelled&&q.cancelledAt?` · İptal: ${new Date(q.cancelledAt).toLocaleDateString('tr-TR')}`  :''}</div>
@@ -2875,8 +2875,8 @@ async function renderBooks(){
   if(!mc)return;
   mc.innerHTML=`
   <div class="flex items-center justify-between mb-4">
-    <div style="font-family:'Syne',sans-serif;font-size:1.3rem;font-weight:700">📚 Kitaplarım</div>
-    ${session.role==='teacher'?`<button class="btn btn-primary" onclick="openAddBookModal()">+ Kitap Ekle</button>`:''}
+    <div style="font-family:'Syne',sans-serif;font-size:1.3rem;font-weight:700">📚 ${t('books')}</div>
+    ${session.role==='teacher'?`<button class="btn btn-primary" onclick="openAddBookModal()">+ ${t('add')}</button>`:''}
   </div>
   <div id="books-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:16px"></div>`;
   await loadBooks();
@@ -2926,8 +2926,8 @@ async function loadBooks(){
         <button class="btn btn-primary btn-block" style="font-size:.85rem" onclick="openBookReader('${b.id}','${safeTitle}')">📖 Oku & Not Al</button>
         ${isOwner?`
         <div class="flex gap-2">
-          <button class="btn btn-ghost" style="flex:1;font-size:.78rem" onclick="editBook('${b.id}')">✏️ Düzenle</button>
-          <button class="btn btn-danger" style="flex:1;font-size:.78rem" onclick="deleteBook('${b.id}')">🗑️ Sil</button>
+          <button class="btn btn-ghost" style="flex:1;font-size:.78rem" onclick="editBook('${b.id}')">✏️ ${t('edit')}</button>
+          <button class="btn btn-danger" style="flex:1;font-size:.78rem" onclick="deleteBook('${b.id}')">🗑️ ${t('delete')}</button>
         </div>`:''}
       </div>
     </div>`;
@@ -2972,7 +2972,7 @@ window.openAddBookModal=async function(bookId){
         </div>
       </label>
       <div id="book-upload-progress" style="display:none;margin-top:8px">
-        <div style="font-size:.8rem;color:var(--dim);margin-bottom:4px" id="book-upload-status">Yükleniyor...</div>
+        <div style="font-size:.8rem;color:var(--dim);margin-bottom:4px" id="book-upload-status">${t('loading')}</div>
         <div class="xp-bar-bg"><div class="xp-bar-fill" id="book-upload-bar" style="width:0%;transition:width .2s"></div></div>
       </div>
     </div>
@@ -2980,8 +2980,8 @@ window.openAddBookModal=async function(bookId){
       <textarea class="input" id="book-desc" placeholder="Kitap hakkında kısa bilgi..." style="min-height:60px">${book?.description||''}</textarea>
     </div>
     <div class="flex gap-2 mt-4">
-      <button class="btn btn-ghost" style="flex:1" onclick="document.getElementById('modal-add-book').remove()">İptal</button>
-      <button class="btn btn-primary" style="flex:2" id="book-save-btn" onclick="saveBook('${bookId||''}')">💾 Kaydet</button>
+      <button class="btn btn-ghost" style="flex:1" onclick="document.getElementById('modal-add-book').remove()"> ${t('cancel')}</button>
+      <button class="btn btn-primary" style="flex:2" id="book-save-btn" onclick="saveBook('${bookId||''}')">💾 ${t('save')}</button>
     </div>
   </div>`;
   document.body.appendChild(modal);
@@ -3092,7 +3092,7 @@ window.openBookReader=async function(bookId, bookTitle){
 
   mc.innerHTML=`
   <div class="flex items-center gap-3 mb-3" style="flex-wrap:wrap">
-    <button class="btn btn-ghost" onclick="navTo('books')" style="padding:8px 12px">← Geri</button>
+    <button class="btn btn-ghost" onclick="navTo('books')" style="padding:8px 12px">← ${t('back').replace('← ','')}</button>
     <div style="font-family:'Syne',sans-serif;font-size:1rem;font-weight:700;flex:1">📖 ${bookTitle}</div>
   </div>
   <div class="card" style="padding:0;overflow:hidden">
@@ -3204,7 +3204,7 @@ async function renderStore(){
   const state=await dbGet(`users/${session.uid}/gameState`)||defaultState();
   const owned=state.storeItems||[];
   mc.innerHTML=`<div class="flex items-center justify-between mb-4">
-    <div style="font-family:'Syne',sans-serif;font-size:1.3rem;font-weight:700">🛒 Mağaza</div>
+    <div style="font-family:'Syne',sans-serif;font-size:1.3rem;font-weight:700">🛒 ${t('store')}</div>
     <div class="badge badge-success" style="font-size:.85rem;padding:6px 14px">💰 ${state.totalXp||0} XP</div>
   </div>
   <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px">
@@ -3271,8 +3271,8 @@ async function renderAnalytics(){
   stuXP.sort((a,b)=>b.xp-a.xp);
   document.getElementById('analytics-content').innerHTML=`
   <div class="grid-2 mb-4" style="margin-bottom:20px">
-    <div class="stat-card"><div class="lbl">TOPLAM ÖDEV</div><div class="val text-primary">${myHws.length}</div></div>
-    <div class="stat-card"><div class="lbl">AKTİF SINIF</div><div class="val text-success">${classes.length}</div></div>
+    <div class="stat-card"><div class="lbl">${t('homework').toUpperCase()}</div><div class="val text-primary">${myHws.length}</div></div>
+    <div class="stat-card"><div class="lbl">${t('classes').toUpperCase()}</div><div class="val text-success">${classes.length}</div></div>
   </div>
   <div class="grid-2" style="gap:20px">
     <div class="card"><div style="font-family:'Syne',sans-serif;font-size:.75rem;letter-spacing:.1em;color:var(--dim);margin-bottom:14px">📋 ÖDEV TAMAMLANMA</div><canvas id="chart-completion" height="200"></canvas></div>
@@ -3559,7 +3559,7 @@ async function renderVoiceChat(){
   }
 
   mc.innerHTML=`
-  <div style="font-family:'Syne',sans-serif;font-size:1.3rem;font-weight:700;margin-bottom:12px">🎤 Sesli Sohbet</div>
+  <div style="font-family:'Syne',sans-serif;font-size:1.3rem;font-weight:700;margin-bottom:12px">🎤 ${t('voice')}</div>
   ${classSelector}
 
   ${session.role==='teacher'?`
