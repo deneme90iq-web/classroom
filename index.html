@@ -443,36 +443,36 @@ if(!window.toggleTheme){
   <div class="auth-wrap">
     <div class="text-center float">
       <div class="auth-logo">classroom</div>
-      <div style="font-size:.8rem;color:var(--dim)" data-i18n="tagline">Akıllı Sınıf Yönetim Platformu</div>
+      <div style="font-size:.8rem;color:var(--dim)">Akıllı Sınıf Yönetim Platformu</div>
     </div>
 
     <div class="auth-box">
       <div class="auth-tabs">
-        <div class="auth-tab active" id="tab-login" onclick="switchAuthTab('login')" data-i18n="loginTab">Giriş Yap</div>
-        <div class="auth-tab" id="tab-register" onclick="switchAuthTab('register')" data-i18n="registerTab">Kayıt Ol</div>
+        <div class="auth-tab active" id="tab-login" onclick="switchAuthTab('login')">Giriş Yap</div>
+        <div class="auth-tab" id="tab-register" onclick="switchAuthTab('register')">Kayıt Ol</div>
       </div>
       <div id="auth-error" class="err-msg"></div>
 
       <!-- LOGIN -->
       <div id="form-login">
-        <div class="form-group"><label class="label" data-i18n="emailLabel">E-POSTA</label><input type="email" class="input" id="login-email" placeholder="ornek@mail.com"></div>
-        <div class="form-group"><label class="label" data-i18n="passLabel">ŞİFRE</label><input type="password" class="input" id="login-pass" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()"></div>
-        <button class="btn btn-primary btn-block btn-lg mt-3" onclick="doLogin()" id="login-btn" data-i18n="loginBtn">Giriş Yap →</button>
-        <div class="text-center mt-3" style="font-size:.8rem;color:var(--dim)"><span data-i18n="noAccount">Hesabın yok mu?</span> <span style="color:var(--primary);cursor:pointer" onclick="switchAuthTab('register')" data-i18n="registerLink">Kayıt ol</span></div>
+        <div class="form-group"><label class="label">E-POSTA</label><input type="email" class="input" id="login-email" placeholder="ornek@mail.com"></div>
+        <div class="form-group"><label class="label">ŞİFRE</label><input type="password" class="input" id="login-pass" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()"></div>
+        <button class="btn btn-primary btn-block btn-lg mt-3" onclick="doLogin()" id="login-btn">Giriş Yap →</button>
+        <div class="text-center mt-3" style="font-size:.8rem;color:var(--dim)"><span>Hesabın yok mu?</span> <span style="color:var(--primary);cursor:pointer" onclick="switchAuthTab('register')">Kayıt ol</span></div>
       </div>
 
       <!-- REGISTER -->
       <div id="form-register" style="display:none">
-        <div class="form-group"><label class="label" data-i18n="nameLabel">AD SOYAD</label><input type="text" class="input" id="reg-name" placeholder="Adın ve soyadın" maxlength="40"></div>
+        <div class="form-group"><label class="label">AD SOYAD</label><input type="text" class="input" id="reg-name" placeholder="Adın ve soyadın" maxlength="40"></div>
         <div class="form-group">
-          <label class="label" data-i18n="roleLabel">ROL</label>
+          <label class="label">ROL</label>
           <div class="role-grid" style="grid-template-columns:1fr 1fr">
-            <button class="role-btn sel-teacher" id="role-teacher" onclick="selectRole('teacher')">👨‍🏫<br><span data-i18n="teacher">Öğretmen</span></button>
-            <button class="role-btn" id="role-student" onclick="selectRole('student')">🎓<br><span data-i18n="student">Öğrenci</span></button>
+            <button class="role-btn sel-teacher" id="role-teacher" onclick="selectRole('teacher')">👨‍🏫<br><span>Öğretmen</span></button>
+            <button class="role-btn" id="role-student" onclick="selectRole('student')">🎓<br><span>Öğrenci</span></button>
           </div>
         </div>
         <div id="reg-branch-group" class="form-group">
-          <label class="label" data-i18n="branchLabel">BRANŞ</label>
+          <label class="label">BRANŞ</label>
           <select class="input" id="reg-branch">
             <option value="genel">🏫 Genel (Tüm Dersler)</option>
             <option value="math">📐 Matematik</option>
@@ -491,10 +491,10 @@ if(!window.toggleTheme){
             <option value="siyer">📿 Siyer</option>
           </select>
         </div>
-        <div class="form-group"><label class="label" data-i18n="emailLabel">E-POSTA</label><input type="email" class="input" id="reg-email" placeholder="ornek@mail.com"></div>
-        <div class="form-group"><label class="label" data-i18n="passHint">ŞİFRE (en az 6 karakter)</label><input type="password" class="input" id="reg-pass" placeholder="••••••••" onkeydown="if(event.key==='Enter')doRegister()"></div>
-        <button class="btn btn-success btn-block btn-lg mt-3" onclick="doRegister()" id="register-btn" data-i18n="registerBtn">Hesap Oluştur →</button>
-        <div class="text-center mt-3" style="font-size:.8rem;color:var(--dim)"><span data-i18n="hasAccount">Hesabın var mı?</span> <span style="color:var(--primary);cursor:pointer" onclick="switchAuthTab('login')" data-i18n="loginLink">Giriş yap</span></div>
+        <div class="form-group"><label class="label">E-POSTA</label><input type="email" class="input" id="reg-email" placeholder="ornek@mail.com"></div>
+        <div class="form-group"><label class="label">ŞİFRE (en az 6 karakter)</label><input type="password" class="input" id="reg-pass" placeholder="••••••••" onkeydown="if(event.key==='Enter')doRegister()"></div>
+        <button class="btn btn-success btn-block btn-lg mt-3" onclick="doRegister()" id="register-btn">Hesap Oluştur →</button>
+        <div class="text-center mt-3" style="font-size:.8rem;color:var(--dim)"><span>Hesabın var mı?</span> <span style="color:var(--primary);cursor:pointer" onclick="switchAuthTab('login')">Giriş yap</span></div>
       </div>
     </div>
   </div>
@@ -1161,7 +1161,7 @@ function enterApp(){
   const gb=document.getElementById('global-theme-btn');
   if(gb)gb.style.display='flex';
   applyStoredTheme();
-  setTimeout(()=>applyLang('tr'),100); // nav item'lar render olduktan sonra
+   // nav item'lar render olduktan sonra
   if(window.innerWidth<=768){
     const mmb=document.getElementById('mobile-menu-btn');
     if(mmb)mmb.style.removeProperty('display');
@@ -1358,35 +1358,35 @@ async function renderDashboard(){
 
   mc.innerHTML=`
     <div style="margin-bottom:24px">
-      <div style="font-family:'Syne',sans-serif;font-size:1.5rem;font-weight:700">${tr_('hello')}, ${session.name}! 👋</div>
-      <div class="text-dim" style="font-size:.9rem;margin-top:4px">${new Date().toLocaleDateString(currentLang==='tr'?'tr-TR':currentLang==='zh'?'zh-CN':currentLang==='de'?'de-DE':currentLang==='fr'?'fr-FR':currentLang==='es'?'es-ES':'en-GB',{weekday:'long',day:'numeric',month:'long'})}</div>
+      <div style="font-family:'Syne',sans-serif;font-size:1.5rem;font-weight:700">Merhaba, ${session.name}! 👋</div>
+      <div class="text-dim" style="font-size:.9rem;margin-top:4px">${new Date().toLocaleDateString('tr-TR',{weekday:'long',day:'numeric',month:'long'})}</div>
     </div>
 
     <div class="grid-3 mb-4" style="margin-bottom:20px">
-      <div class="stat-card"><div class="lbl">${tr_('level')}</div><div class="val text-primary">${state.lvl||1}</div><div style="font-size:.72rem;color:var(--dim)">${getRank(state.lvl||1)}</div></div>
-      <div class="stat-card"><div class="lbl">${tr_('totalXp')}</div><div class="val text-accent">${state.totalXp||0}</div></div>
-      <div class="stat-card"><div class="lbl">${tr_('streak')}</div><div class="val text-warning">${state.streak||0} 🔥</div></div>
+      <div class="stat-card"><div class="lbl">SEVİYE</div><div class="val text-primary">${state.lvl||1}</div><div style="font-size:.72rem;color:var(--dim)">${getRank(state.lvl||1)}</div></div>
+      <div class="stat-card"><div class="lbl">TOPLAM XP</div><div class="val text-accent">${state.totalXp||0}</div></div>
+      <div class="stat-card"><div class="lbl">SERİ</div><div class="val text-warning">${state.streak||0} 🔥</div></div>
     </div>
 
     <div class="grid-2" style="margin-bottom:20px">
       <div>
-        <div style="font-family:'Syne',sans-serif;font-size:.85rem;font-weight:700;margin-bottom:12px;color:var(--dim)">📋 ${tr_('recentHw')}</div>
+        <div style="font-family:'Syne',sans-serif;font-size:.85rem;font-weight:700;margin-bottom:12px;color:var(--dim)">📋 YAKIN ÖDEVLER</div>
         ${pendingHws.length===0
-          ?`<div class="card text-center text-dim" style="padding:30px">${tr_('noHw')}</div>`
+          ?`<div class="card text-center text-dim" style="padding:30px">Bekleyen ödev yok ✓</div>`
           :pendingHws.sort((a,b)=>new Date(a.dueDate)-new Date(b.dueDate)).slice(0,4).map(h=>miniHwCard(h)).join('')
         }
       </div>
       <div>
-        <div style="font-family:'Syne',sans-serif;font-size:.85rem;font-weight:700;margin-bottom:12px;color:var(--dim)">📝 ${tr_('recentNotes')}</div>
+        <div style="font-family:'Syne',sans-serif;font-size:.85rem;font-weight:700;margin-bottom:12px;color:var(--dim)">📝 SON NOTLAR</div>
         ${recentNotes.length===0
-          ?`<div class="card text-center text-dim" style="padding:30px">${tr_('noNotes')}</div>`
+          ?`<div class="card text-center text-dim" style="padding:30px">Henüz not yok</div>`
           :recentNotes.map(n=>miniNoteCard(n)).join('')
         }
       </div>
     </div>
 
     <div>
-      <div style="font-family:'Syne',sans-serif;font-size:.85rem;font-weight:700;margin-bottom:12px;color:var(--dim)">🏆 ${tr_('badges')}</div>
+      <div style="font-family:'Syne',sans-serif;font-size:.85rem;font-weight:700;margin-bottom:12px;color:var(--dim)">🏆 ROZETLER</div>
       <div class="card"><div style="display:grid;grid-template-columns:repeat(7,1fr);gap:10px">${renderBadgesHTML(state)}</div></div>
     </div>
   `;
@@ -1402,7 +1402,7 @@ function miniHwCard(hw){
   const days=daysUntil(hw.dueDate);
   const subj=getSubject(hw.subjectId);
   const urgency=days<0?'done':days<=1?'urgent':days<=3?'soon':'normal';
-  const urgencyLabel=days<0?tr_('overdue'):days===0?tr_('today'):days===1?tr_('tomorrow'):`${days} ${tr_('days')}`;
+  const urgencyLabel=days<0?'Geçti':days===0?'Bugün':days===1?'Yarın':`${days} gün`;
   return `<div class="hw-card ${urgency}" style="cursor:pointer" onclick="navTo('homework')">
     <div class="flex items-center justify-between mb-2">
       <span style="font-weight:600;font-size:.88rem">${hw.title}</span>
@@ -1441,18 +1441,18 @@ function renderBadgesHTML(state){
 async function renderHomework(){
   const mc=document.getElementById('main-content');
   mc.innerHTML=`<div class="flex items-center justify-between mb-4">
-    <div style="font-family:'Syne',sans-serif;font-size:1.3rem;font-weight:700">📋 ${tr_('homework')}</div>
-    ${session.role==='teacher'?`<button class="btn btn-primary" onclick="showModal('modal-assign-hw');loadTeacherClassesForHw()">${tr_('assign')}</button>`
+    <div style="font-family:'Syne',sans-serif;font-size:1.3rem;font-weight:700">📋 Ödevler</div>
+    ${session.role==='teacher'?`<button class="btn btn-primary" onclick="showModal('modal-assign-hw');loadTeacherClassesForHw()">Ödev Ver</button>`
     :`<button class="btn btn-success" onclick="openNoteModal()">+ Paylaş</button>`}
   </div>
   <div class="tabs">
-    <div class="tab active" id="hw-tab-pending" onclick="hwTab('pending')"><span data-tab-i18n='pending'>${tr_('pending')}</span></div>
-    <div class="tab" id="hw-tab-done" onclick="hwTab('done')"><span data-tab-i18n='done'>${tr_('completed')}</span></div>
-    <div class="tab" id="hw-tab-overdue" onclick="hwTab('overdue')"><span data-tab-i18n='past'>${tr_('past')}</span></div>
+    <div class="tab active" id="hw-tab-pending" onclick="hwTab('pending')"><span data-tab-i18n='pending'>Bekleyen</span></div>
+    <div class="tab" id="hw-tab-done" onclick="hwTab('done')"><span data-tab-i18n='done'>Tamamlanan</span></div>
+    <div class="tab" id="hw-tab-overdue" onclick="hwTab('overdue')"><span data-tab-i18n='past'>Geçmiş</span></div>
     ${session.role==='teacher'?`
-      <div class="tab" id="hw-tab-given" onclick="hwTab('given')"><span data-tab-i18n='mine'>${tr_('mine')}</span></div>
-      <div class="tab" id="hw-tab-cancelled" onclick="hwTab('cancelled')">🚫 ${tr_('cancelled')}</div>
-    `:`<div class="tab" id="hw-tab-cancelled" onclick="hwTab('cancelled')">🚫 ${tr_('cancelled')}</div>`}
+      <div class="tab" id="hw-tab-given" onclick="hwTab('given')"><span data-tab-i18n='mine'>Verdiğim</span></div>
+      <div class="tab" id="hw-tab-cancelled" onclick="hwTab('cancelled')">🚫 İptal</div>
+    `:`<div class="tab" id="hw-tab-cancelled" onclick="hwTab('cancelled')">🚫 İptal</div>`}
   </div>
   <div id="hw-list"></div>`;
   await loadHwTab('pending');
@@ -1483,7 +1483,7 @@ async function loadHwTab(tab){
     else filtered=all.filter(h=>h.status!=='cancelled');
   }
   filtered.sort((a,b)=>new Date(a.dueDate)-new Date(b.dueDate));
-  if(filtered.length===0){list.innerHTML=`<div class="card text-center text-dim" style="padding:50px"><div style="font-size:3rem;margin-bottom:10px">📭</div><div>${tab==='cancelled'?tr_('cancelled')+' - ' +tr_('noHw'):tr_('noHw')}</div></div>`;return}
+  if(filtered.length===0){list.innerHTML=`<div class="card text-center text-dim" style="padding:50px"><div style="font-size:3rem;margin-bottom:10px">📭</div><div>${tab==='cancelled'?'İptal'+' - ' +'Bekleyen ödev yok ✓':'Bekleyen ödev yok ✓'}</div></div>`;return}
   list.innerHTML=filtered.map(h=>hwCard(h,tab)).join('');
 }
 
@@ -1502,31 +1502,31 @@ function hwCard(hw,tab){
   return `<div class="hw-card ${urgency}" style="${isCancelled?'opacity:.65;border-left-color:var(--danger)':''}">
     <div class="flex items-center justify-between mb-2">
       <div>
-        <div style="font-weight:700;font-size:.95rem;margin-bottom:4px">${hw.title}${isCancelled?` <span class="badge badge-danger">🚫 ${tr_('cancelled')}</span>`:''}</div>
+        <div style="font-weight:700;font-size:.95rem;margin-bottom:4px">${hw.title}${isCancelled?` <span class="badge badge-danger">🚫 İptal</span>`:''}</div>
         <div class="flex items-center gap-2">
           <span style="color:${subj.color};font-size:.8rem">${subj.icon} ${subj.name}</span>
           <span class="text-dim" style="font-size:.75rem">· ${fmtDate(hw.dueDate)}</span>
-          ${session.role==='teacher'?`<span class="badge badge-accent">${submittedCount}/${assignedCount} ${tr_('submit')}</span>`:''}
+          ${session.role==='teacher'?`<span class="badge badge-accent">${submittedCount}/${assignedCount} Gönder</span>`:''}
         </div>
       </div>
       <div class="flex items-center gap-2">
         ${isCancelled
-          ?`<span class="badge badge-danger">🚫 ${tr_('cancelled')}</span>`
-          :isDone?`<span class="badge badge-success">✓ ${tr_('submit')}</span>`
+          ?`<span class="badge badge-danger">🚫 İptal</span>`
+          :isDone?`<span class="badge badge-success">✓ Gönder</span>`
           :days<0?`<span class="badge badge-danger">Geçti</span>`
-          :days===0?`<span class="badge badge-danger">${tr_('today')}!</span>`
-          :days<=3?`<span class="badge badge-warning">${days} ${tr_('days')}</span>`
-          :`<span class="badge badge-primary">${days} ${tr_('days')}</span>`
+          :days===0?`<span class="badge badge-danger">Bugün!</span>`
+          :days<=3?`<span class="badge badge-warning">${days} gün</span>`
+          :`<span class="badge badge-primary">${days} gün</span>`
         }
-        ${!isCancelled&&!isDone&&days>=0&&session.role==='student'?`<button class="btn btn-success" style="padding:6px 14px;font-size:.78rem" onclick="openSubmitHw('${hw.id}')">${tr_('submit')}</button>`:''}
-        ${session.role==='teacher'&&!isCancelled?`<button class="btn btn-danger" style="padding:6px 12px;font-size:.75rem" onclick="cancelHomework('${hw.id}','${hw.title.replace(/'/g,"\\'")}')">🚫 ${tr_('cancelled')}</button>`:''}
-        ${session.role==='teacher'&&isCancelled?`<button class="btn btn-ghost" style="padding:6px 12px;font-size:.75rem" onclick="restoreHomework('${hw.id}','${hw.title.replace(/'/g,"\\'")}')">${tr_('back')}</button>`:''}
+        ${!isCancelled&&!isDone&&days>=0&&session.role==='student'?`<button class="btn btn-success" style="padding:6px 14px;font-size:.78rem" onclick="openSubmitHw('${hw.id}')">Gönder</button>`:''}
+        ${session.role==='teacher'&&!isCancelled?`<button class="btn btn-danger" style="padding:6px 12px;font-size:.75rem" onclick="cancelHomework('${hw.id}','${hw.title.replace(/'/g,"\\'")}')">🚫 İptal</button>`:''}
+        ${session.role==='teacher'&&isCancelled?`<button class="btn btn-ghost" style="padding:6px 12px;font-size:.75rem" onclick="restoreHomework('${hw.id}','${hw.title.replace(/'/g,"\\'")}')">← Geri</button>`:''}
       </div>
     </div>
     ${hw.description?`<div class="text-dim" style="font-size:.82rem;margin-bottom:8px">${hw.description}</div>`:''}
     <div class="deadline-bar"><div class="deadline-fill" style="width:${pct}%;background:${barColor}"></div></div>
     <div class="flex items-center justify-between">
-      <span class="text-dim2" style="font-size:.72rem">+${hw.xp||50} XP ${tr_('xpReward')} · −${hw.penalty||20} XP ${tr_('latePenalty')}</span>
+      <span class="text-dim2" style="font-size:.72rem">+${hw.xp||50} XP XP Ödülü · −${hw.penalty||20} XP Geç Teslim Cezası</span>
       ${isCancelled&&hw.cancelledAt?`<span class="text-dim2" style="font-size:.72rem">İptal: ${new Date(hw.cancelledAt).toLocaleDateString('tr-TR')}</span>`:''}
     </div>
   </div>`;
@@ -1587,7 +1587,7 @@ window.restoreHomework=async function(hwId,title){
 async function renderNotes(){
   const mc=document.getElementById('main-content');
   mc.innerHTML=`<div class="flex items-center justify-between mb-4">
-    <div style="font-family:'Syne',sans-serif;font-size:1.3rem;font-weight:700">📝 ${tr_('notes')}</div>
+    <div style="font-family:'Syne',sans-serif;font-size:1.3rem;font-weight:700">📝 Ders Notları</div>
     <button class="btn btn-success" onclick="openNoteModal()">+ Paylaş</button>
   </div>
   <div class="flex gap-2 mb-4" style="flex-wrap:wrap">
@@ -1634,7 +1634,7 @@ async function loadNotes(cat){
   if(filtered.length===0){
     grid.innerHTML=`<div class="card text-center text-dim" style="padding:50px;grid-column:1/-1">
       <div style="font-size:3rem;margin-bottom:10px">📭</div>
-      <div>${!myCode&&session.role==='student'?'Henüz bir sınıfa katılmadın.':tr_('noNotes')}</div>
+      <div>${!myCode&&session.role==='student'?'Henüz bir sınıfa katılmadın.':'Henüz not yok'}</div>
     </div>`;
     return;
   }
@@ -1764,15 +1764,15 @@ window.shareNote=async function(){
 async function renderClasses(){
   const mc=document.getElementById('main-content');
   mc.innerHTML=`<div class="flex items-center justify-between mb-4">
-    <div style="font-family:'Syne',sans-serif;font-size:1.3rem;font-weight:700">🏫 ${tr_('classes')}</div>
-    ${session.role==='teacher'?`<button class="btn btn-primary" onclick="showModal('modal-create-class')">+ ${tr_('newClass')}</button>`:''}
+    <div style="font-family:'Syne',sans-serif;font-size:1.3rem;font-weight:700">🏫 Sınıflarım</div>
+    ${session.role==='teacher'?`<button class="btn btn-primary" onclick="showModal('modal-create-class')">+ Yeni Sınıf</button>`:''}
   </div><div id="classes-list"></div>`;
   const classes=await dbGet('classes')||{};
   const el=document.getElementById('classes-list');
   let myClasses=[];
   if(session.role==='teacher')myClasses=Object.values(classes).filter(c=>c.teacherUid===session.uid);
   else if(session.role==='student'&&session.classCode)myClasses=Object.values(classes).filter(c=>c.code===session.classCode);
-  if(myClasses.length===0){el.innerHTML=`<div class="card text-center text-dim" style="padding:60px"><div style="font-size:3rem;margin-bottom:12px">🏫</div><div>${session.role==='teacher'?`${tr_('classes')} - Sağ üstten oluştur.`:'Henüz bir sınıfa kayıtlı değilsin.'}</div></div>`;return}
+  if(myClasses.length===0){el.innerHTML=`<div class="card text-center text-dim" style="padding:60px"><div style="font-size:3rem;margin-bottom:12px">🏫</div><div>${session.role==='teacher'?`Sınıflarım - Sağ üstten oluştur.`:'Henüz bir sınıfa kayıtlı değilsin.'}</div></div>`;return}
   el.innerHTML='';
   for(const cls of myClasses){
     const members=await dbGet(`classMembers/${safeKey(cls.code)}`)||{};
@@ -1868,7 +1868,7 @@ window.assignHomework=async function(){
 // ═══════════ STUDENTS (Teacher) ═══════════
 async function renderStudents(){
   const mc=document.getElementById('main-content');
-  mc.innerHTML=`<div style="font-family:'Syne',sans-serif;font-size:1.3rem;font-weight:700;margin-bottom:20px">👥 ${tr_('students')}</div>
+  mc.innerHTML=`<div style="font-family:'Syne',sans-serif;font-size:1.3rem;font-weight:700;margin-bottom:20px">👥 Öğrencilerim</div>
   <div class="tabs">
     <div class="tab active" id="stu-tab-pending" onclick="stuTab('pending')">⏳ Bekleyenler <span id="pending-count-tab" class="nav-badge" style="display:inline;margin-left:4px">0</span></div>
     <div class="tab" id="stu-tab-approved" onclick="stuTab('approved')">✅ Onaylananlar</div>
@@ -1980,7 +1980,7 @@ window.removeStudent=async function(uid,classCode,name){
 async function renderLeaderboard(){
   const mc=document.getElementById('main-content');
   if(!mc)return;
-  mc.innerHTML=`<div style="font-family:'Syne',sans-serif;font-size:1.3rem;font-weight:700;margin-bottom:20px">🏆 ${tr_('leaderboard')}</div>
+  mc.innerHTML=`<div style="font-family:'Syne',sans-serif;font-size:1.3rem;font-weight:700;margin-bottom:20px">🏆 Liderboard</div>
   <div id="lb-content"></div>`;
   const classes=await dbGet('classes')||{};
   const myClassCodes=session.role==='teacher'
@@ -2184,7 +2184,7 @@ function applyStoredTheme(){
   }
 }
 applyStoredTheme();
-setTimeout(()=>applyLang('tr'),80);
+
 
 window.showContributors=function(){
   showModal('modal-contributors');
@@ -2192,221 +2192,9 @@ window.showContributors=function(){
 }
 
 // ═══════════ DİL SİSTEMİ ═══════════
-const LANGUAGES={
-  tr:{flag:'🇹🇷',name:'Türkçe',t:{
-    // Nav
-    dashboard:'Dashboard',homework:'Ödevler',notes:'Ders Notları',announcements:'Duyurular',
-    chat:'Sınıf Sohbeti',voice:'Sesli Sohbet',quiz:'Quiz',classes:'Sınıflarım',
-    books:'Kitaplarım',store:'Mağaza',leaderboard:'Liderboard',
-    assign:'Ödev Ver',quizCreate:'Quiz Oluştur',students:'Öğrencilerim',analytics:'Analitik',
-    logout:'Çıkış Yap',theme:'Aydınlık Mod',themeD:'Karanlık Mod',install:'Uygulamayı Yükle',
-    contributors:'Katkıda Bulunanlar',language:'Türkçe',joinClass:'Sınıfa Katıl',newClass:'Yeni Sınıf',
-    // Auth
-    tagline:'Akıllı Sınıf Yönetim Platformu',loginTab:'Giriş Yap',registerTab:'Kayıt Ol',
-    emailLabel:'E-POSTA',passLabel:'ŞİFRE',loginBtn:'Giriş Yap →',noAccount:'Hesabın yok mu?',
-    registerLink:'Kayıt ol',nameLabel:'AD SOYAD',roleLabel:'ROL',branchLabel:'BRANŞ',
-    passHint:'ŞİFRE (en az 6 karakter)',registerBtn:'Hesap Oluştur →',hasAccount:'Hesabın var mı?',
-    loginLink:'Giriş yap',teacher:'Öğretmen',student:'Öğrenci',
-    // Dashboard
-    hello:'Merhaba',level:'SEVİYE',totalXp:'TOPLAM XP',streak:'SERİ',
-    recentHw:'YAKIN ÖDEVLER',recentNotes:'SON NOTLAR',badges:'ROZETLER',
-    noHw:'Bekleyen ödev yok ✓',noNotes:'Henüz not yok',
-    today:'Bugün',tomorrow:'Yarın',overdue:'Geçti',days:'gün',
-    // Buttons
-    submit:'Gönder',cancel:'İptal',save:'Kaydet',close:'Kapat',delete:'Sil',edit:'Düzenle',
-    publish:'Yayınla',create:'Oluştur',add:'Ekle',share:'Paylaş',upload:'Yükle',
-    back:'← Geri',loading:'Yükleniyor...',
-    // Homework
-    pending:'Bekleyen',completed:'Tamamlanan',past:'Geçmiş',mine:'Verdiğim',cancelled:'İptal',
-    dueDate:'Son Teslim',xpReward:'XP Ödülü',latePenalty:'Geç Teslim Cezası',
-    // Quiz
-    multipleChoice:'Çoktan Seçmeli',fillBlank:'Boşluk Doldurma',openEnded:'Açık Uçlu',
-    correct:'Doğru',wrong:'Yanlış',finish:'Bitir',result:'Sonuç',
-    // Store
-    myXp:'XP\'im',buy:'Satın Al',owned:'Sahip',
-  }},
-  en:{flag:'🇬🇧',name:'English',t:{
-    dashboard:'Dashboard',homework:'Homework',notes:'Lesson Notes',announcements:'Announcements',
-    chat:'Class Chat',voice:'Voice Chat',quiz:'Quiz',classes:'My Classes',
-    books:'My Books',store:'Store',leaderboard:'Leaderboard',
-    assign:'Assign HW',quizCreate:'Create Quiz',students:'My Students',analytics:'Analytics',
-    logout:'Log Out',theme:'Light Mode',themeD:'Dark Mode',install:'Install App',
-    contributors:'Contributors',language:'English',joinClass:'Join Class',newClass:'New Class',
-    tagline:'Smart Classroom Management Platform',loginTab:'Log In',registerTab:'Sign Up',
-    emailLabel:'EMAIL',passLabel:'PASSWORD',loginBtn:'Log In →',noAccount:'No account?',
-    registerLink:'Sign up',nameLabel:'FULL NAME',roleLabel:'ROLE',branchLabel:'SUBJECT',
-    passHint:'PASSWORD (min 6 chars)',registerBtn:'Create Account →',hasAccount:'Have an account?',
-    loginLink:'Log in',teacher:'Teacher',student:'Student',
-    hello:'Hello',level:'LEVEL',totalXp:'TOTAL XP',streak:'STREAK',
-    recentHw:'UPCOMING HW',recentNotes:'RECENT NOTES',badges:'BADGES',
-    noHw:'No pending homework ✓',noNotes:'No notes yet',
-    today:'Today',tomorrow:'Tomorrow',overdue:'Overdue',days:'days',
-    submit:'Submit',cancel:'Cancel',save:'Save',close:'Close',delete:'Delete',edit:'Edit',
-    publish:'Publish',create:'Create',add:'Add',share:'Share',upload:'Upload',
-    back:'← Back',loading:'Loading...',
-    pending:'Pending',completed:'Completed',past:'Past',mine:'My HW',cancelled:'Cancelled',
-    dueDate:'Due Date',xpReward:'XP Reward',latePenalty:'Late Penalty',
-    multipleChoice:'Multiple Choice',fillBlank:'Fill in the Blank',openEnded:'Open Ended',
-    correct:'Correct',wrong:'Wrong',finish:'Finish',result:'Result',
-    myXp:'My XP',buy:'Buy',owned:'Owned',
-  }},
-  zh:{flag:'🇨🇳',name:'中文',t:{
-    dashboard:'主页',homework:'作业',notes:'课堂笔记',announcements:'公告',
-    chat:'班级聊天',voice:'语音聊天',quiz:'测验',classes:'我的班级',
-    books:'我的书籍',store:'商店',leaderboard:'排行榜',
-    assign:'布置作业',quizCreate:'创建测验',students:'我的学生',analytics:'分析',
-    logout:'退出登录',theme:'亮色模式',themeD:'暗色模式',install:'安装应用',
-    contributors:'贡献者',language:'中文',joinClass:'加入班级',newClass:'新班级',
-    tagline:'智能课堂管理平台',loginTab:'登录',registerTab:'注册',
-    emailLabel:'邮箱',passLabel:'密码',loginBtn:'登录 →',noAccount:'没有账号？',
-    registerLink:'注册',nameLabel:'姓名',roleLabel:'角色',branchLabel:'学科',
-    passHint:'密码（至少6位）',registerBtn:'创建账号 →',hasAccount:'已有账号？',
-    loginLink:'登录',teacher:'教师',student:'学生',
-    hello:'你好',level:'等级',totalXp:'总经验',streak:'连续',
-    recentHw:'近期作业',recentNotes:'最近笔记',badges:'徽章',
-    noHw:'暂无待完成作业 ✓',noNotes:'暂无笔记',
-    today:'今天',tomorrow:'明天',overdue:'已过期',days:'天',
-    submit:'提交',cancel:'取消',save:'保存',close:'关闭',delete:'删除',edit:'编辑',
-    publish:'发布',create:'创建',add:'添加',share:'分享',upload:'上传',
-    back:'← 返回',loading:'加载中...',
-    pending:'待完成',completed:'已完成',past:'已过去',mine:'我的作业',cancelled:'已取消',
-    dueDate:'截止日期',xpReward:'经验奖励',latePenalty:'迟交惩罚',
-    multipleChoice:'多项选择',fillBlank:'填空题',openEnded:'开放题',
-    correct:'正确',wrong:'错误',finish:'完成',result:'结果',
-    myXp:'我的经验',buy:'购买',owned:'已拥有',
-  }},
-  es:{flag:'🇪🇸',name:'Español',t:{
-    dashboard:'Inicio',homework:'Tareas',notes:'Notas de Clase',announcements:'Anuncios',
-    chat:'Chat de Clase',voice:'Chat de Voz',quiz:'Quiz',classes:'Mis Clases',
-    books:'Mis Libros',store:'Tienda',leaderboard:'Clasificación',
-    assign:'Asignar Tarea',quizCreate:'Crear Quiz',students:'Mis Alumnos',analytics:'Analítica',
-    logout:'Cerrar Sesión',theme:'Modo Claro',themeD:'Modo Oscuro',install:'Instalar App',
-    contributors:'Contribuidores',language:'Español',joinClass:'Unirse',newClass:'Nueva Clase',
-    tagline:'Plataforma Inteligente de Gestión de Aulas',loginTab:'Iniciar Sesión',registerTab:'Registrarse',
-    emailLabel:'CORREO',passLabel:'CONTRASEÑA',loginBtn:'Entrar →',noAccount:'¿No tienes cuenta?',
-    registerLink:'Regístrate',nameLabel:'NOMBRE COMPLETO',roleLabel:'ROL',branchLabel:'ASIGNATURA',
-    passHint:'CONTRASEÑA (mín 6 chars)',registerBtn:'Crear Cuenta →',hasAccount:'¿Ya tienes cuenta?',
-    loginLink:'Inicia sesión',teacher:'Profesor',student:'Estudiante',
-    hello:'Hola',level:'NIVEL',totalXp:'XP TOTAL',streak:'RACHA',
-    recentHw:'PRÓXIMAS TAREAS',recentNotes:'NOTAS RECIENTES',badges:'INSIGNIAS',
-    noHw:'Sin tareas pendientes ✓',noNotes:'Sin notas aún',
-    today:'Hoy',tomorrow:'Mañana',overdue:'Vencido',days:'días',
-    submit:'Enviar',cancel:'Cancelar',save:'Guardar',close:'Cerrar',delete:'Eliminar',edit:'Editar',
-    publish:'Publicar',create:'Crear',add:'Añadir',share:'Compartir',upload:'Subir',
-    back:'← Volver',loading:'Cargando...',
-    pending:'Pendiente',completed:'Completado',past:'Pasado',mine:'Mis Tareas',cancelled:'Cancelado',
-    dueDate:'Fecha Límite',xpReward:'Recompensa XP',latePenalty:'Penalización',
-    multipleChoice:'Opción Múltiple',fillBlank:'Rellenar Espacio',openEnded:'Respuesta Abierta',
-    correct:'Correcto',wrong:'Incorrecto',finish:'Terminar',result:'Resultado',
-    myXp:'Mi XP',buy:'Comprar',owned:'Comprado',
-  }},
-  fr:{flag:'🇫🇷',name:'Français',t:{
-    dashboard:'Tableau de bord',homework:'Devoirs',notes:'Notes de Cours',announcements:'Annonces',
-    chat:'Chat de Classe',voice:'Chat Vocal',quiz:'Quiz',classes:'Mes Classes',
-    books:'Mes Livres',store:'Boutique',leaderboard:'Classement',
-    assign:'Donner Devoir',quizCreate:'Créer Quiz',students:'Mes Élèves',analytics:'Analytique',
-    logout:'Déconnexion',theme:'Mode Clair',themeD:'Mode Sombre',install:'Installer',
-    contributors:'Contributeurs',language:'Français',joinClass:'Rejoindre',newClass:'Nouvelle Classe',
-    tagline:'Plateforme Intelligente de Gestion de Classe',loginTab:'Se Connecter',registerTab:'S\'inscrire',
-    emailLabel:'E-MAIL',passLabel:'MOT DE PASSE',loginBtn:'Connexion →',noAccount:'Pas de compte ?',
-    registerLink:'S\'inscrire',nameLabel:'NOM COMPLET',roleLabel:'RÔLE',branchLabel:'MATIÈRE',
-    passHint:'MOT DE PASSE (min 6 car.)',registerBtn:'Créer un Compte →',hasAccount:'Déjà un compte ?',
-    loginLink:'Se connecter',teacher:'Professeur',student:'Élève',
-    hello:'Bonjour',level:'NIVEAU',totalXp:'XP TOTAL',streak:'SÉRIE',
-    recentHw:'DEVOIRS À VENIR',recentNotes:'NOTES RÉCENTES',badges:'BADGES',
-    noHw:'Aucun devoir en attente ✓',noNotes:'Pas encore de notes',
-    today:'Aujourd\'hui',tomorrow:'Demain',overdue:'En retard',days:'jours',
-    submit:'Soumettre',cancel:'Annuler',save:'Enregistrer',close:'Fermer',delete:'Supprimer',edit:'Modifier',
-    publish:'Publier',create:'Créer',add:'Ajouter',share:'Partager',upload:'Télécharger',
-    back:'← Retour',loading:'Chargement...',
-    pending:'En attente',completed:'Terminé',past:'Passé',mine:'Mes Devoirs',cancelled:'Annulé',
-    dueDate:'Date Limite',xpReward:'Récompense XP',latePenalty:'Pénalité Retard',
-    multipleChoice:'Choix Multiple',fillBlank:'Texte à Trous',openEnded:'Question Ouverte',
-    correct:'Correct',wrong:'Incorrect',finish:'Terminer',result:'Résultat',
-    myXp:'Mon XP',buy:'Acheter',owned:'Possédé',
-  }},
-  de:{flag:'🇩🇪',name:'Deutsch',t:{
-    dashboard:'Übersicht',homework:'Hausaufgaben',notes:'Unterrichtsnotizen',announcements:'Ankündigungen',
-    chat:'Klassenchat',voice:'Sprachchat',quiz:'Quiz',classes:'Meine Klassen',
-    books:'Meine Bücher',store:'Shop',leaderboard:'Rangliste',
-    assign:'Aufgabe geben',quizCreate:'Quiz erstellen',students:'Meine Schüler',analytics:'Analytik',
-    logout:'Abmelden',theme:'Heller Modus',themeD:'Dunkler Modus',install:'App installieren',
-    contributors:'Mitwirkende',language:'Deutsch',joinClass:'Klasse beitreten',newClass:'Neue Klasse',
-    tagline:'Intelligente Klassenverwaltungsplattform',loginTab:'Anmelden',registerTab:'Registrieren',
-    emailLabel:'E-MAIL',passLabel:'PASSWORT',loginBtn:'Anmelden →',noAccount:'Noch kein Konto?',
-    registerLink:'Registrieren',nameLabel:'VOR- UND NACHNAME',roleLabel:'ROLLE',branchLabel:'FACH',
-    passHint:'PASSWORT (mind. 6 Zeichen)',registerBtn:'Konto erstellen →',hasAccount:'Bereits ein Konto?',
-    loginLink:'Anmelden',teacher:'Lehrer',student:'Schüler',
-    hello:'Hallo',level:'STUFE',totalXp:'GESAMT-XP',streak:'SERIE',
-    recentHw:'ANSTEHENDE AUFGABEN',recentNotes:'LETZTE NOTIZEN',badges:'ABZEICHEN',
-    noHw:'Keine ausstehenden Aufgaben ✓',noNotes:'Noch keine Notizen',
-    today:'Heute',tomorrow:'Morgen',overdue:'Überfällig',days:'Tage',
-    submit:'Einreichen',cancel:'Abbrechen',save:'Speichern',close:'Schließen',delete:'Löschen',edit:'Bearbeiten',
-    publish:'Veröffentlichen',create:'Erstellen',add:'Hinzufügen',share:'Teilen',upload:'Hochladen',
-    back:'← Zurück',loading:'Laden...',
-    pending:'Ausstehend',completed:'Abgeschlossen',past:'Vergangen',mine:'Meine Aufgaben',cancelled:'Abgebrochen',
-    dueDate:'Fälligkeitsdatum',xpReward:'XP-Belohnung',latePenalty:'Verspätungsstrafe',
-    multipleChoice:'Multiple Choice',fillBlank:'Lückentext',openEnded:'Offene Frage',
-    correct:'Richtig',wrong:'Falsch',finish:'Beenden',result:'Ergebnis',
-    myXp:'Mein XP',buy:'Kaufen',owned:'Besitze',
-  }},
-};
-const currentLang='tr';
+
 
 // Kısa çeviri yardımcısı
-function tr_(key){return LANGUAGES.tr.t[key]||key;}
-window.tr_=tr_;
-window.t=tr_;
-
-function applyLang(lang){
-  if(!LANGUAGES[lang])return;
-  currentLang=lang;
-  const tr=LANGUAGES[lang].t;
-  const flag=LANGUAGES[lang].flag;
-
-  // ── Sidebar nav ──
-  const navMap={
-    'nav-dashboard':tr.dashboard,'nav-homework':tr.homework,'nav-notes':tr.notes,
-    'nav-announcements':tr.announcements,'nav-chat':tr.chat,'nav-voice':tr.voice,
-    'nav-quiz':tr.quiz,'nav-classes':tr.classes,'nav-books':tr.books,
-    'nav-store':tr.store,'nav-leaderboard':tr.leaderboard,
-    'nav-assign':tr.assign,'nav-quiz-create':tr.quizCreate,
-    'nav-students':tr.students,'nav-analytics':tr.analytics,
-    'nav-join-class':tr.joinClass,'nav-newclass':tr.newClass,
-  };
-  Object.entries(navMap).forEach(([id,txt])=>{
-    const el=document.getElementById(id);if(!el)return;
-    const icon=el.querySelector('.nav-icon');
-    const badge=el.querySelector('.nav-badge');
-    el.innerHTML=(icon?icon.outerHTML:'')+' '+txt+' '+(badge?badge.outerHTML:'');
-  });
-
-  // ── Dil & tema butonları ──
-  ['lang-flag','mdr-lang-flag','auth-lang-flag'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent=flag;});
-  ['lang-label','mdr-lang-label','auth-lang-label'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent=tr.language;});
-
-  // ── Auth sayfası ──
-  const authTagline=document.querySelector('#screen-auth .auth-wrap .text-center div:last-child');
-  if(authTagline)authTagline.textContent=tr.tagline;
-  const tabLogin=document.getElementById('tab-login');if(tabLogin)tabLogin.textContent=tr.loginTab;
-  const tabReg=document.getElementById('tab-register');if(tabReg)tabReg.textContent=tr.registerTab;
-  const loginBtn=document.getElementById('login-btn');if(loginBtn)loginBtn.textContent=tr.loginBtn;
-  const regBtn=document.getElementById('register-btn');if(regBtn)regBtn.textContent=tr.registerBtn;
-
-  // Form etiketleri (data-i18n attribute ile)
-  document.querySelectorAll('[data-i18n]').forEach(el=>{
-    const key=el.getAttribute('data-i18n');
-    if(tr[key])el.textContent=tr[key];
-  });
-
-  // ── Ekran başlığı ──
-  document.title='classroom — '+tr.tagline;
-
-  // ── Aktif sayfayı yeniden render et ──
-  if(typeof currentNav!=='undefined'&&currentNav&&typeof navTo==='function'){
-    navTo(currentNav);
-  }
-}
 
 
 
@@ -2414,15 +2202,15 @@ function applyLang(lang){
 async function renderAnnouncements(){
   const mc=document.getElementById('main-content');
   mc.innerHTML=`<div class="flex items-center justify-between mb-4">
-    <div style="font-family:'Syne',sans-serif;font-size:1.3rem;font-weight:700">📢 ${tr_('announcements')}</div>
-    ${session.role==='teacher'?`<button class="btn btn-primary" onclick="openAnnModal()">+ ${tr_('add')}</button>`:''}
+    <div style="font-family:'Syne',sans-serif;font-size:1.3rem;font-weight:700">📢 Duyurular</div>
+    ${session.role==='teacher'?`<button class="btn btn-primary" onclick="openAnnModal()">+ Ekle</button>`:''}
   </div><div id="ann-list"></div>`;
   const anns=await dbGet('announcements')||{};
   const myClassCode=session.classCode||'';
   let list=Object.values(anns).filter(a=>a.classCode===myClassCode||(session.role==='teacher'&&a.teacherUid===session.uid));
   list.sort((a,b)=>{if(a.type==='pinned'&&b.type!=='pinned')return -1;if(b.type==='pinned'&&a.type!=='pinned')return 1;return b.createdAt-a.createdAt});
   const el=document.getElementById('ann-list');
-  if(list.length===0){el.innerHTML=`<div class="card text-center text-dim" style="padding:50px"><div style="font-size:3rem;margin-bottom:10px">📢</div><div>tr_('noHw').replace('ödev','duyuru')</div></div>`;return}
+  if(list.length===0){el.innerHTML=`<div class="card text-center text-dim" style="padding:50px"><div style="font-size:3rem;margin-bottom:10px">📢</div><div>'Bekleyen ödev yok ✓'.replace('ödev','duyuru')</div></div>`;return}
   el.innerHTML=list.map(a=>{
     const typeColor=a.type==='important'?'var(--danger)':a.type==='pinned'?'var(--warning)':'var(--primary)';
     const typeIcon=a.type==='important'?'⚠️':a.type==='pinned'?'📌':'📢';
@@ -2538,12 +2326,12 @@ async function renderChat(){
     mc.innerHTML=`<div class="card text-center text-dim" style="padding:50px"><div style="font-size:3rem;margin-bottom:10px">💬</div><div>Sohbet için önce bir sınıfa katıl.</div></div>`;
     return;
   }
-  mc.innerHTML=`<div style="font-family:'Syne',sans-serif;font-size:1.3rem;font-weight:700;margin-bottom:12px">💬 ${tr_('chat')}</div>
+  mc.innerHTML=`<div style="font-family:'Syne',sans-serif;font-size:1.3rem;font-weight:700;margin-bottom:12px">💬 Sınıf Sohbeti</div>
   ${classOptions}
   <div style="display:flex;flex-direction:column;height:calc(100vh - ${session.role==='teacher'?'230':'190'}px)">
     <div id="chat-messages" class="scroll-y" style="flex:1;background:var(--card);border:1px solid var(--border);border-radius:16px 16px 0 0;padding:16px;overflow-y:auto;display:flex;flex-direction:column;gap:10px"></div>
     <div style="display:flex;gap:10px;background:var(--card2);border:1px solid var(--border);border-top:none;border-radius:0 0 16px 16px;padding:12px">
-      <input type="text" class="input" id="chat-input" placeholder="${tr_('chat')}..." onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendChatMsg('${chatClassCode}')}" style="flex:1">
+      <input type="text" class="input" id="chat-input" placeholder="Sınıf Sohbeti..." onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendChatMsg('${chatClassCode}')}" style="flex:1">
       <button class="btn btn-primary" onclick="sendChatMsg('${chatClassCode}')">Gönder →</button>
     </div>
   </div>`;
@@ -2607,8 +2395,8 @@ async function renderQuiz(){
   const mc=document.getElementById('main-content');
   mc.innerHTML=`<div style="font-family:'Syne',sans-serif;font-size:1.3rem;font-weight:700;margin-bottom:16px">📝 Quizler</div>
   <div class="tabs">
-    <div class="tab active" id="quiz-tab-active" onclick="quizTab('active')">${tr_('pending')}</div>
-    <div class="tab" id="quiz-tab-cancelled" onclick="quizTab('cancelled')">🚫 ${tr_('cancelled')}</div>
+    <div class="tab active" id="quiz-tab-active" onclick="quizTab('active')">Bekleyen</div>
+    <div class="tab" id="quiz-tab-cancelled" onclick="quizTab('cancelled')">🚫 İptal</div>
   </div>
   <div id="quiz-list"></div>`;
   await loadQuizTab('active');
@@ -2637,7 +2425,7 @@ async function loadQuizTab(tab){
     return `<div class="card card-hover mb-3" style="margin-bottom:12px;${isCancelled?'opacity:.65;border-left:4px solid var(--danger)':''}">
       <div class="flex items-center justify-between mb-2">
         <div>
-          <div style="font-weight:700;font-size:.95rem">${q.title}${isCancelled?` <span class="badge badge-danger">🚫 ${tr_('cancelled')}</span>`:''}</div>
+          <div style="font-weight:700;font-size:.95rem">${q.title}${isCancelled?` <span class="badge badge-danger">🚫 İptal</span>`:''}</div>
           <div class="flex items-center gap-2 mt-1">
             <span style="color:${subj.color};font-size:.8rem">${subj.icon} ${subj.name}</span>
             <span class="badge badge-primary">${q.questions?.length||0} soru</span>
@@ -2646,13 +2434,13 @@ async function loadQuizTab(tab){
         </div>
         <div class="flex items-center gap-2">
           ${session.role==='student'
-            ?isCancelled?`<span class="badge badge-danger"> ${tr_('cancel')}</span>`
+            ?isCancelled?`<span class="badge badge-danger"> İptal</span>`
             :myResult?`<span class="badge badge-success">✓ ${myResult.score}/${q.questions?.length||0} · +${myResult.xp}XP</span>`
-            :`<button class="btn btn-primary" onclick="startQuiz('${q.id}')">${tr_('quiz')} →</button>`
-            :`<span class="badge badge-accent">${Object.keys(q.results||{}).length} ${tr_('completed')}</span>`
+            :`<button class="btn btn-primary" onclick="startQuiz('${q.id}')">Quiz →</button>`
+            :`<span class="badge badge-accent">${Object.keys(q.results||{}).length} Tamamlanan</span>`
           }
-          ${session.role==='teacher'&&!isCancelled?`<button class="btn btn-danger" style="padding:6px 12px;font-size:.75rem" onclick="cancelQuiz('${q.id}','${q.title.replace(/'/g,"\\'")}')">🚫 ${tr_('cancelled')}</button>`:''}
-          ${session.role==='teacher'&&isCancelled?`<button class="btn btn-ghost" style="padding:6px 12px;font-size:.75rem" onclick="restoreQuiz('${q.id}','${q.title.replace(/'/g,"\\'")}')">${tr_('back')}</button>`:''}
+          ${session.role==='teacher'&&!isCancelled?`<button class="btn btn-danger" style="padding:6px 12px;font-size:.75rem" onclick="cancelQuiz('${q.id}','${q.title.replace(/'/g,"\\'")}')">🚫 İptal</button>`:''}
+          ${session.role==='teacher'&&isCancelled?`<button class="btn btn-ghost" style="padding:6px 12px;font-size:.75rem" onclick="restoreQuiz('${q.id}','${q.title.replace(/'/g,"\\'")}')">← Geri</button>`:''}
         </div>
       </div>
       <div class="text-dim" style="font-size:.75rem">${new Date(q.createdAt).toLocaleDateString('tr-TR')} · ${q.teacherName}${isCancelled&&q.cancelledAt?` · İptal: ${new Date(q.cancelledAt).toLocaleDateString('tr-TR')}`  :''}</div>
@@ -2843,8 +2631,8 @@ async function renderBooks(){
   if(!mc)return;
   mc.innerHTML=`
   <div class="flex items-center justify-between mb-4">
-    <div style="font-family:'Syne',sans-serif;font-size:1.3rem;font-weight:700">📚 ${tr_('books')}</div>
-    ${session.role==='teacher'?`<button class="btn btn-primary" onclick="openAddBookModal()">+ ${tr_('add')}</button>`:''}
+    <div style="font-family:'Syne',sans-serif;font-size:1.3rem;font-weight:700">📚 Kitaplarım</div>
+    ${session.role==='teacher'?`<button class="btn btn-primary" onclick="openAddBookModal()">+ Ekle</button>`:''}
   </div>
   <div id="books-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:16px"></div>`;
   await loadBooks();
@@ -2894,8 +2682,8 @@ async function loadBooks(){
         <button class="btn btn-primary btn-block" style="font-size:.85rem" onclick="openBookReader('${b.id}','${safeTitle}')">📖 Oku & Not Al</button>
         ${isOwner?`
         <div class="flex gap-2">
-          <button class="btn btn-ghost" style="flex:1;font-size:.78rem" onclick="editBook('${b.id}')">✏️ ${tr_('edit')}</button>
-          <button class="btn btn-danger" style="flex:1;font-size:.78rem" onclick="deleteBook('${b.id}')">🗑️ ${tr_('delete')}</button>
+          <button class="btn btn-ghost" style="flex:1;font-size:.78rem" onclick="editBook('${b.id}')">✏️ Düzenle</button>
+          <button class="btn btn-danger" style="flex:1;font-size:.78rem" onclick="deleteBook('${b.id}')">🗑️ Sil</button>
         </div>`:''}
       </div>
     </div>`;
@@ -2940,7 +2728,7 @@ window.openAddBookModal=async function(bookId){
         </div>
       </label>
       <div id="book-upload-progress" style="display:none;margin-top:8px">
-        <div style="font-size:.8rem;color:var(--dim);margin-bottom:4px" id="book-upload-status">${tr_('loading')}</div>
+        <div style="font-size:.8rem;color:var(--dim);margin-bottom:4px" id="book-upload-status">Yükleniyor...</div>
         <div class="xp-bar-bg"><div class="xp-bar-fill" id="book-upload-bar" style="width:0%;transition:width .2s"></div></div>
       </div>
     </div>
@@ -2949,7 +2737,7 @@ window.openAddBookModal=async function(bookId){
     </div>
     <div class="flex gap-2 mt-4">
       <button class="btn btn-ghost" style="flex:1" onclick="document.getElementById('modal-add-book').remove()"> İptal</button>
-      <button class="btn btn-primary" style="flex:2" id="book-save-btn" onclick="saveBook('${bookId||''}')">💾 ${tr_('save')}</button>
+      <button class="btn btn-primary" style="flex:2" id="book-save-btn" onclick="saveBook('${bookId||''}')">💾 Kaydet</button>
     </div>
   </div>`;
   document.body.appendChild(modal);
@@ -3060,7 +2848,7 @@ window.openBookReader=async function(bookId, bookTitle){
 
   mc.innerHTML=`
   <div class="flex items-center gap-3 mb-3" style="flex-wrap:wrap">
-    <button class="btn btn-ghost" onclick="navTo('books')" style="padding:8px 12px">← ${tr_('back').replace('← ','')}</button>
+    <button class="btn btn-ghost" onclick="navTo('books')" style="padding:8px 12px">← ${'← Geri'.replace('← ','')}</button>
     <div style="font-family:'Syne',sans-serif;font-size:1rem;font-weight:700;flex:1">📖 ${bookTitle}</div>
   </div>
   <div class="card" style="padding:0;overflow:hidden">
@@ -3172,7 +2960,7 @@ async function renderStore(){
   const state=await dbGet(`users/${session.uid}/gameState`)||defaultState();
   const owned=state.storeItems||[];
   mc.innerHTML=`<div class="flex items-center justify-between mb-4">
-    <div style="font-family:'Syne',sans-serif;font-size:1.3rem;font-weight:700">🛒 ${tr_('store')}</div>
+    <div style="font-family:'Syne',sans-serif;font-size:1.3rem;font-weight:700">🛒 Mağaza</div>
     <div class="badge badge-success" style="font-size:.85rem;padding:6px 14px">💰 ${state.totalXp||0} XP</div>
   </div>
   <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px">
@@ -3239,8 +3027,8 @@ async function renderAnalytics(){
   stuXP.sort((a,b)=>b.xp-a.xp);
   document.getElementById('analytics-content').innerHTML=`
   <div class="grid-2 mb-4" style="margin-bottom:20px">
-    <div class="stat-card"><div class="lbl">${tr_('homework').toUpperCase()}</div><div class="val text-primary">${myHws.length}</div></div>
-    <div class="stat-card"><div class="lbl">${tr_('classes').toUpperCase()}</div><div class="val text-success">${classes.length}</div></div>
+    <div class="stat-card"><div class="lbl">${'Ödevler'.toUpperCase()}</div><div class="val text-primary">${myHws.length}</div></div>
+    <div class="stat-card"><div class="lbl">${'Sınıflarım'.toUpperCase()}</div><div class="val text-success">${classes.length}</div></div>
   </div>
   <div class="grid-2" style="gap:20px">
     <div class="card"><div style="font-family:'Syne',sans-serif;font-size:.75rem;letter-spacing:.1em;color:var(--dim);margin-bottom:14px">📋 ÖDEV TAMAMLANMA</div><canvas id="chart-completion" height="200"></canvas></div>
@@ -3527,7 +3315,7 @@ async function renderVoiceChat(){
   }
 
   mc.innerHTML=`
-  <div style="font-family:'Syne',sans-serif;font-size:1.3rem;font-weight:700;margin-bottom:12px">🎤 ${tr_('voice')}</div>
+  <div style="font-family:'Syne',sans-serif;font-size:1.3rem;font-weight:700;margin-bottom:12px">🎤 Sesli Sohbet</div>
   ${classSelector}
 
   ${session.role==='teacher'?`
