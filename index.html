@@ -1593,46 +1593,81 @@ async function renderClassProfiles(){
   }
 
   mc.innerHTML=`
-  <div style="font-family:'Syne',sans-serif;font-size:1.3rem;font-weight:700;margin-bottom:20px">👥 Sınıf Arkadaşlarım</div>
+  <div style="font-family:'Syne',sans-serif;font-size:1.3rem;font-weight:700;margin-bottom:20px">👥 Sınıfım</div>
   <div id="class-profiles-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:14px">
     <div class="text-dim text-center" style="padding:40px;grid-column:1/-1">Yükleniyor...</div>
   </div>`;
 
-  const members=await dbGet(`classMembers/${safeKey(classCode)}`)||{};
-  const uids=Object.keys(members);
   const grid=document.getElementById('class-profiles-grid');
   if(!grid)return;
-  if(uids.length===0){
-    grid.innerHTML=`<div class="card text-center text-dim" style="padding:50px;grid-column:1/-1"><div style="font-size:3rem;margin-bottom:10px">👥</div><div>Sınıfta başka öğrenci yok.</div></div>`;
-    return;
+
+  // Sınıf bilgisi — öğretmeni bul
+  const classes=await dbGet('classes')||{};
+  const cls=Object.values(classes).find(c=>c.code===classCode);
+  const teacherUid=cls?.teacherUid||null;
+
+  // Öğrenciler
+  const members=await dbGet(`classMembers/${safeKey(classCode)}`)||{};
+  const studentUids=Object.keys(members);
+
+  // Tüm kartları oluştur: önce öğretmen, sonra öğrenciler
+  const allCards=[];
+
+  // Öğretmen kartı
+  if(teacherUid){
+    const tProfile=await dbGet(`users/${teacherUid}/profile`)||{};
+    const tState=await dbGet(`users/${teacherUid}/gameState`)||defaultState();
+    const tPhoto=await dbGet(`profilePhoto_${teacherUid}`)||null;
+    allCards.push(`
+      <div class="card" style="padding:18px;text-align:center;cursor:pointer;border-color:var(--warning);position:relative" onclick="showStudentProfile('${teacherUid}')">
+        <div style="position:absolute;top:8px;right:8px">
+          <span class="badge badge-warning" style="font-size:.6rem">👨‍🏫 ÖĞRETMEN</span>
+        </div>
+        <div style="width:60px;height:60px;border-radius:50%;overflow:hidden;background:var(--bg2);border:2px solid var(--warning);margin:0 auto 10px;display:flex;align-items:center;justify-content:center">
+          ${tPhoto?`<img src="${tPhoto}" style="width:100%;height:100%;object-fit:cover">`:`<span style="font-size:1.8rem">👨‍🏫</span>`}
+        </div>
+        <div style="font-weight:700;font-size:.88rem;margin-bottom:4px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis">${tProfile.name||cls?.teacherName||'Öğretmen'}</div>
+        <div style="font-size:.72rem;color:var(--warning);margin-bottom:6px">${tProfile.branch?`📚 ${tProfile.branch}`:''}</div>
+        <div class="flex gap-1" style="justify-content:center;flex-wrap:wrap">
+          <span class="badge" style="font-size:.62rem;background:rgba(255,184,0,.15);color:var(--warning)">Sev.${tState.lvl||1}</span>
+          <span class="badge" style="font-size:.62rem;background:rgba(255,184,0,.15);color:var(--warning)">${tState.totalXp||0} XP</span>
+        </div>
+      </div>`);
   }
 
-  const cards=await Promise.all(uids.map(async uid=>{
-    const st=await dbGet(`users/${uid}/gameState`)||defaultState();
-    const photo=await dbGet(`profilePhoto_${uid}`)||null;
-    const m=members[uid];
-    const isMe=uid===session.uid;
-    const earnedCount=(st.earnedBadges||[]).length;
-    return `<div class="card card-hover" style="padding:18px;text-align:center;cursor:pointer;${isMe?'border-color:var(--primary)':''}" onclick="showStudentProfile('${uid}')">
-      <div style="position:relative;display:inline-block;margin-bottom:10px">
-        <div style="width:60px;height:60px;border-radius:50%;overflow:hidden;background:var(--bg2);border:2px solid ${isMe?'var(--primary)':'var(--border)'};margin:0 auto;display:flex;align-items:center;justify-content:center">
-          ${photo?`<img src="${photo}" style="width:100%;height:100%;object-fit:cover">`:`<span style="font-size:1.8rem">👤</span>`}
-        </div>
-        ${isMe?`<span style="position:absolute;bottom:0;right:0;background:var(--primary);color:#fff;font-size:.55rem;padding:1px 4px;border-radius:6px;font-weight:700">SEN</span>`:''}
-      </div>
-      <div style="font-weight:700;font-size:.88rem;margin-bottom:4px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis">${m.name}</div>
-      <div style="font-size:.72rem;color:var(--primary);margin-bottom:6px">${getRank(st.lvl||1)} · Sev.${st.lvl||1}</div>
-      <div class="flex gap-1" style="justify-content:center;flex-wrap:wrap;margin-bottom:6px">
-        <span class="badge badge-accent" style="font-size:.62rem">${st.totalXp||0} XP</span>
-        ${earnedCount>0?`<span class="badge badge-warning" style="font-size:.62rem">🏆 ${earnedCount}</span>`:''}
-      </div>
-      <div style="font-size:.68rem;color:var(--dim)">${st.streak||0} 🔥 seri</div>
-    </div>`;
-  }));
+  // Öğrenci kartları
+  if(studentUids.length>0){
+    const studentCards=await Promise.all(studentUids.map(async uid=>{
+      const st=await dbGet(`users/${uid}/gameState`)||defaultState();
+      const photo=await dbGet(`profilePhoto_${uid}`)||null;
+      const m=members[uid];
+      const isMe=uid===session.uid;
+      const earnedCount=(st.earnedBadges||[]).length;
+      return {xp:st.totalXp||0, html:`
+        <div class="card card-hover" style="padding:18px;text-align:center;cursor:pointer;${isMe?'border-color:var(--primary)':''}" onclick="showStudentProfile('${uid}')">
+          <div style="position:relative;display:inline-block;margin-bottom:10px">
+            <div style="width:60px;height:60px;border-radius:50%;overflow:hidden;background:var(--bg2);border:2px solid ${isMe?'var(--primary)':'var(--border)'};margin:0 auto;display:flex;align-items:center;justify-content:center">
+              ${photo?`<img src="${photo}" style="width:100%;height:100%;object-fit:cover">`:`<span style="font-size:1.8rem">👤</span>`}
+            </div>
+            ${isMe?`<span style="position:absolute;bottom:0;right:0;background:var(--primary);color:#fff;font-size:.55rem;padding:1px 4px;border-radius:6px;font-weight:700">SEN</span>`:''}
+          </div>
+          <div style="font-weight:700;font-size:.88rem;margin-bottom:4px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis">${m.name}</div>
+          <div style="font-size:.72rem;color:var(--primary);margin-bottom:6px">${getRank(st.lvl||1)} · Sev.${st.lvl||1}</div>
+          <div class="flex gap-1" style="justify-content:center;flex-wrap:wrap;margin-bottom:6px">
+            <span class="badge badge-accent" style="font-size:.62rem">${st.totalXp||0} XP</span>
+            ${earnedCount>0?`<span class="badge badge-warning" style="font-size:.62rem">🏆 ${earnedCount}</span>`:''}
+          </div>
+          <div style="font-size:.68rem;color:var(--dim)">${st.streak||0} 🔥 seri</div>
+        </div>`};
+    }));
+    // XP'ye göre sırala
+    studentCards.sort((a,b)=>b.xp-a.xp);
+    studentCards.forEach(s=>allCards.push(s.html));
+  } else {
+    allCards.push(`<div class="card text-center text-dim" style="padding:30px"><div>Sınıfta başka öğrenci yok.</div></div>`);
+  }
 
-  // XP'ye göre sırala
-  const sorted=uids.map((uid,i)=>({uid,html:cards[i]}));
-  grid.innerHTML=sorted.map(s=>s.html).join('');
+  grid.innerHTML=allCards.join('');
 }
 async function loadWeatherWidget(){
   const el=document.getElementById('weather-widget');
