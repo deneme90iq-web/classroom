@@ -399,13 +399,13 @@ textarea.input{resize:vertical;min-height:80px}
       <span class="nav-badge" id="mnav-hw-badge" style="display:none"></span>
       <span>Ödevler</span>
     </div>
-    <div class="mnav-item" id="mnav-notes" onclick="mnavTo('notes')">
-      <div class="mnav-icon">📝</div>
-      <span>Notlar</span>
+    <div class="mnav-item" id="mnav-calendar" onclick="mnavTo('calendar')">
+      <div class="mnav-icon">📅</div>
+      <span>Takvim</span>
     </div>
-    <div class="mnav-item" id="mnav-chat" onclick="mnavTo('chat')">
-      <div class="mnav-icon">💬</div>
-      <span>Sohbet</span>
+    <div class="mnav-item" id="mnav-ai" onclick="mnavTo('ai')">
+      <div class="mnav-icon">🤖</div>
+      <span>AI</span>
     </div>
     <div class="mnav-item" id="mnav-more" onclick="openMobileDrawer()">
       <div class="mnav-icon">☰</div>
@@ -1390,7 +1390,7 @@ async function renderDashboard(){
     </div>
 
     <!-- Widgets Row -->
-    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:20px">
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin-bottom:20px">
 
       <!-- Hava Durumu Widget -->
       <div class="card" style="padding:16px">
@@ -4284,6 +4284,8 @@ function buildDrawerNav(){
     {page:'voice',icon:'🎤',label:'Sesli Sohbet'},
     {page:'quiz',icon:'📝',label:'Quiz'},
     {page:'classes',icon:'🏫',label:'Sınıflarım'},
+    {page:'calendar',icon:'📅',label:'Takvim'},
+    {page:'ai',icon:'🤖',label:'AI Asistan'},
     {page:'books',icon:'📚',label:'Kitaplarım'},
     {page:'store',icon:'🛒',label:'Mağaza'},
     {page:'leaderboard',icon:'🏆',label:'Liderboard'},
