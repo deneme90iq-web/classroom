@@ -1459,7 +1459,7 @@ async function renderHomework(){
     ${session.role==='teacher'?`
       <div class="tab" id="hw-tab-given" onclick="hwTab('given')"><span data-tab-i18n='mine'>${tr_('mine')}</span></div>
       <div class="tab" id="hw-tab-cancelled" onclick="hwTab('cancelled')">🚫 ${tr_('cancelled')}</div>
-    `:'<div class="tab" id="hw-tab-cancelled" onclick="hwTab(\'cancelled\')">🚫 ${tr_('cancelled')}</div>'}
+    `:`<div class="tab" id="hw-tab-cancelled" onclick="hwTab('cancelled')">🚫 ${tr_('cancelled')}</div>`}
   </div>
   <div id="hw-list"></div>`;
   await loadHwTab('pending');
@@ -1641,7 +1641,7 @@ async function loadNotes(cat){
   if(filtered.length===0){
     grid.innerHTML=`<div class="card text-center text-dim" style="padding:50px;grid-column:1/-1">
       <div style="font-size:3rem;margin-bottom:10px">📭</div>
-      <div>${!myCode&&session.role==='student'?'Henüz bir sınıfa katılmadın.':'tr_('noNotes')'}</div>
+      <div>${!myCode&&session.role==='student'?'Henüz bir sınıfa katılmadın.':tr_('noNotes')}</div>
     </div>`;
     return;
   }
@@ -1779,7 +1779,7 @@ async function renderClasses(){
   let myClasses=[];
   if(session.role==='teacher')myClasses=Object.values(classes).filter(c=>c.teacherUid===session.uid);
   else if(session.role==='student'&&session.classCode)myClasses=Object.values(classes).filter(c=>c.code===session.classCode);
-  if(myClasses.length===0){el.innerHTML=`<div class="card text-center text-dim" style="padding:60px"><div style="font-size:3rem;margin-bottom:12px">🏫</div><div>${session.role==='teacher'?'${tr_('classes')} - ${tr_('noHw')} Sağ üstten oluştur.':'Henüz bir sınıfa kayıtlı değilsin.'}</div></div>`;return}
+  if(myClasses.length===0){el.innerHTML=`<div class="card text-center text-dim" style="padding:60px"><div style="font-size:3rem;margin-bottom:12px">🏫</div><div>${session.role==='teacher'?`${tr_('classes')} - Sağ üstten oluştur.`:'Henüz bir sınıfa kayıtlı değilsin.'}</div></div>`;return}
   el.innerHTML='';
   for(const cls of myClasses){
     const members=await dbGet(`classMembers/${safeKey(cls.code)}`)||{};
@@ -2222,7 +2222,7 @@ const LANGUAGES={
     // Buttons
     submit:'Gönder',cancel:'İptal',save:'Kaydet',close:'Kapat',delete:'Sil',edit:'Düzenle',
     publish:'Yayınla',create:'Oluştur',add:'Ekle',share:'Paylaş',upload:'Yükle',
-    back:'← Geri',loading:'${tr_('loading')}',
+    back:'← Geri',loading:'Yükleniyor...',
     // Homework
     pending:'Bekleyen',completed:'Tamamlanan',past:'Geçmiş',mine:'Verdiğim',cancelled:'İptal',
     dueDate:'Son Teslim',xpReward:'XP Ödülü',latePenalty:'Geç Teslim Cezası',
