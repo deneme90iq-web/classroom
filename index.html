@@ -444,35 +444,41 @@ if(!window.toggleTheme){
   <div class="auth-wrap">
     <div class="text-center float">
       <div class="auth-logo">classroom</div>
-      <div style="font-size:.8rem;color:var(--dim)">Akıllı Sınıf Yönetim Platformu</div>
+      <div style="font-size:.8rem;color:var(--dim)" data-i18n="tagline">Akıllı Sınıf Yönetim Platformu</div>
+    </div>
+    <!-- Dil seçici — auth ekranı -->
+    <div style="display:flex;justify-content:center;margin-bottom:16px">
+      <button onclick="showLangPicker()" style="display:flex;align-items:center;gap:8px;background:var(--card);border:1px solid var(--border);border-radius:20px;padding:7px 16px;cursor:pointer;color:var(--dim);font-size:.82rem;font-family:'DM Sans',sans-serif">
+        <span id="auth-lang-flag">🇹🇷</span> <span id="auth-lang-label">Türkçe</span> <span style="font-size:.7rem">▾</span>
+      </button>
     </div>
     <div class="auth-box">
       <div class="auth-tabs">
-        <div class="auth-tab active" id="tab-login" onclick="switchAuthTab('login')">Giriş Yap</div>
-        <div class="auth-tab" id="tab-register" onclick="switchAuthTab('register')">Kayıt Ol</div>
+        <div class="auth-tab active" id="tab-login" onclick="switchAuthTab('login')" data-i18n="loginTab">Giriş Yap</div>
+        <div class="auth-tab" id="tab-register" onclick="switchAuthTab('register')" data-i18n="registerTab">Kayıt Ol</div>
       </div>
       <div id="auth-error" class="err-msg"></div>
 
       <!-- LOGIN -->
       <div id="form-login">
-        <div class="form-group"><label class="label">E-POSTA</label><input type="email" class="input" id="login-email" placeholder="ornek@mail.com"></div>
-        <div class="form-group"><label class="label">ŞİFRE</label><input type="password" class="input" id="login-pass" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()"></div>
-        <button class="btn btn-primary btn-block btn-lg mt-3" onclick="doLogin()" id="login-btn">Giriş Yap →</button>
-        <div class="text-center mt-3" style="font-size:.8rem;color:var(--dim)">Hesabın yok mu? <span style="color:var(--primary);cursor:pointer" onclick="switchAuthTab('register')">Kayıt ol</span></div>
+        <div class="form-group"><label class="label" data-i18n="emailLabel">E-POSTA</label><input type="email" class="input" id="login-email" placeholder="ornek@mail.com"></div>
+        <div class="form-group"><label class="label" data-i18n="passLabel">ŞİFRE</label><input type="password" class="input" id="login-pass" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()"></div>
+        <button class="btn btn-primary btn-block btn-lg mt-3" onclick="doLogin()" id="login-btn" data-i18n="loginBtn">Giriş Yap →</button>
+        <div class="text-center mt-3" style="font-size:.8rem;color:var(--dim)"><span data-i18n="noAccount">Hesabın yok mu?</span> <span style="color:var(--primary);cursor:pointer" onclick="switchAuthTab('register')" data-i18n="registerLink">Kayıt ol</span></div>
       </div>
 
       <!-- REGISTER -->
       <div id="form-register" style="display:none">
-        <div class="form-group"><label class="label">AD SOYAD</label><input type="text" class="input" id="reg-name" placeholder="Adın ve soyadın" maxlength="40"></div>
+        <div class="form-group"><label class="label" data-i18n="nameLabel">AD SOYAD</label><input type="text" class="input" id="reg-name" placeholder="Adın ve soyadın" maxlength="40"></div>
         <div class="form-group">
-          <label class="label">ROL</label>
+          <label class="label" data-i18n="roleLabel">ROL</label>
           <div class="role-grid" style="grid-template-columns:1fr 1fr">
-            <button class="role-btn sel-teacher" id="role-teacher" onclick="selectRole('teacher')">👨‍🏫<br>Öğretmen</button>
-            <button class="role-btn" id="role-student" onclick="selectRole('student')">🎓<br>Öğrenci</button>
+            <button class="role-btn sel-teacher" id="role-teacher" onclick="selectRole('teacher')">👨‍🏫<br><span data-i18n="teacher">Öğretmen</span></button>
+            <button class="role-btn" id="role-student" onclick="selectRole('student')">🎓<br><span data-i18n="student">Öğrenci</span></button>
           </div>
         </div>
         <div id="reg-branch-group" class="form-group">
-          <label class="label">BRANŞ</label>
+          <label class="label" data-i18n="branchLabel">BRANŞ</label>
           <select class="input" id="reg-branch">
             <option value="genel">🏫 Genel (Tüm Dersler)</option>
             <option value="math">📐 Matematik</option>
@@ -491,10 +497,10 @@ if(!window.toggleTheme){
             <option value="siyer">📿 Siyer</option>
           </select>
         </div>
-        <div class="form-group"><label class="label">E-POSTA</label><input type="email" class="input" id="reg-email" placeholder="ornek@mail.com"></div>
-        <div class="form-group"><label class="label">ŞİFRE (en az 6 karakter)</label><input type="password" class="input" id="reg-pass" placeholder="••••••••" onkeydown="if(event.key==='Enter')doRegister()"></div>
-        <button class="btn btn-success btn-block btn-lg mt-3" onclick="doRegister()" id="register-btn">Hesap Oluştur →</button>
-        <div class="text-center mt-3" style="font-size:.8rem;color:var(--dim)">Hesabın var mı? <span style="color:var(--primary);cursor:pointer" onclick="switchAuthTab('login')">Giriş yap</span></div>
+        <div class="form-group"><label class="label" data-i18n="emailLabel">E-POSTA</label><input type="email" class="input" id="reg-email" placeholder="ornek@mail.com"></div>
+        <div class="form-group"><label class="label" data-i18n="passHint">ŞİFRE (en az 6 karakter)</label><input type="password" class="input" id="reg-pass" placeholder="••••••••" onkeydown="if(event.key==='Enter')doRegister()"></div>
+        <button class="btn btn-success btn-block btn-lg mt-3" onclick="doRegister()" id="register-btn" data-i18n="registerBtn">Hesap Oluştur →</button>
+        <div class="text-center mt-3" style="font-size:.8rem;color:var(--dim)"><span data-i18n="hasAccount">Hesabın var mı?</span> <span style="color:var(--primary);cursor:pointer" onclick="switchAuthTab('login')" data-i18n="loginLink">Giriş yap</span></div>
       </div>
     </div>
   </div>
@@ -1359,35 +1365,35 @@ async function renderDashboard(){
 
   mc.innerHTML=`
     <div style="margin-bottom:24px">
-      <div style="font-family:'Syne',sans-serif;font-size:1.5rem;font-weight:700">Merhaba, ${session.name}! 👋</div>
-      <div class="text-dim" style="font-size:.9rem;margin-top:4px">${new Date().toLocaleDateString('tr-TR',{weekday:'long',day:'numeric',month:'long'})}</div>
+      <div style="font-family:'Syne',sans-serif;font-size:1.5rem;font-weight:700">${t('hello')}, ${session.name}! 👋</div>
+      <div class="text-dim" style="font-size:.9rem;margin-top:4px">${new Date().toLocaleDateString(currentLang==='tr'?'tr-TR':currentLang==='zh'?'zh-CN':currentLang==='de'?'de-DE':currentLang==='fr'?'fr-FR':currentLang==='es'?'es-ES':'en-GB',{weekday:'long',day:'numeric',month:'long'})}</div>
     </div>
 
     <div class="grid-3 mb-4" style="margin-bottom:20px">
-      <div class="stat-card"><div class="lbl">SEVİYE</div><div class="val text-primary">${state.lvl||1}</div><div style="font-size:.72rem;color:var(--dim)">${getRank(state.lvl||1)}</div></div>
-      <div class="stat-card"><div class="lbl">TOPLAM XP</div><div class="val text-accent">${state.totalXp||0}</div></div>
-      <div class="stat-card"><div class="lbl">SERİ</div><div class="val text-warning">${state.streak||0} 🔥</div></div>
+      <div class="stat-card"><div class="lbl">${t('level')}</div><div class="val text-primary">${state.lvl||1}</div><div style="font-size:.72rem;color:var(--dim)">${getRank(state.lvl||1)}</div></div>
+      <div class="stat-card"><div class="lbl">${t('totalXp')}</div><div class="val text-accent">${state.totalXp||0}</div></div>
+      <div class="stat-card"><div class="lbl">${t('streak')}</div><div class="val text-warning">${state.streak||0} 🔥</div></div>
     </div>
 
     <div class="grid-2" style="margin-bottom:20px">
       <div>
-        <div style="font-family:'Syne',sans-serif;font-size:.85rem;font-weight:700;margin-bottom:12px;color:var(--dim)">📋 YAKIN ÖDEVLER</div>
+        <div style="font-family:'Syne',sans-serif;font-size:.85rem;font-weight:700;margin-bottom:12px;color:var(--dim)">📋 ${t('recentHw')}</div>
         ${pendingHws.length===0
-          ?'<div class="card text-center text-dim" style="padding:30px">Bekleyen ödev yok ✓</div>'
+          ?`<div class="card text-center text-dim" style="padding:30px">${t('noHw')}</div>`
           :pendingHws.sort((a,b)=>new Date(a.dueDate)-new Date(b.dueDate)).slice(0,4).map(h=>miniHwCard(h)).join('')
         }
       </div>
       <div>
-        <div style="font-family:'Syne',sans-serif;font-size:.85rem;font-weight:700;margin-bottom:12px;color:var(--dim)">📝 SON NOTLAR</div>
+        <div style="font-family:'Syne',sans-serif;font-size:.85rem;font-weight:700;margin-bottom:12px;color:var(--dim)">📝 ${t('recentNotes')}</div>
         ${recentNotes.length===0
-          ?'<div class="card text-center text-dim" style="padding:30px">Henüz not yok</div>'
+          ?`<div class="card text-center text-dim" style="padding:30px">${t('noNotes')}</div>`
           :recentNotes.map(n=>miniNoteCard(n)).join('')
         }
       </div>
     </div>
 
     <div>
-      <div style="font-family:'Syne',sans-serif;font-size:.85rem;font-weight:700;margin-bottom:12px;color:var(--dim)">🏆 ROZETLER</div>
+      <div style="font-family:'Syne',sans-serif;font-size:.85rem;font-weight:700;margin-bottom:12px;color:var(--dim)">🏆 ${t('badges')}</div>
       <div class="card"><div style="display:grid;grid-template-columns:repeat(7,1fr);gap:10px">${renderBadgesHTML(state)}</div></div>
     </div>
   `;
@@ -1403,7 +1409,7 @@ function miniHwCard(hw){
   const days=daysUntil(hw.dueDate);
   const subj=getSubject(hw.subjectId);
   const urgency=days<0?'done':days<=1?'urgent':days<=3?'soon':'normal';
-  const urgencyLabel=days<0?'Geçti':days===0?'Bugün':days===1?'Yarın':`${days} gün`;
+  const urgencyLabel=days<0?t('overdue'):days===0?t('today'):days===1?t('tomorrow'):`${days} ${t('days')}`;
   return `<div class="hw-card ${urgency}" style="cursor:pointer" onclick="navTo('homework')">
     <div class="flex items-center justify-between mb-2">
       <span style="font-weight:600;font-size:.88rem">${hw.title}</span>
@@ -2185,6 +2191,7 @@ function applyStoredTheme(){
   }
 }
 applyStoredTheme();
+setTimeout(()=>applyLang(currentLang),80);
 
 window.showContributors=function(){
   showModal('modal-contributors');
@@ -2194,13 +2201,36 @@ window.showContributors=function(){
 // ═══════════ DİL SİSTEMİ ═══════════
 const LANGUAGES={
   tr:{flag:'🇹🇷',name:'Türkçe',t:{
+    // Nav
     dashboard:'Dashboard',homework:'Ödevler',notes:'Ders Notları',announcements:'Duyurular',
     chat:'Sınıf Sohbeti',voice:'Sesli Sohbet',quiz:'Quiz',classes:'Sınıflarım',
     books:'Kitaplarım',store:'Mağaza',leaderboard:'Liderboard',
     assign:'Ödev Ver',quizCreate:'Quiz Oluştur',students:'Öğrencilerim',analytics:'Analitik',
     logout:'Çıkış Yap',theme:'Aydınlık Mod',themeD:'Karanlık Mod',install:'Uygulamayı Yükle',
-    contributors:'Katkıda Bulunanlar',language:'Türkçe',
-    joinClass:'Sınıfa Katıl',newClass:'Yeni Sınıf',
+    contributors:'Katkıda Bulunanlar',language:'Türkçe',joinClass:'Sınıfa Katıl',newClass:'Yeni Sınıf',
+    // Auth
+    tagline:'Akıllı Sınıf Yönetim Platformu',loginTab:'Giriş Yap',registerTab:'Kayıt Ol',
+    emailLabel:'E-POSTA',passLabel:'ŞİFRE',loginBtn:'Giriş Yap →',noAccount:'Hesabın yok mu?',
+    registerLink:'Kayıt ol',nameLabel:'AD SOYAD',roleLabel:'ROL',branchLabel:'BRANŞ',
+    passHint:'ŞİFRE (en az 6 karakter)',registerBtn:'Hesap Oluştur →',hasAccount:'Hesabın var mı?',
+    loginLink:'Giriş yap',teacher:'Öğretmen',student:'Öğrenci',
+    // Dashboard
+    hello:'Merhaba',level:'SEVİYE',totalXp:'TOPLAM XP',streak:'SERİ',
+    recentHw:'YAKIN ÖDEVLER',recentNotes:'SON NOTLAR',badges:'ROZETLER',
+    noHw:'Bekleyen ödev yok ✓',noNotes:'Henüz not yok',
+    today:'Bugün',tomorrow:'Yarın',overdue:'Geçti',days:'gün',
+    // Buttons
+    submit:'Gönder',cancel:'İptal',save:'Kaydet',close:'Kapat',delete:'Sil',edit:'Düzenle',
+    publish:'Yayınla',create:'Oluştur',add:'Ekle',share:'Paylaş',upload:'Yükle',
+    back:'← Geri',loading:'Yükleniyor...',
+    // Homework
+    pending:'Bekleyen',completed:'Tamamlanan',past:'Geçmiş',mine:'Verdiğim',cancelled:'İptal',
+    dueDate:'Son Teslim',xpReward:'XP Ödülü',latePenalty:'Geç Teslim Cezası',
+    // Quiz
+    multipleChoice:'Çoktan Seçmeli',fillBlank:'Boşluk Doldurma',openEnded:'Açık Uçlu',
+    correct:'Doğru',wrong:'Yanlış',finish:'Bitir',result:'Sonuç',
+    // Store
+    myXp:'XP\'im',buy:'Satın Al',owned:'Sahip',
   }},
   en:{flag:'🇬🇧',name:'English',t:{
     dashboard:'Dashboard',homework:'Homework',notes:'Lesson Notes',announcements:'Announcements',
@@ -2208,8 +2238,24 @@ const LANGUAGES={
     books:'My Books',store:'Store',leaderboard:'Leaderboard',
     assign:'Assign HW',quizCreate:'Create Quiz',students:'My Students',analytics:'Analytics',
     logout:'Log Out',theme:'Light Mode',themeD:'Dark Mode',install:'Install App',
-    contributors:'Contributors',language:'English',
-    joinClass:'Join Class',newClass:'New Class',
+    contributors:'Contributors',language:'English',joinClass:'Join Class',newClass:'New Class',
+    tagline:'Smart Classroom Management Platform',loginTab:'Log In',registerTab:'Sign Up',
+    emailLabel:'EMAIL',passLabel:'PASSWORD',loginBtn:'Log In →',noAccount:'No account?',
+    registerLink:'Sign up',nameLabel:'FULL NAME',roleLabel:'ROLE',branchLabel:'SUBJECT',
+    passHint:'PASSWORD (min 6 chars)',registerBtn:'Create Account →',hasAccount:'Have an account?',
+    loginLink:'Log in',teacher:'Teacher',student:'Student',
+    hello:'Hello',level:'LEVEL',totalXp:'TOTAL XP',streak:'STREAK',
+    recentHw:'UPCOMING HW',recentNotes:'RECENT NOTES',badges:'BADGES',
+    noHw:'No pending homework ✓',noNotes:'No notes yet',
+    today:'Today',tomorrow:'Tomorrow',overdue:'Overdue',days:'days',
+    submit:'Submit',cancel:'Cancel',save:'Save',close:'Close',delete:'Delete',edit:'Edit',
+    publish:'Publish',create:'Create',add:'Add',share:'Share',upload:'Upload',
+    back:'← Back',loading:'Loading...',
+    pending:'Pending',completed:'Completed',past:'Past',mine:'My HW',cancelled:'Cancelled',
+    dueDate:'Due Date',xpReward:'XP Reward',latePenalty:'Late Penalty',
+    multipleChoice:'Multiple Choice',fillBlank:'Fill in the Blank',openEnded:'Open Ended',
+    correct:'Correct',wrong:'Wrong',finish:'Finish',result:'Result',
+    myXp:'My XP',buy:'Buy',owned:'Owned',
   }},
   zh:{flag:'🇨🇳',name:'中文',t:{
     dashboard:'主页',homework:'作业',notes:'课堂笔记',announcements:'公告',
@@ -2217,8 +2263,24 @@ const LANGUAGES={
     books:'我的书籍',store:'商店',leaderboard:'排行榜',
     assign:'布置作业',quizCreate:'创建测验',students:'我的学生',analytics:'分析',
     logout:'退出登录',theme:'亮色模式',themeD:'暗色模式',install:'安装应用',
-    contributors:'贡献者',language:'中文',
-    joinClass:'加入班级',newClass:'新班级',
+    contributors:'贡献者',language:'中文',joinClass:'加入班级',newClass:'新班级',
+    tagline:'智能课堂管理平台',loginTab:'登录',registerTab:'注册',
+    emailLabel:'邮箱',passLabel:'密码',loginBtn:'登录 →',noAccount:'没有账号？',
+    registerLink:'注册',nameLabel:'姓名',roleLabel:'角色',branchLabel:'学科',
+    passHint:'密码（至少6位）',registerBtn:'创建账号 →',hasAccount:'已有账号？',
+    loginLink:'登录',teacher:'教师',student:'学生',
+    hello:'你好',level:'等级',totalXp:'总经验',streak:'连续',
+    recentHw:'近期作业',recentNotes:'最近笔记',badges:'徽章',
+    noHw:'暂无待完成作业 ✓',noNotes:'暂无笔记',
+    today:'今天',tomorrow:'明天',overdue:'已过期',days:'天',
+    submit:'提交',cancel:'取消',save:'保存',close:'关闭',delete:'删除',edit:'编辑',
+    publish:'发布',create:'创建',add:'添加',share:'分享',upload:'上传',
+    back:'← 返回',loading:'加载中...',
+    pending:'待完成',completed:'已完成',past:'已过去',mine:'我的作业',cancelled:'已取消',
+    dueDate:'截止日期',xpReward:'经验奖励',latePenalty:'迟交惩罚',
+    multipleChoice:'多项选择',fillBlank:'填空题',openEnded:'开放题',
+    correct:'正确',wrong:'错误',finish:'完成',result:'结果',
+    myXp:'我的经验',buy:'购买',owned:'已拥有',
   }},
   es:{flag:'🇪🇸',name:'Español',t:{
     dashboard:'Inicio',homework:'Tareas',notes:'Notas de Clase',announcements:'Anuncios',
@@ -2226,8 +2288,24 @@ const LANGUAGES={
     books:'Mis Libros',store:'Tienda',leaderboard:'Clasificación',
     assign:'Asignar Tarea',quizCreate:'Crear Quiz',students:'Mis Alumnos',analytics:'Analítica',
     logout:'Cerrar Sesión',theme:'Modo Claro',themeD:'Modo Oscuro',install:'Instalar App',
-    contributors:'Contribuidores',language:'Español',
-    joinClass:'Unirse a Clase',newClass:'Nueva Clase',
+    contributors:'Contribuidores',language:'Español',joinClass:'Unirse',newClass:'Nueva Clase',
+    tagline:'Plataforma Inteligente de Gestión de Aulas',loginTab:'Iniciar Sesión',registerTab:'Registrarse',
+    emailLabel:'CORREO',passLabel:'CONTRASEÑA',loginBtn:'Entrar →',noAccount:'¿No tienes cuenta?',
+    registerLink:'Regístrate',nameLabel:'NOMBRE COMPLETO',roleLabel:'ROL',branchLabel:'ASIGNATURA',
+    passHint:'CONTRASEÑA (mín 6 chars)',registerBtn:'Crear Cuenta →',hasAccount:'¿Ya tienes cuenta?',
+    loginLink:'Inicia sesión',teacher:'Profesor',student:'Estudiante',
+    hello:'Hola',level:'NIVEL',totalXp:'XP TOTAL',streak:'RACHA',
+    recentHw:'PRÓXIMAS TAREAS',recentNotes:'NOTAS RECIENTES',badges:'INSIGNIAS',
+    noHw:'Sin tareas pendientes ✓',noNotes:'Sin notas aún',
+    today:'Hoy',tomorrow:'Mañana',overdue:'Vencido',days:'días',
+    submit:'Enviar',cancel:'Cancelar',save:'Guardar',close:'Cerrar',delete:'Eliminar',edit:'Editar',
+    publish:'Publicar',create:'Crear',add:'Añadir',share:'Compartir',upload:'Subir',
+    back:'← Volver',loading:'Cargando...',
+    pending:'Pendiente',completed:'Completado',past:'Pasado',mine:'Mis Tareas',cancelled:'Cancelado',
+    dueDate:'Fecha Límite',xpReward:'Recompensa XP',latePenalty:'Penalización',
+    multipleChoice:'Opción Múltiple',fillBlank:'Rellenar Espacio',openEnded:'Respuesta Abierta',
+    correct:'Correcto',wrong:'Incorrecto',finish:'Terminar',result:'Resultado',
+    myXp:'Mi XP',buy:'Comprar',owned:'Comprado',
   }},
   fr:{flag:'🇫🇷',name:'Français',t:{
     dashboard:'Tableau de bord',homework:'Devoirs',notes:'Notes de Cours',announcements:'Annonces',
@@ -2235,17 +2313,49 @@ const LANGUAGES={
     books:'Mes Livres',store:'Boutique',leaderboard:'Classement',
     assign:'Donner Devoir',quizCreate:'Créer Quiz',students:'Mes Élèves',analytics:'Analytique',
     logout:'Déconnexion',theme:'Mode Clair',themeD:'Mode Sombre',install:'Installer',
-    contributors:'Contributeurs',language:'Français',
-    joinClass:'Rejoindre Classe',newClass:'Nouvelle Classe',
+    contributors:'Contributeurs',language:'Français',joinClass:'Rejoindre',newClass:'Nouvelle Classe',
+    tagline:'Plateforme Intelligente de Gestion de Classe',loginTab:'Se Connecter',registerTab:'S\'inscrire',
+    emailLabel:'E-MAIL',passLabel:'MOT DE PASSE',loginBtn:'Connexion →',noAccount:'Pas de compte ?',
+    registerLink:'S\'inscrire',nameLabel:'NOM COMPLET',roleLabel:'RÔLE',branchLabel:'MATIÈRE',
+    passHint:'MOT DE PASSE (min 6 car.)',registerBtn:'Créer un Compte →',hasAccount:'Déjà un compte ?',
+    loginLink:'Se connecter',teacher:'Professeur',student:'Élève',
+    hello:'Bonjour',level:'NIVEAU',totalXp:'XP TOTAL',streak:'SÉRIE',
+    recentHw:'DEVOIRS À VENIR',recentNotes:'NOTES RÉCENTES',badges:'BADGES',
+    noHw:'Aucun devoir en attente ✓',noNotes:'Pas encore de notes',
+    today:'Aujourd\'hui',tomorrow:'Demain',overdue:'En retard',days:'jours',
+    submit:'Soumettre',cancel:'Annuler',save:'Enregistrer',close:'Fermer',delete:'Supprimer',edit:'Modifier',
+    publish:'Publier',create:'Créer',add:'Ajouter',share:'Partager',upload:'Télécharger',
+    back:'← Retour',loading:'Chargement...',
+    pending:'En attente',completed:'Terminé',past:'Passé',mine:'Mes Devoirs',cancelled:'Annulé',
+    dueDate:'Date Limite',xpReward:'Récompense XP',latePenalty:'Pénalité Retard',
+    multipleChoice:'Choix Multiple',fillBlank:'Texte à Trous',openEnded:'Question Ouverte',
+    correct:'Correct',wrong:'Incorrect',finish:'Terminer',result:'Résultat',
+    myXp:'Mon XP',buy:'Acheter',owned:'Possédé',
   }},
   de:{flag:'🇩🇪',name:'Deutsch',t:{
     dashboard:'Übersicht',homework:'Hausaufgaben',notes:'Unterrichtsnotizen',announcements:'Ankündigungen',
-    chat:'Klassenchat',voice:'Sprackchat',quiz:'Quiz',classes:'Meine Klassen',
+    chat:'Klassenchat',voice:'Sprachchat',quiz:'Quiz',classes:'Meine Klassen',
     books:'Meine Bücher',store:'Shop',leaderboard:'Rangliste',
     assign:'Aufgabe geben',quizCreate:'Quiz erstellen',students:'Meine Schüler',analytics:'Analytik',
     logout:'Abmelden',theme:'Heller Modus',themeD:'Dunkler Modus',install:'App installieren',
-    contributors:'Mitwirkende',language:'Deutsch',
-    joinClass:'Klasse beitreten',newClass:'Neue Klasse',
+    contributors:'Mitwirkende',language:'Deutsch',joinClass:'Klasse beitreten',newClass:'Neue Klasse',
+    tagline:'Intelligente Klassenverwaltungsplattform',loginTab:'Anmelden',registerTab:'Registrieren',
+    emailLabel:'E-MAIL',passLabel:'PASSWORT',loginBtn:'Anmelden →',noAccount:'Noch kein Konto?',
+    registerLink:'Registrieren',nameLabel:'VOR- UND NACHNAME',roleLabel:'ROLLE',branchLabel:'FACH',
+    passHint:'PASSWORT (mind. 6 Zeichen)',registerBtn:'Konto erstellen →',hasAccount:'Bereits ein Konto?',
+    loginLink:'Anmelden',teacher:'Lehrer',student:'Schüler',
+    hello:'Hallo',level:'STUFE',totalXp:'GESAMT-XP',streak:'SERIE',
+    recentHw:'ANSTEHENDE AUFGABEN',recentNotes:'LETZTE NOTIZEN',badges:'ABZEICHEN',
+    noHw:'Keine ausstehenden Aufgaben ✓',noNotes:'Noch keine Notizen',
+    today:'Heute',tomorrow:'Morgen',overdue:'Überfällig',days:'Tage',
+    submit:'Einreichen',cancel:'Abbrechen',save:'Speichern',close:'Schließen',delete:'Löschen',edit:'Bearbeiten',
+    publish:'Veröffentlichen',create:'Erstellen',add:'Hinzufügen',share:'Teilen',upload:'Hochladen',
+    back:'← Zurück',loading:'Laden...',
+    pending:'Ausstehend',completed:'Abgeschlossen',past:'Vergangen',mine:'Meine Aufgaben',cancelled:'Abgebrochen',
+    dueDate:'Fälligkeitsdatum',xpReward:'XP-Belohnung',latePenalty:'Verspätungsstrafe',
+    multipleChoice:'Multiple Choice',fillBlank:'Lückentext',openEnded:'Offene Frage',
+    correct:'Richtig',wrong:'Falsch',finish:'Beenden',result:'Ergebnis',
+    myXp:'Mein XP',buy:'Kaufen',owned:'Besitze',
   }},
 };
 
@@ -2253,36 +2363,59 @@ let currentLang='tr';
 try{currentLang=localStorage.getItem('classroom_lang')||'tr';}catch(e){}
 if(!LANGUAGES[currentLang])currentLang='tr';
 
+// Kısa çeviri yardımcısı
+function t(key){return(LANGUAGES[currentLang]?.t||LANGUAGES.tr.t)[key]||key;}
+window.t=t;
+
 function applyLang(lang){
   if(!LANGUAGES[lang])return;
   currentLang=lang;
   try{localStorage.setItem('classroom_lang',lang);}catch(e){}
-  const t=LANGUAGES[lang].t;
+  const tr=LANGUAGES[lang].t;
   const flag=LANGUAGES[lang].flag;
 
-  // Sidebar nav etiketleri
-  const map={
-    'nav-dashboard':t.dashboard,'nav-homework':t.homework,'nav-notes':t.notes,
-    'nav-announcements':t.announcements,'nav-chat':t.chat,'nav-voice':t.voice,
-    'nav-quiz':t.quiz,'nav-classes':t.classes,'nav-books':t.books,
-    'nav-store':t.store,'nav-leaderboard':t.leaderboard,
-    'nav-assign':t.assign,'nav-quiz-create':t.quizCreate,
-    'nav-students':t.students,'nav-analytics':t.analytics,
+  // ── Sidebar nav ──
+  const navMap={
+    'nav-dashboard':tr.dashboard,'nav-homework':tr.homework,'nav-notes':tr.notes,
+    'nav-announcements':tr.announcements,'nav-chat':tr.chat,'nav-voice':tr.voice,
+    'nav-quiz':tr.quiz,'nav-classes':tr.classes,'nav-books':tr.books,
+    'nav-store':tr.store,'nav-leaderboard':tr.leaderboard,
+    'nav-assign':tr.assign,'nav-quiz-create':tr.quizCreate,
+    'nav-students':tr.students,'nav-analytics':tr.analytics,
+    'nav-join-class':tr.joinClass,'nav-newclass':tr.newClass,
   };
-  Object.entries(map).forEach(([id,txt])=>{
-    const el=document.getElementById(id);
-    if(!el)return;
-    // Sadece text node'u güncelle (badge span'ı koru)
+  Object.entries(navMap).forEach(([id,txt])=>{
+    const el=document.getElementById(id);if(!el)return;
     const icon=el.querySelector('.nav-icon');
     const badge=el.querySelector('.nav-badge');
-    const iconHtml=icon?icon.outerHTML:'';
-    const badgeHtml=badge?badge.outerHTML:'';
-    el.innerHTML=iconHtml+' '+txt+' '+badgeHtml;
+    el.innerHTML=(icon?icon.outerHTML:'')+' '+txt+' '+(badge?badge.outerHTML:'');
   });
 
-  // Dil butonları güncelle
-  ['lang-flag','mdr-lang-flag'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent=flag;});
-  ['lang-label','mdr-lang-label'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent=t.language;});
+  // ── Dil & tema butonları ──
+  ['lang-flag','mdr-lang-flag','auth-lang-flag'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent=flag;});
+  ['lang-label','mdr-lang-label','auth-lang-label'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent=tr.language;});
+
+  // ── Auth sayfası ──
+  const authTagline=document.querySelector('#screen-auth .auth-wrap .text-center div:last-child');
+  if(authTagline)authTagline.textContent=tr.tagline;
+  const tabLogin=document.getElementById('tab-login');if(tabLogin)tabLogin.textContent=tr.loginTab;
+  const tabReg=document.getElementById('tab-register');if(tabReg)tabReg.textContent=tr.registerTab;
+  const loginBtn=document.getElementById('login-btn');if(loginBtn)loginBtn.textContent=tr.loginBtn;
+  const regBtn=document.getElementById('register-btn');if(regBtn)regBtn.textContent=tr.registerBtn;
+
+  // Form etiketleri (data-i18n attribute ile)
+  document.querySelectorAll('[data-i18n]').forEach(el=>{
+    const key=el.getAttribute('data-i18n');
+    if(tr[key])el.textContent=tr[key];
+  });
+
+  // ── Ekran başlığı ──
+  document.title='classroom — '+tr.tagline;
+
+  // ── Aktif sayfayı yeniden render et ──
+  if(typeof currentNav!=='undefined'&&currentNav&&typeof navTo==='function'){
+    navTo(currentNav);
+  }
 }
 
 window.showLangPicker=function(){
@@ -2298,7 +2431,7 @@ window.showLangPicker=function(){
     <div style="display:flex;flex-direction:column;gap:8px;margin-top:8px">
       ${Object.entries(LANGUAGES).map(([code,lang])=>`
       <button onclick="applyLang('${code}');document.getElementById('modal-lang').remove()"
-        style="display:flex;align-items:center;gap:14px;padding:14px 16px;background:${currentLang===code?'var(--primary-dim)':'var(--bg2)'};border:1px solid ${currentLang===code?'var(--primary)':'var(--border)'};border-radius:12px;cursor:pointer;color:var(--text);font-size:.95rem;font-family:'DM Sans',sans-serif;transition:all .15s">
+        style="display:flex;align-items:center;gap:14px;padding:14px 16px;background:${currentLang===code?'var(--primary-dim)':'var(--bg2)'};border:1px solid ${currentLang===code?'var(--primary)':'var(--border)'};border-radius:12px;cursor:pointer;color:var(--text);font-size:.95rem;font-family:'DM Sans',sans-serif">
         <span style="font-size:1.6rem">${lang.flag}</span>
         <span style="font-weight:${currentLang===code?700:400}">${lang.name}</span>
         ${currentLang===code?'<span style="margin-left:auto;color:var(--primary)">✓</span>':''}
