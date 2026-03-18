@@ -2226,7 +2226,7 @@ async function renderAI(){
   mc.innerHTML=`
   <div class="flex items-center gap-3 mb-4">
     <div style="font-family:'Syne',sans-serif;font-size:1.3rem;font-weight:700">🤖 AI Asistan</div>
-    <span class="badge badge-primary">Gemini 1.5 Flash</span>
+    <span class="badge badge-primary">Gemini 2.0 Flash</span>
   </div>
   <div class="card" style="padding:0;overflow:hidden;display:flex;flex-direction:column;height:calc(100vh - 200px);min-height:500px">
     <!-- Chat history -->
@@ -2306,7 +2306,7 @@ async function renderAI(){
         role:m.role==='assistant'?'model':'user',
         parts:[{text:m.content}]
       }));
-      const resp=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_KEY}`,{
+      const resp=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_KEY}`,{
         method:'POST',
         headers:{'Content-Type':'application/json'},
         body:JSON.stringify({
