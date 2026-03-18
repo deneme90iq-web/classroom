@@ -888,7 +888,7 @@ onAuthStateChanged(auth, async user=>{
   if(user){
     const profile=await dbGet(`users/${user.uid}/profile`);
     if(profile){
-      session={uid:user.uid,role:profile.role,name:profile.name,classCode:profile.classCode||null,email:user.email};
+      session={uid:user.uid,role:profile.role,name:profile.name,classCode:profile.classCode||null,email:user.email,approved:false};
       // Öğrenci onay kontrolü — sadece sınıf koduna sahipse
       if(profile.role==='student'&&profile.classCode){
         const pending=await dbGet(`pendingStudents/${safeKey(profile.classCode)}/${safeKey(user.uid)}`);
@@ -904,6 +904,10 @@ onAuthStateChanged(auth, async user=>{
           showErr('Başvurun öğretmen tarafından reddedildi. Farklı bir sınıfa katılabilirsin.');
           return;
         }
+        // approved veya classMembers'da varsa onaylı
+        session.approved=(pending?.status==='approved')||(!pending);
+      } else {
+        session.approved=true; // sınıfsız öğrenci veya öğretmen
       }
       hideLoading();
       enterApp();
@@ -928,7 +932,30 @@ onAuthStateChanged(auth, async user=>{
             await new Promise(r=>setTimeout(r,500));
           }
           if(profile){
-            session={...s,role:profile.role,name:profile.name,classCode:profile.classCode||null};
+            session={...s,role:profile.role,name:profile.name,classCode:profile.classCode||null,approved:false};
+
+            // Test öğrenci için onay kontrolü
+            if(profile.role==='student'&&profile.classCode){
+              const pending=await dbGet(`pendingStudents/${safeKey(profile.classCode)}/${safeKey(s.uid)}`);
+              if(pending&&pending.status==='pending'){
+                hideLoading();
+                showPendingScreen(profile.name,profile.classCode);
+                return;
+              }
+              if(pending&&(pending.status==='rejected'||pending.status==='removed')){
+                hideLoading();
+                session.classCode=null;
+                try{localStorage.removeItem('test_session');}catch(e){}
+                try{sessionStorage.removeItem('test_session');}catch(e){}
+                showScreen('screen-auth');
+                showErr('Başvurun reddedildi veya sınıftan çıkarıldın.');
+                return;
+              }
+              session.approved=(pending?.status==='approved')||(!pending);
+            } else {
+              session.approved=true;
+            }
+
             // Her iki storage'a da kaydet
             const sessionStr=JSON.stringify(session);
             try{localStorage.setItem('test_session',sessionStr);}catch(e){}
@@ -1269,8 +1296,28 @@ async function sendReminderEmail(hw,days){
   }
 }
 
+// Onaysız öğrenci kontrolü — sınıfa katılmış ama henüz onaylanmamış
+function isApprovedStudent(){
+  if(session.role!=='student')return true; // öğretmen her zaman ok
+  if(!session.classCode)return true; // sınıfa katılmamış, sadece kendi içeriğini görebilir
+  return session.approved===true;
+}
+
 // ═══════════ NAVIGATION ═══════════
+const TEACHER_ONLY_PAGES=['assign','students','analytics','quiz-create'];
+const CLASS_REQUIRED_PAGES=['homework','notes','chat','voice','quiz','store','leaderboard','books','announcements'];
+
 window.navTo=function(page){
+  // Öğretmen sayfaları
+  if(TEACHER_ONLY_PAGES.includes(page)&&session.role!=='teacher'){
+    toast('⛔ Bu sayfa sadece öğretmenlere açık.','d');
+    return;
+  }
+  // Onay bekleyen öğrenci — sınıf içeriklerine erişemez
+  if(CLASS_REQUIRED_PAGES.includes(page)&&session.role==='student'&&session.classCode&&!session.approved){
+    toast('⏳ Öğretmenin henüz seni onaylamadı.','w');
+    return;
+  }
   currentNav=page;
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
   const navEl=document.getElementById('nav-'+page);
@@ -1285,13 +1332,13 @@ window.navTo=function(page){
     case 'chat': renderChat();break;
     case 'voice': renderVoiceChat();break;
     case 'quiz': renderQuiz();break;
-    case 'quiz-create': showModal('modal-create-quiz');loadTeacherClassesForQuiz();break;
+    case 'quiz-create': if(session.role==='teacher'){showModal('modal-create-quiz');loadTeacherClassesForQuiz();}break;
     case 'classes': renderClasses();break;
     case 'store': renderStore();break;
     case 'leaderboard': renderLeaderboard();break;
-    case 'assign': renderAssign();break;
-    case 'students': renderStudents();break;
-    case 'analytics': renderAnalytics();break;
+    case 'assign': if(session.role==='teacher')renderAssign();break;
+    case 'students': if(session.role==='teacher')renderStudents();break;
+    case 'analytics': if(session.role==='teacher')renderAnalytics();break;
     default: renderDashboard();
   }
 }
@@ -1683,6 +1730,7 @@ window.openNoteModal=async function(){
 }
 
 window.shareNote=async function(){
+  if(session.role==='student'&&session.classCode&&!session.approved){toast('⏳ Öğretmenin seni henüz onaylamadı.','w');return;}
   const subjectId=document.getElementById('note-subject-sel').value;
   const title=document.getElementById('note-title').value.trim();
   const content=document.getElementById('note-content').value.trim();
@@ -1792,6 +1840,7 @@ window.loadClassStudentsForHw=async function(){
 }
 
 window.assignHomework=async function(){
+  if(session.role!=='teacher'){toast('⛔ Yetersiz yetki.','d');return;}
   const classCode=document.getElementById('hw-class-sel').value;
   const subjectId=document.getElementById('hw-subject-sel').value;
   const title=document.getElementById('hw-title').value.trim();
@@ -2222,6 +2271,7 @@ window.editAnnouncement=async function(annId){
 }
 
 window.openAnnModal=async function(){
+  if(session.role!=='teacher'){toast('⛔ Sadece öğretmenler duyuru oluşturabilir.','d');return;}
   const classes=await getMyClasses();
   const sel=document.getElementById('ann-class-sel');
   sel.innerHTML='<option value="">— Seç —</option>';
@@ -2230,6 +2280,7 @@ window.openAnnModal=async function(){
 }
 
 window.createAnnouncement=async function(){
+  if(session.role!=='teacher'){toast('⛔ Yetersiz yetki.','d');return;}
   const title=document.getElementById('ann-title').value.trim();
   const content=document.getElementById('ann-content').value.trim();
   const type=document.getElementById('ann-type').value;
@@ -2544,6 +2595,7 @@ async function loadTeacherClassesForQuiz(){
 }
 
 window.publishQuiz=async function(){
+  if(session.role!=='teacher'){toast('⛔ Yetersiz yetki.','d');return;}
   const title=document.getElementById('quiz-title').value.trim();
   const classCode=document.getElementById('quiz-class-sel').value;
   const subjectId=document.getElementById('quiz-subject-sel').value;
@@ -2630,6 +2682,7 @@ async function loadBooks(){
 }
 
 window.openAddBookModal=async function(bookId){
+  if(session.role!=='teacher'){toast('⛔ Sadece öğretmenler kitap ekleyebilir.','d');return;}
   const classes=await getMyClasses();
   if(classes.length===0){toast('Önce sınıf oluştur!','w');return;}
 
