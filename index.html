@@ -447,6 +447,15 @@ if(!window.toggleTheme){
       <div style="font-size:.8rem;color:var(--dim)" data-i18n="tagline">${tr_('tagline')}</div>
     </div>
 
+    <!-- Language picker -->
+    <div style="display:flex;justify-content:center;margin-bottom:12px">
+      <button onclick="showLangPicker()" style="display:flex;align-items:center;gap:8px;background:var(--card);border:1px solid var(--border);border-radius:20px;padding:7px 16px;cursor:pointer;color:var(--dim);font-size:.82rem;font-family:'DM Sans',sans-serif;transition:all .2s" onmouseover="this.style.borderColor='var(--primary)'" onmouseout="this.style.borderColor='var(--border)'">
+        <span id="auth-lang-flag">🇬🇧</span>
+        <span id="auth-lang-label">English</span>
+        <span style="font-size:.65rem;opacity:.6">▾</span>
+      </button>
+    </div>
+
     <div class="auth-box">
       <div class="auth-tabs">
         <div class="auth-tab active" id="tab-login" onclick="switchAuthTab('login')" data-i18n="loginTab">Log In</div>
@@ -1163,7 +1172,7 @@ function enterApp(){
   const gb=document.getElementById('global-theme-btn');
   if(gb)gb.style.display='flex';
   applyStoredTheme();
-  setTimeout(()=>applyLang('tr'),100); // nav item'lar render olduktan sonra
+  setTimeout(()=>applyLang(currentLang),100);
   if(window.innerWidth<=768){
     const mmb=document.getElementById('mobile-menu-btn');
     if(mmb)mmb.style.removeProperty('display');
@@ -2186,7 +2195,7 @@ function applyStoredTheme(){
   }
 }
 applyStoredTheme();
-setTimeout(()=>applyLang('tr'),80);
+setTimeout(()=>applyLang(currentLang),80);
 
 window.showContributors=function(){
   showModal('modal-contributors');
