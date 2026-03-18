@@ -592,6 +592,7 @@ if(!window.toggleTheme){
 
       <div class="sidebar-section">ARAÇLAR</div>
       <div class="nav-item" id="nav-profile" onclick="navTo('profile')"><span class="nav-icon">👤</span> Profilim</div>
+      <div class="nav-item" id="nav-classprofiles" onclick="navTo('classprofiles')" style="display:none"><span class="nav-icon">👥</span> Sınıfım</div>
       <div class="nav-item" id="nav-calendar" onclick="navTo('calendar')"><span class="nav-icon">📅</span> Takvim</div>
       <div class="nav-item" id="nav-ai" onclick="navTo('ai')"><span class="nav-icon">🤖</span> AI Asistan</div>
       <div class="nav-item" id="nav-books" onclick="navTo('books')"><span class="nav-icon">📚</span> Kitaplarım</div>
@@ -1207,6 +1208,11 @@ function enterApp(){
   if(session.role==='student'){
     const joinBtn=document.getElementById('nav-join-class');
     if(joinBtn)joinBtn.style.display='flex';
+    // Sınıfa üyeyse "Sınıfım" butonunu göster
+    if(session.classCode && session.approved){
+      const cpBtn=document.getElementById('nav-classprofiles');
+      if(cpBtn)cpBtn.style.display='flex';
+    }
   }
   // Listen to game state
   dbListen(`users/${session.uid}/gameState`,s=>{
@@ -1333,6 +1339,7 @@ window.navTo=function(page){
   const mc=document.getElementById('main-content');
   switch(page){
     case 'profile': renderProfile();break;
+    case 'classprofiles': renderClassProfiles();break;
     case 'calendar': renderCalendar();break;
     case 'ai': renderAI();break;
     case 'dashboard': renderDashboard();break;
@@ -1482,10 +1489,22 @@ async function renderDashboard(){
       <div style="font-family:'Syne',sans-serif;font-size:.85rem;font-weight:700;margin-bottom:12px;color:var(--dim)">🏆 ROZETLER</div>
       <div class="card"><div style="display:grid;grid-template-columns:repeat(7,1fr);gap:10px">${renderBadgesHTML(state)}</div></div>
     </div>
+
+    <!-- Sınıf Öğrencileri (öğretmen için dashboard'da) -->
+    ${session.role==='teacher'?`
+    <div style="margin-top:20px">
+      <div style="font-family:'Syne',sans-serif;font-size:.85rem;font-weight:700;margin-bottom:12px;color:var(--dim)">👥 SINIF ÖĞRENCİLERİ</div>
+      <div id="dashboard-students-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px">
+        <div class="text-dim" style="font-size:.82rem;padding:10px">Yükleniyor...</div>
+      </div>
+    </div>`:''}
   `;
 
   // Hava durumu yükle
   loadWeatherWidget();
+
+  // Öğretmen için sınıf öğrencilerini yükle
+  if(session.role==='teacher') loadDashboardStudents();
 
   if(session.role==='student'){
     const btn=document.createElement('button');
@@ -1499,7 +1518,122 @@ async function renderDashboard(){
   checkHwNotifications();
 }
 
-async function loadWeatherWidget(){
+async function loadDashboardStudents(){
+  const grid=document.getElementById('dashboard-students-grid');
+  if(!grid)return;
+  const classes=await getMyClasses();
+  if(classes.length===0){grid.innerHTML=`<div class="text-dim" style="font-size:.82rem">Henüz sınıf yok.</div>`;return;}
+  // İlk sınıfı göster
+  const cls=classes[0];
+  const members=await dbGet(`classMembers/${safeKey(cls.code)}`)||{};
+  const uids=Object.keys(members);
+  if(uids.length===0){grid.innerHTML=`<div class="text-dim" style="font-size:.82rem">Sınıfta öğrenci yok.</div>`;return;}
+
+  const cards=await Promise.all(uids.slice(0,12).map(async uid=>{
+    const st=await dbGet(`users/${uid}/gameState`)||defaultState();
+    const photo=await dbGet(`profilePhoto_${uid}`)||null;
+    const m=members[uid];
+    return `<div class="card card-hover" style="padding:14px;text-align:center;cursor:pointer" onclick="showStudentProfile('${uid}')">
+      <div style="width:48px;height:48px;border-radius:50%;overflow:hidden;background:var(--bg2);border:2px solid var(--primary);margin:0 auto 8px;display:flex;align-items:center;justify-content:center">
+        ${photo?`<img src="${photo}" style="width:100%;height:100%;object-fit:cover">`:`<span style="font-size:1.4rem">👤</span>`}
+      </div>
+      <div style="font-weight:600;font-size:.82rem;overflow:hidden;white-space:nowrap;text-overflow:ellipsis">${m.name}</div>
+      <div style="font-size:.7rem;color:var(--primary);margin-top:2px">Sev.${st.lvl||1} · ${st.totalXp||0} XP</div>
+    </div>`;
+  }));
+
+  grid.innerHTML=cards.join('')+(uids.length>12?`<div class="card" style="padding:14px;text-align:center;cursor:pointer;display:flex;align-items:center;justify-content:center" onclick="navTo('students')">
+    <div style="color:var(--dim);font-size:.82rem">+${uids.length-12} daha →</div>
+  </div>`:'');
+}
+
+window.showStudentProfile=async function(uid){
+  const profile=await dbGet(`users/${uid}/profile`)||{};
+  const state=await dbGet(`users/${uid}/gameState`)||defaultState();
+  const photo=await dbGet(`profilePhoto_${uid}`)||null;
+
+  const modal=document.createElement('div');
+  modal.className='modal-overlay';
+  modal.style.display='flex';
+  modal.onclick=e=>{if(e.target===modal)modal.remove();};
+  modal.innerHTML=`<div class="modal" style="max-width:400px;text-align:center">
+    <div style="width:80px;height:80px;border-radius:50%;overflow:hidden;background:var(--bg2);border:3px solid var(--primary);margin:0 auto 12px;display:flex;align-items:center;justify-content:center">
+      ${photo?`<img src="${photo}" style="width:100%;height:100%;object-fit:cover">`:`<span style="font-size:2rem">👤</span>`}
+    </div>
+    <div style="font-family:'Syne',sans-serif;font-size:1.2rem;font-weight:700">${profile.name||'Öğrenci'}</div>
+    <div style="font-size:.8rem;color:var(--dim);margin-bottom:16px">🎓 Öğrenci · Sev.${state.lvl||1}</div>
+    <div class="flex gap-2 justify-center mb-4" style="justify-content:center">
+      <div class="stat-card" style="flex:1"><div class="lbl">XP</div><div class="val text-primary">${state.totalXp||0}</div></div>
+      <div class="stat-card" style="flex:1"><div class="lbl">ÖDEV</div><div class="val text-success">${state.totalCompleted||0}</div></div>
+      <div class="stat-card" style="flex:1"><div class="lbl">SERİ</div><div class="val text-warning">${state.streak||0}🔥</div></div>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-bottom:16px">
+      ${BADGES_DEF.map(b=>{
+        const earned=(state.earnedBadges||[]).includes(b.id)||b.check(state);
+        return `<div title="${b.name}" style="text-align:center;padding:6px 2px;border-radius:8px;background:${earned?'rgba(255,184,0,.08)':'rgba(255,255,255,.02)'};border:1px solid ${earned?'rgba(255,184,0,.3)':'rgba(255,255,255,.06)'}">
+          <div style="font-size:1.1rem">${earned?b.icon:'🔒'}</div>
+        </div>`;
+      }).join('')}
+    </div>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-primary" style="flex:1" onclick="this.closest('.modal-overlay').remove()">Kapat</button>
+    </div>
+  </div>`;
+  document.body.appendChild(modal);
+}
+
+// ═══════════ SINIF PROFİLLERİ (Öğrenciler Birbirini Görsün) ═══════════
+async function renderClassProfiles(){
+  const mc=document.getElementById('main-content');
+  if(!mc)return;
+  const classCode=session.classCode||null;
+  if(!classCode){
+    mc.innerHTML=`<div class="card text-center text-dim" style="padding:60px"><div style="font-size:3rem;margin-bottom:10px">👥</div><div>Sınıfa katılman gerekiyor.</div></div>`;
+    return;
+  }
+
+  mc.innerHTML=`
+  <div style="font-family:'Syne',sans-serif;font-size:1.3rem;font-weight:700;margin-bottom:20px">👥 Sınıf Arkadaşlarım</div>
+  <div id="class-profiles-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:14px">
+    <div class="text-dim text-center" style="padding:40px;grid-column:1/-1">Yükleniyor...</div>
+  </div>`;
+
+  const members=await dbGet(`classMembers/${safeKey(classCode)}`)||{};
+  const uids=Object.keys(members);
+  const grid=document.getElementById('class-profiles-grid');
+  if(!grid)return;
+  if(uids.length===0){
+    grid.innerHTML=`<div class="card text-center text-dim" style="padding:50px;grid-column:1/-1"><div style="font-size:3rem;margin-bottom:10px">👥</div><div>Sınıfta başka öğrenci yok.</div></div>`;
+    return;
+  }
+
+  const cards=await Promise.all(uids.map(async uid=>{
+    const st=await dbGet(`users/${uid}/gameState`)||defaultState();
+    const photo=await dbGet(`profilePhoto_${uid}`)||null;
+    const m=members[uid];
+    const isMe=uid===session.uid;
+    const earnedCount=(st.earnedBadges||[]).length;
+    return `<div class="card card-hover" style="padding:18px;text-align:center;cursor:pointer;${isMe?'border-color:var(--primary)':''}" onclick="showStudentProfile('${uid}')">
+      <div style="position:relative;display:inline-block;margin-bottom:10px">
+        <div style="width:60px;height:60px;border-radius:50%;overflow:hidden;background:var(--bg2);border:2px solid ${isMe?'var(--primary)':'var(--border)'};margin:0 auto;display:flex;align-items:center;justify-content:center">
+          ${photo?`<img src="${photo}" style="width:100%;height:100%;object-fit:cover">`:`<span style="font-size:1.8rem">👤</span>`}
+        </div>
+        ${isMe?`<span style="position:absolute;bottom:0;right:0;background:var(--primary);color:#fff;font-size:.55rem;padding:1px 4px;border-radius:6px;font-weight:700">SEN</span>`:''}
+      </div>
+      <div style="font-weight:700;font-size:.88rem;margin-bottom:4px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis">${m.name}</div>
+      <div style="font-size:.72rem;color:var(--primary);margin-bottom:6px">${getRank(st.lvl||1)} · Sev.${st.lvl||1}</div>
+      <div class="flex gap-1" style="justify-content:center;flex-wrap:wrap;margin-bottom:6px">
+        <span class="badge badge-accent" style="font-size:.62rem">${st.totalXp||0} XP</span>
+        ${earnedCount>0?`<span class="badge badge-warning" style="font-size:.62rem">🏆 ${earnedCount}</span>`:''}
+      </div>
+      <div style="font-size:.68rem;color:var(--dim)">${st.streak||0} 🔥 seri</div>
+    </div>`;
+  }));
+
+  // XP'ye göre sırala
+  const sorted=uids.map((uid,i)=>({uid,html:cards[i]}));
+  grid.innerHTML=sorted.map(s=>s.html).join('');
+}
   const el=document.getElementById('weather-widget');
   if(!el)return;
   try{
@@ -4415,6 +4549,7 @@ function buildDrawerNav(){
     {page:'quiz',icon:'📝',label:'Quiz'},
     {page:'classes',icon:'🏫',label:'Sınıflarım'},
     {page:'profile',icon:'👤',label:'Profilim'},
+    {page:'classprofiles',icon:'👥',label:'Sınıfım',studentOnly:true},
     {page:'calendar',icon:'📅',label:'Takvim'},
     {page:'ai',icon:'🤖',label:'AI Asistan'},
     {page:'books',icon:'📚',label:'Kitaplarım'},
@@ -4432,12 +4567,14 @@ function buildDrawerNav(){
   if(session.role==='student'){
     items.push({page:'join-class',icon:'➕',label:'Sınıfa Katıl'});
   }
-  el.innerHTML=items.map(it=>{
-    const onclick=it.page==='join-class'
-      ? "showModal('modal-join-class');closeMobileDrawer()"
-      : "mnavTo('"+it.page+"')";
-    return '<div class="nav-item" onclick="'+onclick+'" style="margin-bottom:2px"><span class="nav-icon">'+it.icon+'</span> '+it.label+'</div>';
-  }).join('');
+  el.innerHTML=items
+    .filter(it=>!it.studentOnly||(it.studentOnly&&session.role==='student'&&session.classCode&&session.approved))
+    .map(it=>{
+      const onclick=it.page==='join-class'
+        ? "showModal('modal-join-class');closeMobileDrawer()"
+        : "mnavTo('"+it.page+"')";
+      return '<div class="nav-item" onclick="'+onclick+'" style="margin-bottom:2px"><span class="nav-icon">'+it.icon+'</span> '+it.label+'</div>';
+    }).join('');
 }
 
 // XP bar senkronizasyonu (drawer için)
