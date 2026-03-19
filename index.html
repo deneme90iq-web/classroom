@@ -399,6 +399,10 @@ textarea.input{resize:vertical;min-height:80px}
       <span class="nav-badge" id="mnav-hw-badge" style="display:none"></span>
       <span>Ödevler</span>
     </div>
+    <div class="mnav-item" id="mnav-dersler" onclick="mnavTo('dersler')">
+      <div class="mnav-icon">📚</div>
+      <span>Dersler</span>
+    </div>
     <div class="mnav-item" id="mnav-classprofiles" onclick="mnavTo('classprofiles')" style="display:none">
       <div class="mnav-icon">👥</div>
       <span>Sınıfım</span>
@@ -582,6 +586,7 @@ if(!window.toggleTheme){
       <div class="sidebar-section">ANA MENÜ</div>
       <div class="nav-item active" id="nav-dashboard" onclick="navTo('dashboard')"><span class="nav-icon">🏠</span> Dashboard</div>
       <div class="nav-item" id="nav-homework" onclick="navTo('homework')"><span class="nav-icon">📋</span> Ödevler <span class="nav-badge" id="hw-badge" style="display:none">0</span></div>
+      <div class="nav-item" id="nav-dersler" onclick="navTo('dersler')"><span class="nav-icon">📚</span> Dersler</div>
       <div class="nav-item" id="nav-notes" onclick="navTo('notes')"><span class="nav-icon">📝</span> Ders Notları</div>
       <div class="nav-item" id="nav-announcements" onclick="navTo('announcements')"><span class="nav-icon">📢</span> Duyurular <span class="nav-badge" id="ann-badge" style="display:none">!</span></div>
       <div class="nav-item" id="nav-chat" onclick="navTo('chat')"><span class="nav-icon">💬</span> Sınıf Sohbeti</div>
@@ -1349,6 +1354,7 @@ window.navTo=function(page){
     case 'ai': renderAI();break;
     case 'dashboard': renderDashboard();break;
     case 'homework': renderHomework();break;
+    case 'dersler': renderDersler();break;
     case 'notes': renderNotes();break;
     case 'books': renderBooks();break;
     case 'announcements': renderAnnouncements();break;
@@ -1892,6 +1898,147 @@ window.restoreHomework=async function(hwId,title){
   toast(`↩ "${title}" ödevi geri alındı.`,'s');
   loadHwTab('cancelled');
 }
+// ═══════════ DERSLER ═══════════
+async function renderDersler(){
+  const mc=document.getElementById('main-content');
+  mc.innerHTML=`
+  <div style="font-family:'Syne',sans-serif;font-size:1.3rem;font-weight:700;margin-bottom:6px">📚 Dersler</div>
+  <div style="font-size:.82rem;color:var(--dim);margin-bottom:20px">Tüm ders ve kategoriler</div>
+  <div id="dersler-content"></div>`;
+
+  // Kategorilere göre dersleri grupla
+  const cats={};
+  SUBJECTS.forEach(s=>{
+    if(!cats[s.cat])cats[s.cat]=[];
+    cats[s.cat].push(s);
+  });
+
+  // Her kategorinin ödev ve not sayısını çek
+  const hws=await dbGet('homeworks')||{};
+  const notes=await dbGet('notes')||{};
+  const myCode=session.classCode||null;
+
+  const myHws=Object.values(hws).filter(h=>{
+    if(session.role==='student')return h.classCode===myCode&&Array.isArray(h.assignedTo)&&h.assignedTo.includes(session.uid);
+    if(session.role==='teacher')return h.teacherUid===session.uid;
+    return false;
+  });
+  const myNotes=Object.values(notes).filter(n=>{
+    if(!n.classCode)return false;
+    if(session.role==='student')return n.classCode===myCode;
+    return true;
+  });
+
+  // Konu bazlı ödev/not sayısı
+  const subjHwCount={};
+  const subjNoteCount={};
+  myHws.forEach(h=>{subjHwCount[h.subjectId]=(subjHwCount[h.subjectId]||0)+1});
+  myNotes.forEach(n=>{subjNoteCount[n.subjectId]=(subjNoteCount[n.subjectId]||0)+1});
+
+  const catIcons={'Fen':'🔬','Sözel':'📖','Dil':'🌐','Spor':'🏃','Din':'☪️','Seçmeli':'⭐','Teknoloji':'💻'};
+
+  const html=Object.entries(cats).map(([cat,subjects])=>`
+    <div style="margin-bottom:28px">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+        <span style="font-size:1.1rem">${catIcons[cat]||'📚'}</span>
+        <span style="font-family:'Syne',sans-serif;font-size:.78rem;font-weight:700;letter-spacing:.1em;color:var(--dim)">${cat.toUpperCase()}</span>
+        <div style="flex:1;height:1px;background:var(--border);margin-left:4px"></div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px">
+        ${subjects.map(s=>{
+          const hwC=subjHwCount[s.id]||0;
+          const noteC=subjNoteCount[s.id]||0;
+          return `<div class="card-hover" style="background:var(--card);border:1px solid var(--border);border-radius:14px;padding:16px;cursor:pointer;transition:all .2s;border-left:3px solid ${s.color}" onclick="dersDetay('${s.id}')">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+              <span style="font-size:1.6rem">${s.icon}</span>
+              <span style="font-size:.65rem;font-weight:700;letter-spacing:.05em;padding:2px 8px;border-radius:20px;background:${s.color}22;color:${s.color}">${cat}</span>
+            </div>
+            <div style="font-weight:700;font-size:.88rem;margin-bottom:8px;line-height:1.3">${s.name}</div>
+            <div style="display:flex;gap:8px;margin-top:6px">
+              ${hwC>0?`<span style="font-size:.7rem;color:var(--primary);background:var(--primary-dim);padding:2px 8px;border-radius:6px">📋 ${hwC} ödev</span>`:''}
+              ${noteC>0?`<span style="font-size:.7rem;color:var(--success);background:var(--success-dim);padding:2px 8px;border-radius:6px">📝 ${noteC} not</span>`:''}
+              ${hwC===0&&noteC===0?`<span style="font-size:.7rem;color:var(--dim)">Henüz içerik yok</span>`:''}
+            </div>
+          </div>`;
+        }).join('')}
+      </div>
+    </div>
+  `).join('');
+
+  document.getElementById('dersler-content').innerHTML=html;
+}
+
+window.dersDetay=async function(subjectId){
+  const subj=getSubject(subjectId);
+  const mc=document.getElementById('main-content');
+  mc.innerHTML=`
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px">
+    <button class="btn btn-ghost btn-icon" onclick="navTo('dersler')" title="Geri">←</button>
+    <span style="font-size:1.8rem">${subj.icon}</span>
+    <div>
+      <div style="font-family:'Syne',sans-serif;font-size:1.2rem;font-weight:700">${subj.name}</div>
+      <div style="font-size:.75rem;color:${subj.color}">${subj.cat}</div>
+    </div>
+  </div>
+  <div class="tabs" style="margin-bottom:20px">
+    <div class="tab active" id="dtab-hw" onclick="dersTab('hw','${subjectId}')">📋 Ödevler</div>
+    <div class="tab" id="dtab-notes" onclick="dersTab('notes','${subjectId}')">📝 Notlar</div>
+  </div>
+  <div id="ders-detay-content"><div class="text-center text-dim" style="padding:30px">Yükleniyor...</div></div>`;
+  await dersTab('hw', subjectId);
+}
+
+window.dersTab=async function(tab, subjectId){
+  document.querySelectorAll('[id^="dtab-"]').forEach(t=>t.classList.remove('active'));
+  document.getElementById('dtab-'+tab)?.classList.add('active');
+
+  const subj=getSubject(subjectId);
+  const cont=document.getElementById('ders-detay-content');
+  if(!cont)return;
+
+  if(tab==='hw'){
+    const hws=await dbGet('homeworks')||{};
+    const myCode=session.classCode||null;
+    let list=Object.values(hws).filter(h=>h.subjectId===subjectId&&(
+      session.role==='student'?(h.classCode===myCode&&Array.isArray(h.assignedTo)&&h.assignedTo.includes(session.uid))
+      :(h.teacherUid===session.uid)
+    ));
+    list.sort((a,b)=>b.createdAt-a.createdAt);
+    if(list.length===0){
+      cont.innerHTML=`<div class="card text-center text-dim" style="padding:40px"><div style="font-size:2.5rem;margin-bottom:8px">📭</div><div>${subj.name} için ödev bulunmuyor.</div></div>`;
+      return;
+    }
+    cont.innerHTML=list.map(h=>{
+      const done=(h.submittedBy||[]).includes(session.uid);
+      const dueDate=h.dueDate?new Date(h.dueDate).toLocaleDateString('tr-TR'):'—';
+      const isLate=h.dueDate&&Date.now()>new Date(h.dueDate).getTime();
+      return `<div class="hw-card ${done?'done':isLate?'late':'normal'}" style="margin-bottom:10px">
+        <div style="display:flex;align-items:center;justify-content:space-between">
+          <div style="font-weight:700;font-size:.92rem">${h.title}</div>
+          <span style="font-size:.75rem;padding:3px 10px;border-radius:6px;background:${done?'var(--success-dim)':isLate?'var(--danger-dim)':'var(--primary-dim)'};color:${done?'var(--success)':isLate?'var(--danger)':'var(--primary)'}">${done?'✅ Tamamlandı':isLate?'⏰ Geçti':'⏳ Bekliyor'}</span>
+        </div>
+        ${h.description?`<div class="text-dim" style="font-size:.82rem;margin-top:6px">${h.description}</div>`:''}
+        <div class="flex items-center gap-3 mt-2" style="font-size:.75rem;color:var(--dim)">
+          <span>📅 ${dueDate}</span><span>⚡ ${h.xp||0} XP</span>
+          ${session.role==='teacher'?`<span>👥 ${(h.submittedBy||[]).length}/${(h.assignedTo||[]).length} teslim</span>`:''}
+        </div>
+      </div>`;
+    }).join('');
+  } else {
+    const notes=await dbGet('notes')||{};
+    const myCode=session.classCode||null;
+    let list=Object.values(notes).filter(n=>n.subjectId===subjectId&&n.classCode&&(
+      session.role==='student'?n.classCode===myCode:true
+    ));
+    list.sort((a,b)=>b.createdAt-a.createdAt);
+    if(list.length===0){
+      cont.innerHTML=`<div class="card text-center text-dim" style="padding:40px"><div style="font-size:2.5rem;margin-bottom:8px">📭</div><div>${subj.name} için not bulunmuyor.</div></div>`;
+      return;
+    }
+    cont.innerHTML=`<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">${list.map(n=>noteCardFull(n)).join('')}</div>`;
+  }
+}
+
 async function renderNotes(){
   const mc=document.getElementById('main-content');
   mc.innerHTML=`<div class="flex items-center justify-between mb-4">
@@ -1900,7 +2047,7 @@ async function renderNotes(){
   </div>
   <div class="flex gap-2 mb-4" style="flex-wrap:wrap">
     <button class="btn btn-ghost" style="font-size:.8rem" id="note-filter-all" onclick="filterNotes('all')">Tümü</button>
-    ${['Fen','Sözel','Dil','Sanat','Din','Teknoloji'].map(cat=>`<button class="btn btn-ghost" style="font-size:.8rem" id="note-filter-${cat}" onclick="filterNotes('${cat}')">${cat}</button>`).join('')}
+    ${['Fen','Sözel','Dil','Spor','Din','Seçmeli','Teknoloji'].map(cat=>`<button class="btn btn-ghost" style="font-size:.8rem" id="note-filter-${cat}" onclick="filterNotes('${cat}')">${cat}</button>`).join('')}
   </div>
   <div id="notes-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:14px"></div>`;
   await loadNotes('all');
