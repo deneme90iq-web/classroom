@@ -1357,6 +1357,7 @@ function enterApp(){
   initPushNotifications();
   loadProfilePhoto();
   setTimeout(updateDmBadge, 2000);
+  if(session.role==='student') startAttendanceListener();
 }
 
 function updateSidebarXP(s){
@@ -3361,6 +3362,72 @@ window.deleteFCSet=async function(id){
 
 
 
+// ═══════════ YOKLAMA POPUP (Öğrenci) ═══════════
+let attListener = null;
+function startAttendanceListener(){
+  if(!session.classCode) return;
+  if(attListener){ off(attListener); attListener=null; }
+  const r = dbRef(`attendancePending/${safeKey(session.classCode)}`);
+  attListener = r;
+  onValue(r, async snap => {
+    if(!snap.exists()) return;
+    const records = snap.val();
+    const today = new Date().toISOString().slice(0,10);
+    for(const [date, rec] of Object.entries(records)){
+      if(rec.status !== 'open') continue;
+      if(date !== today) continue;
+      // Öğrenci zaten onaylamış mı?
+      const existing = await dbGet(`attendancePending/${safeKey(session.classCode)}/${date}/confirmed/${safeKey(session.uid)}`);
+      if(existing) continue;
+      // Popup göster
+      showAttendancePopup(date, rec);
+      break;
+    }
+  });
+}
+
+function showAttendancePopup(date, rec){
+  // Zaten açık popup var mı?
+  if(document.getElementById('att-popup')) return;
+
+  const div = document.createElement('div');
+  div.id = 'att-popup';
+  div.className = 'modal-overlay';
+  div.style.zIndex = '9999';
+  div.innerHTML = `
+    <div class="modal" style="max-width:360px;text-align:center">
+      <div style="font-size:3rem;margin-bottom:10px">📋</div>
+      <div style="font-family:'Syne',sans-serif;font-size:1.1rem;font-weight:700;margin-bottom:6px">Yoklama!</div>
+      <div style="font-size:.85rem;color:var(--dim);margin-bottom:4px">${rec.teacherName} yoklama aldı.</div>
+      <div style="font-size:.78rem;color:var(--dim2);margin-bottom:20px">${date}</div>
+      <div style="font-size:.85rem;color:var(--dim);margin-bottom:16px">Bugün okula geldin mi?</div>
+      <div style="display:flex;gap:10px">
+        <button class="btn btn-success" style="flex:1;padding:14px;font-size:.95rem" onclick="confirmAttendance('${date}','P')">
+          ✅ Geldim
+        </button>
+        <button class="btn btn-danger" style="flex:1;padding:14px;font-size:.95rem" onclick="confirmAttendance('${date}','A')">
+          ❌ Gelmedim
+        </button>
+      </div>
+      <button class="btn btn-ghost btn-block" style="margin-top:8px;font-size:.8rem" onclick="confirmAttendance('${date}','E')">
+        🟡 Mazeretliyim
+      </button>
+    </div>`;
+  document.body.appendChild(div);
+}
+
+window.confirmAttendance = async function(date, status){
+  const popup = document.getElementById('att-popup');
+  if(popup) popup.remove();
+  const classCode = session.classCode;
+  // Devamsızlık kaydını güncelle
+  await dbSet(`attendance/${safeKey(classCode)}/${safeKey(session.uid)}/${date}`, status);
+  // Onaylandı olarak işaretle
+  await dbSet(`attendancePending/${safeKey(classCode)}/${date}/confirmed/${safeKey(session.uid)}`, true);
+  const labels = {P:'✅ Katılımın kaydedildi!', A:'❌ Devamsızlığın kaydedildi.', E:'🟡 Mazeretli devamsızlığın kaydedildi.'};
+  toast(labels[status]||'Kaydedildi.', status==='P'?'s':'i');
+}
+
 // ═══════════ DEVAMSIZLIK TAKİBİ ═══════════
 async function renderAttendance(){
   const mc=document.getElementById('main-content');
@@ -3540,7 +3607,12 @@ window.saveAttendance=async function(){
     const status=selected?.dataset.status||'P';
     await dbSet(`attendance/${safeKey(classCode)}/${uid}/${date}`,status);
   }
-  toast('✅ Yoklama kaydedildi!','s');
+  // Öğrencilere yoklama onayı bildirimi gönder
+  await dbSet(`attendancePending/${safeKey(classCode)}/${date}`,{
+    classCode,date,teacherName:session.name,teacherUid:session.uid,
+    createdAt:Date.now(),status:'open'
+  });
+  toast('✅ Yoklama kaydedildi! Öğrencilere bildirim gönderildi.','s');
   document.querySelector('.modal-overlay')?.remove();
   loadAttendance(classCode);
 }
