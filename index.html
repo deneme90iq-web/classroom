@@ -696,11 +696,22 @@ if(!window.toggleTheme){
       <div class="nav-item active" id="nav-dashboard" onclick="navTo('dashboard')"><span class="nav-icon">🏠</span> Dashboard</div>
       <div class="nav-item" id="nav-homework" onclick="navTo('homework')"><span class="nav-icon">📋</span> Ödevler <span class="nav-badge" id="hw-badge" style="display:none">0</span></div>
       <div class="nav-item" id="nav-dersler" onclick="navTo('dersler')"><span class="nav-icon">📚</span> Dersler</div>
+      <div class="nav-item" id="nav-questionbank" onclick="navTo('questionbank')"><span class="nav-icon">🗃️</span> Soru Bankası</div>
+      <div class="nav-item" id="nav-videos" onclick="navTo('videos')"><span class="nav-icon">🎬</span> Video Dersler</div>
+      <div class="nav-item" id="nav-flashcard" onclick="navTo('flashcard')"><span class="nav-icon">🃏</span> Flashcard</div>
+      <div class="nav-item" id="nav-questionbank" onclick="navTo('questionbank')"><span class="nav-icon">🧩</span> Soru Bankası</div>
+      <div class="nav-item" id="nav-videos" onclick="navTo('videos')"><span class="nav-icon">🎬</span> Ders Videoları</div>
+      <div class="nav-item" id="nav-flashcards" onclick="navTo('flashcards')"><span class="nav-icon">🃏</span> Flashcard</div>
       <div class="nav-item" id="nav-notes" onclick="navTo('notes')"><span class="nav-icon">📝</span> Ders Notları</div>
+      <div class="nav-item" id="nav-videos" onclick="navTo('videos')"><span class="nav-icon">🎥</span> Video Dersler</div>
+      <div class="nav-item" id="nav-flashcards" onclick="navTo('flashcards')"><span class="nav-icon">🃏</span> Flashcard</div>
       <div class="nav-item" id="nav-announcements" onclick="navTo('announcements')"><span class="nav-icon">📢</span> Duyurular <span class="nav-badge" id="ann-badge" style="display:none">!</span></div>
       <div class="nav-item" id="nav-chat" onclick="navTo('chat')"><span class="nav-icon">💬</span> Sınıf Sohbeti</div>
       <div class="nav-item" id="nav-voice" onclick="navTo('voice')"><span class="nav-icon">🎤</span> Sesli Sohbet</div>
       <div class="nav-item" id="nav-quiz" onclick="navTo('quiz')"><span class="nav-icon">📝</span> Quiz</div>
+      <div class="nav-item" id="nav-questionbank" onclick="navTo('questionbank')"><span class="nav-icon">🗃️</span> Soru Bankası</div>
+      <div class="nav-item" id="nav-videos" onclick="navTo('videos')"><span class="nav-icon">🎬</span> Video Dersler</div>
+      <div class="nav-item" id="nav-flashcards" onclick="navTo('flashcards')"><span class="nav-icon">🃏</span> Flashcard</div>
       <div class="nav-item" id="nav-classes" onclick="navTo('classes')"><span class="nav-icon">🏫</span> Sınıflarım</div>
       <div class="nav-item" id="nav-join-class" onclick="showModal('modal-join-class')" style="display:none"><span class="nav-icon">➕</span> Sınıfa Katıl</div>
 
@@ -711,6 +722,9 @@ if(!window.toggleTheme){
       <div class="nav-item" id="nav-schedule" onclick="navTo('schedule')"><span class="nav-icon">🗓️</span> Ders Programı</div>
       <div class="nav-item" id="nav-calendar" onclick="navTo('calendar')"><span class="nav-icon">📅</span> Takvim</div>
       <div class="nav-item" id="nav-ai" onclick="navTo('ai')"><span class="nav-icon">🤖</span> AI Asistan</div>
+      <div class="nav-item" id="nav-qbank" onclick="navTo('qbank')"><span class="nav-icon">🗂️</span> Soru Bankası</div>
+      <div class="nav-item" id="nav-videos" onclick="navTo('videos')"><span class="nav-icon">🎬</span> Ders Videoları</div>
+      <div class="nav-item" id="nav-flashcard" onclick="navTo('flashcard')"><span class="nav-icon">🃏</span> Flashcard</div>
       <div class="nav-item" id="nav-books" onclick="navTo('books')"><span class="nav-icon">📚</span> Kitaplarım</div>
       <div class="nav-item" id="nav-store" onclick="navTo('store')"><span class="nav-icon">🛒</span> Mağaza</div>
       <div class="nav-item" id="nav-leaderboard" onclick="navTo('leaderboard')"><span class="nav-icon">🏆</span> Liderboard</div>
@@ -718,7 +732,9 @@ if(!window.toggleTheme){
       <div id="teacher-nav" style="display:none">
         <div class="sidebar-section">ÖĞRETMEN</div>
         <div class="nav-item" id="nav-assign" onclick="navTo('assign')"><span class="nav-icon">✏️</span> Ödev Ver</div>
+        <div class="nav-item" id="nav-qbank-manage" onclick="navTo('questionbank')" style="color:var(--accent)"><span class="nav-icon">🗃️</span> Soru Bankası</div>
         <div class="nav-item" id="nav-quiz-create" onclick="navTo('quiz-create')"><span class="nav-icon">📝</span> Quiz Oluştur</div>
+        <div class="nav-item" id="nav-questionbank" onclick="navTo('questionbank')"><span class="nav-icon">🏦</span> Soru Bankası</div>
         <div class="nav-item" id="nav-students" onclick="navTo('students')"><span class="nav-icon">👥</span> Öğrencilerim <span class="nav-badge" id="pending-badge" style="display:none">0</span></div>
         <div class="nav-item" id="nav-analytics" onclick="navTo('analytics')"><span class="nav-icon">📊</span> Analitik</div>
         <div class="nav-item" id="nav-newclass" onclick="showModal('modal-create-class')"><span class="nav-icon">➕</span> Yeni Sınıf</div>
@@ -1451,12 +1467,27 @@ window.navTo=function(page){
     case 'dashboard': renderDashboard();break;
     case 'homework': renderHomework();break;
     case 'dersler': renderDersler();break;
+    case 'questionbank': renderQuestionBank();break;
+    case 'videos': renderVideos();break;
+    case 'flashcard': renderFlashcard();break;
+    case 'videos': renderVideos();break;
+    case 'flashcards': renderFlashcards();break;
+    case 'questionbank': if(session.role==='teacher')renderQuestionBank();break;
+    case 'questionbank': renderQuestionBank();break;
+    case 'videos': renderVideos();break;
+    case 'flashcards': renderFlashcards();break;
     case 'notes': renderNotes();break;
+    case 'qbank': renderQBank();break;
+    case 'videos': renderVideos();break;
+    case 'flashcard': renderFlashcard();break;
     case 'books': renderBooks();break;
     case 'announcements': renderAnnouncements();break;
     case 'chat': renderChat();break;
     case 'voice': renderVoiceChat();break;
     case 'quiz': renderQuiz();break;
+    case 'questionbank': renderQuestionBank();break;
+    case 'videos': renderVideos();break;
+    case 'flashcards': renderFlashcards();break;
     case 'quiz-create': if(session.role==='teacher'){showModal('modal-create-quiz');loadTeacherClassesForQuiz();}break;
     case 'classes': renderClasses();break;
     case 'store': renderStore();break;
@@ -2899,6 +2930,442 @@ async function loadProfilePhoto(){
 }
 
 // ═══════════ TAKVİM ═══════════
+
+// ═══════════ SORU BANKASI ═══════════
+async function renderQuestionBank(){
+  const mc=document.getElementById('main-content');
+  const isT=session.role==='teacher';
+  mc.innerHTML=`
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px">
+    <div style="font-family:'Syne',sans-serif;font-size:1.3rem;font-weight:700">🧩 Soru Bankası</div>
+    ${isT?`<button class="btn btn-primary" onclick="openQBModal()">+ Soru Ekle</button>`:''}
+  </div>
+  <div class="flex gap-2 mb-4" style="flex-wrap:wrap;margin-bottom:16px">
+    <button class="btn btn-ghost btn-primary" id="qb-filter-all" onclick="qbFilter('all')" style="font-size:.78rem">Tümü</button>
+    ${['Fen','Sözel','Dil','Spor','Din','Seçmeli','Teknoloji'].map(c=>`<button class="btn btn-ghost" id="qb-filter-${c}" onclick="qbFilter('${c}')" style="font-size:.78rem;white-space:nowrap">${c}</button>`).join('')}
+  </div>
+  <div id="qb-grid"></div>`;
+  await loadQB('all');
+}
+
+window.qbFilter=async function(cat){
+  document.querySelectorAll('[id^="qb-filter-"]').forEach(b=>{b.classList.remove('btn-primary');b.classList.add('btn-ghost');});
+  const el=document.getElementById('qb-filter-'+cat);
+  if(el){el.classList.remove('btn-ghost');el.classList.add('btn-primary');}
+  await loadQB(cat);
+}
+
+async function loadQB(cat){
+  const grid=document.getElementById('qb-grid');if(!grid)return;
+  const all=await dbGet('questionBank')||{};
+  let qs=Object.values(all).filter(q=>q.authorUid===session.uid||session.role==='student'&&q.classCode===session.classCode);
+  if(cat!=='all'){const ids=SUBJECTS.filter(s=>s.cat===cat).map(s=>s.id);qs=qs.filter(q=>ids.includes(q.subjectId));}
+  qs.sort((a,b)=>b.createdAt-a.createdAt);
+  if(!qs.length){grid.innerHTML=`<div class="card text-center text-dim" style="padding:40px"><div style="font-size:3rem;margin-bottom:10px">🧩</div><div>Henüz soru yok.</div></div>`;return;}
+  grid.innerHTML=qs.map(q=>{
+    const subj=getSubject(q.subjectId);
+    const isOwner=q.authorUid===session.uid||session.role==='teacher';
+    return `<div class="card" style="margin-bottom:12px">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:10px">
+        <div style="flex:1">
+          <div style="font-weight:600;font-size:.92rem;margin-bottom:6px">${q.question}</div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px">
+            <span style="font-size:.68rem;padding:2px 8px;border-radius:6px;background:${subj.color}22;color:${subj.color}">${subj.icon} ${subj.name}</span>
+            <span style="font-size:.68rem;padding:2px 8px;border-radius:6px;background:var(--card2);color:var(--dim)">${q.type==='multiple'?'Çoktan Seçmeli':'Açık Uçlu'}</span>
+          </div>
+        </div>
+        ${isOwner?`<div style="display:flex;gap:4px">
+          <button onclick="deleteQB('${q.id}')" style="background:none;border:none;cursor:pointer;color:var(--danger);font-size:.85rem;padding:4px">🗑️</button>
+        </div>`:''}
+      </div>
+      ${q.type==='multiple'&&q.options?`
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+        ${q.options.map((o,i)=>`<div style="padding:7px 10px;border-radius:8px;font-size:.8rem;${i===q.answer?'background:var(--success-dim);border:1px solid var(--success);color:var(--success);font-weight:600':'background:var(--card2);border:1px solid var(--border)'}">
+          ${String.fromCharCode(65+i)}. ${o}
+        </div>`).join('')}
+      </div>`:`<div style="font-size:.8rem;color:var(--success);padding:8px 12px;background:var(--success-dim);border-radius:8px;border:1px solid rgba(0,214,143,.3)">✅ ${q.answer}</div>`}
+    </div>`;
+  }).join('');
+}
+
+window.openQBModal=async function(edit=null){
+  const classes=await getMyClasses();
+  if(!classes.length){toast('Önce sınıf oluştur!','w');return;}
+  const modal=document.createElement('div');
+  modal.className='modal-overlay';
+  modal.innerHTML=`<div class="modal" style="max-width:520px">
+    <div class="modal-title">🧩 ${edit?'Soruyu Düzenle':'Yeni Soru'}</div>
+    <div class="form-group"><label class="label">DERS</label>
+      <select class="input" id="qb-subj"><option value="">— Seç —</option>${SUBJECTS.map(s=>`<option value="${s.id}">${s.icon} ${s.name}</option>`).join('')}</select></div>
+    <div class="form-group"><label class="label">SINIF</label>
+      <select class="input" id="qb-class"><option value="">— Seç —</option>${classes.map(c=>`<option value="${c.code}">${c.name}</option>`).join('')}</select></div>
+    <div class="form-group"><label class="label">SORU TİPİ</label>
+      <select class="input" id="qb-type" onchange="toggleQBType(this.value)">
+        <option value="multiple">Çoktan Seçmeli</option>
+        <option value="open">Açık Uçlu</option>
+      </select></div>
+    <div class="form-group"><label class="label">SORU METNİ</label>
+      <textarea class="input" id="qb-q" rows="3" placeholder="Soruyu yaz..."></textarea></div>
+    <div id="qb-options-wrap">
+      <div class="form-group"><label class="label">ŞIKLAR</label>
+        ${['A','B','C','D'].map((l,i)=>`<input class="input" id="qb-opt-${i}" placeholder="${l} şıkkı..." style="margin-bottom:6px">`).join('')}
+      </div>
+      <div class="form-group"><label class="label">DOĞRU ŞIK</label>
+        <select class="input" id="qb-ans-multi">
+          ${['A','B','C','D'].map((l,i)=>`<option value="${i}">${l}</option>`).join('')}
+        </select></div>
+    </div>
+    <div id="qb-open-wrap" style="display:none">
+      <div class="form-group"><label class="label">CEVAP</label>
+        <textarea class="input" id="qb-ans-open" rows="2" placeholder="Beklenen cevap..."></textarea></div>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:4px">
+      <button class="btn btn-primary" style="flex:1" onclick="saveQB()">💾 Kaydet</button>
+      <button class="btn btn-ghost" onclick="this.closest('.modal-overlay').remove()">İptal</button>
+    </div>
+  </div>`;
+  modal.onclick=e=>{if(e.target===modal)modal.remove();};
+  document.body.appendChild(modal);
+}
+
+window.toggleQBType=function(type){
+  document.getElementById('qb-options-wrap').style.display=type==='multiple'?'block':'none';
+  document.getElementById('qb-open-wrap').style.display=type==='open'?'block':'none';
+}
+
+window.saveQB=async function(){
+  const subjectId=document.getElementById('qb-subj')?.value;
+  const classCode=document.getElementById('qb-class')?.value;
+  const type=document.getElementById('qb-type')?.value;
+  const question=document.getElementById('qb-q')?.value.trim();
+  if(!subjectId||!classCode||!question){toast('Tüm alanları doldur!','w');return;}
+  let answer,options;
+  if(type==='multiple'){
+    options=[0,1,2,3].map(i=>document.getElementById('qb-opt-'+i)?.value.trim()).filter(Boolean);
+    if(options.length<2){toast('En az 2 şık gir!','w');return;}
+    answer=parseInt(document.getElementById('qb-ans-multi')?.value||'0');
+  } else {
+    answer=document.getElementById('qb-ans-open')?.value.trim();
+    if(!answer){toast('Cevabı gir!','w');return;}
+  }
+  const id='qb_'+Date.now();
+  await dbSet(`questionBank/${id}`,{id,subjectId,classCode,type,question,options,answer,
+    authorUid:session.uid,authorName:session.name,createdAt:Date.now()});
+  toast('🧩 Soru eklendi!','s');
+  document.querySelector('.modal-overlay')?.remove();
+  loadQB('all');
+}
+
+window.deleteQB=async function(id){
+  if(!confirm('Bu soruyu sil?'))return;
+  await dbSet(`questionBank/${id}`,null);
+  toast('🗑️ Silindi','w');
+  loadQB('all');
+}
+
+// ═══════════ DERS VİDEOLARI ═══════════
+async function renderVideos(){
+  const mc=document.getElementById('main-content');
+  const isT=session.role==='teacher';
+  mc.innerHTML=`
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px">
+    <div style="font-family:'Syne',sans-serif;font-size:1.3rem;font-weight:700">🎬 Ders Videoları</div>
+    ${isT?`<button class="btn btn-primary" onclick="openVideoModal()">+ Video Ekle</button>`:''}
+  </div>
+  <div class="flex gap-2 mb-4" style="flex-wrap:wrap;overflow-x:auto;margin-bottom:16px;padding-bottom:4px;scrollbar-width:none">
+    <button class="btn btn-primary" id="vid-filter-all" onclick="vidFilter('all')" style="font-size:.78rem;white-space:nowrap">Tümü</button>
+    ${SUBJECTS.map(s=>`<button class="btn btn-ghost" id="vid-filter-${s.id}" onclick="vidFilter('${s.id}')" style="font-size:.78rem;white-space:nowrap">${s.icon} ${s.name}</button>`).join('')}
+  </div>
+  <div id="videos-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px"></div>`;
+  await loadVideos('all');
+}
+
+window.vidFilter=async function(filter){
+  document.querySelectorAll('[id^="vid-filter-"]').forEach(b=>{b.classList.remove('btn-primary');b.classList.add('btn-ghost');});
+  const el=document.getElementById('vid-filter-'+filter);
+  if(el){el.classList.remove('btn-ghost');el.classList.add('btn-primary');}
+  await loadVideos(filter);
+}
+
+async function loadVideos(filter){
+  const grid=document.getElementById('videos-grid');if(!grid)return;
+  const all=await dbGet('classVideos')||{};
+  const myCode=session.classCode;
+  let vids=Object.values(all).filter(v=>{
+    if(session.role==='student')return v.classCode===myCode;
+    return v.authorUid===session.uid;
+  });
+  if(filter!=='all')vids=vids.filter(v=>v.subjectId===filter);
+  vids.sort((a,b)=>b.createdAt-a.createdAt);
+  if(!vids.length){grid.innerHTML=`<div class="card text-center text-dim" style="padding:40px;grid-column:1/-1"><div style="font-size:3rem;margin-bottom:10px">🎬</div><div>Henüz video yok.</div></div>`;return;}
+  grid.innerHTML=vids.map(v=>{
+    const subj=getSubject(v.subjectId);
+    const ytId=getYTId(v.url);
+    const thumb=ytId?`https://img.youtube.com/vi/${ytId}/mqdefault.jpg`:null;
+    const isOwner=v.authorUid===session.uid||session.role==='teacher';
+    return `<div class="card card-hover" style="padding:0;overflow:hidden">
+      ${thumb?`<div style="position:relative;cursor:pointer" onclick="playVideo('${v.id}')">
+        <img src="${thumb}" style="width:100%;aspect-ratio:16/9;object-fit:cover;display:block">
+        <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.3)">
+          <div style="width:48px;height:48px;border-radius:50%;background:rgba(255,255,255,.9);display:flex;align-items:center;justify-content:center;font-size:1.2rem">▶</div>
+        </div>
+      </div>`:`<div style="aspect-ratio:16/9;background:var(--card2);display:flex;align-items:center;justify-content:center;font-size:2rem;cursor:pointer" onclick="playVideo('${v.id}')">🎬</div>`}
+      <div style="padding:12px">
+        <div style="font-weight:700;font-size:.9rem;margin-bottom:4px">${v.title}</div>
+        <div style="display:flex;align-items:center;justify-content:space-between">
+          <span style="font-size:.72rem;color:${subj.color}">${subj.icon} ${subj.name}</span>
+          <span style="font-size:.68rem;color:var(--dim2)">${new Date(v.createdAt).toLocaleDateString('tr-TR')}</span>
+        </div>
+        ${v.description?`<div style="font-size:.75rem;color:var(--dim);margin-top:6px">${v.description.substring(0,80)}${v.description.length>80?'...':''}</div>`:''}
+        ${isOwner?`<button onclick="deleteVideo('${v.id}')" style="background:none;border:none;cursor:pointer;color:var(--danger);font-size:.75rem;margin-top:6px;padding:2px">🗑️ Sil</button>`:''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function getYTId(url){
+  if(!url)return null;
+  const m=url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\n?#]+)/);
+  return m?m[1]:null;
+}
+
+window.playVideo=async function(id){
+  const all=await dbGet('classVideos')||{};
+  const v=all[id];if(!v)return;
+  const ytId=getYTId(v.url);
+  const modal=document.createElement('div');
+  modal.className='modal-overlay';
+  modal.innerHTML=`<div class="modal" style="max-width:640px;padding:16px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+      <div style="font-weight:700;font-size:.95rem">${v.title}</div>
+      <button class="btn btn-ghost btn-icon" onclick="this.closest('.modal-overlay').remove()">✕</button>
+    </div>
+    ${ytId
+      ?`<div style="position:relative;padding-bottom:56.25%;height:0;overflow:hidden;border-radius:12px">
+          <iframe src="https://www.youtube.com/embed/${ytId}?autoplay=1" style="position:absolute;top:0;left:0;width:100%;height:100%;border:none;border-radius:12px" allowfullscreen allow="autoplay"></iframe>
+        </div>`
+      :`<video src="${v.url}" controls style="width:100%;border-radius:12px;max-height:360px"></video>`}
+    ${v.description?`<div style="font-size:.82rem;color:var(--dim);margin-top:10px">${v.description}</div>`:''}
+  </div>`;
+  modal.onclick=e=>{if(e.target===modal)modal.remove();};
+  document.body.appendChild(modal);
+}
+
+window.openVideoModal=async function(){
+  const classes=await getMyClasses();
+  if(!classes.length){toast('Önce sınıf oluştur!','w');return;}
+  const modal=document.createElement('div');
+  modal.className='modal-overlay';
+  modal.innerHTML=`<div class="modal" style="max-width:480px">
+    <div class="modal-title">🎬 Video Ekle</div>
+    <div class="form-group"><label class="label">SINIF</label>
+      <select class="input" id="vid-class">${classes.map(c=>`<option value="${c.code}">${c.name}</option>`).join('')}</select></div>
+    <div class="form-group"><label class="label">DERS</label>
+      <select class="input" id="vid-subj"><option value="">— Seç —</option>${SUBJECTS.map(s=>`<option value="${s.id}">${s.icon} ${s.name}</option>`).join('')}</select></div>
+    <div class="form-group"><label class="label">BAŞLIK</label>
+      <input class="input" id="vid-title" placeholder="Video başlığı..."></div>
+    <div class="form-group"><label class="label">VİDEO BAĞLANTISI</label>
+      <input class="input" id="vid-url" placeholder="https://youtube.com/watch?v=... veya direkt link"></div>
+    <div class="form-group"><label class="label">AÇIKLAMA (isteğe bağlı)</label>
+      <textarea class="input" id="vid-desc" rows="2" placeholder="Kısa açıklama..."></textarea></div>
+    <div style="display:flex;gap:8px;margin-top:4px">
+      <button class="btn btn-primary" style="flex:1" onclick="saveVideo()">💾 Kaydet</button>
+      <button class="btn btn-ghost" onclick="this.closest('.modal-overlay').remove()">İptal</button>
+    </div>
+  </div>`;
+  modal.onclick=e=>{if(e.target===modal)modal.remove();};
+  document.body.appendChild(modal);
+}
+
+window.saveVideo=async function(){
+  const classCode=document.getElementById('vid-class')?.value;
+  const subjectId=document.getElementById('vid-subj')?.value;
+  const title=document.getElementById('vid-title')?.value.trim();
+  const url=document.getElementById('vid-url')?.value.trim();
+  const description=document.getElementById('vid-desc')?.value.trim();
+  if(!classCode||!subjectId||!title||!url){toast('Tüm zorunlu alanları doldur!','w');return;}
+  const id='vid_'+Date.now();
+  await dbSet(`classVideos/${id}`,{id,classCode,subjectId,title,url,description,
+    authorUid:session.uid,authorName:session.name,createdAt:Date.now()});
+  toast('🎬 Video eklendi!','s');
+  document.querySelector('.modal-overlay')?.remove();
+  loadVideos('all');
+}
+
+window.deleteVideo=async function(id){
+  if(!confirm('Bu videoyu sil?'))return;
+  await dbSet(`classVideos/${id}`,null);
+  toast('🗑️ Silindi','w');
+  loadVideos('all');
+}
+
+// ═══════════ FLASHCARD ═══════════
+async function renderFlashcards(){
+  const mc=document.getElementById('main-content');
+  const isT=session.role==='teacher';
+  mc.innerHTML=`
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px">
+    <div style="font-family:'Syne',sans-serif;font-size:1.3rem;font-weight:700">🃏 Flashcard</div>
+    ${isT?`<button class="btn btn-primary" onclick="openFCSetModal()">+ Set Oluştur</button>`:''}
+  </div>
+  <div id="fc-sets-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px"></div>`;
+  await loadFCSets();
+}
+
+async function loadFCSets(){
+  const grid=document.getElementById('fc-sets-grid');if(!grid)return;
+  const all=await dbGet('flashcardSets')||{};
+  const myCode=session.classCode;
+  let sets=Object.values(all).filter(s=>{
+    if(session.role==='student')return s.classCode===myCode;
+    return s.authorUid===session.uid;
+  });
+  sets.sort((a,b)=>b.createdAt-a.createdAt);
+  if(!sets.length){grid.innerHTML=`<div class="card text-center text-dim" style="padding:40px;grid-column:1/-1"><div style="font-size:3rem;margin-bottom:10px">🃏</div><div>Henüz flashcard seti yok.</div></div>`;return;}
+  grid.innerHTML=sets.map(s=>{
+    const subj=getSubject(s.subjectId);
+    const isOwner=s.authorUid===session.uid||session.role==='teacher';
+    return `<div class="card card-hover" style="cursor:pointer" onclick="openFCStudy('${s.id}')">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+        <span style="font-size:1.5rem">${subj.icon}</span>
+        <span style="font-size:.65rem;padding:2px 8px;border-radius:6px;background:${subj.color}22;color:${subj.color}">${subj.name}</span>
+      </div>
+      <div style="font-weight:700;font-size:.92rem;margin-bottom:4px">${s.title}</div>
+      <div style="font-size:.75rem;color:var(--dim);margin-bottom:10px">${(s.cards||[]).length} kart</div>
+      <div style="display:flex;gap:6px">
+        <button class="btn btn-primary" style="flex:1;font-size:.75rem;padding:7px" onclick="event.stopPropagation();openFCStudy('${s.id}')">📖 Çalış</button>
+        ${isOwner?`<button class="btn btn-ghost" style="font-size:.75rem;padding:7px" onclick="event.stopPropagation();deleteFCSet('${s.id}')">🗑️</button>`:''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+window.openFCSetModal=async function(){
+  const classes=await getMyClasses();
+  if(!classes.length){toast('Önce sınıf oluştur!','w');return;}
+  const modal=document.createElement('div');
+  modal.className='modal-overlay';
+  modal.innerHTML=`<div class="modal" style="max-width:520px;max-height:90vh;overflow-y:auto">
+    <div class="modal-title">🃏 Flashcard Seti Oluştur</div>
+    <div class="form-group"><label class="label">SINIF</label>
+      <select class="input" id="fc-class">${classes.map(c=>`<option value="${c.code}">${c.name}</option>`).join('')}</select></div>
+    <div class="form-group"><label class="label">DERS</label>
+      <select class="input" id="fc-subj"><option value="">— Seç —</option>${SUBJECTS.map(s=>`<option value="${s.id}">${s.icon} ${s.name}</option>`).join('')}</select></div>
+    <div class="form-group"><label class="label">SET ADI</label>
+      <input class="input" id="fc-title" placeholder="Set adı..."></div>
+    <div id="fc-cards-list" style="margin-bottom:12px"></div>
+    <button class="btn btn-ghost btn-block" onclick="addFCCard()" style="margin-bottom:12px">+ Kart Ekle</button>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-primary" style="flex:1" onclick="saveFCSet()">💾 Kaydet</button>
+      <button class="btn btn-ghost" onclick="this.closest('.modal-overlay').remove()">İptal</button>
+    </div>
+  </div>`;
+  modal.onclick=e=>{if(e.target===modal)modal.remove();};
+  document.body.appendChild(modal);
+  addFCCard(); addFCCard();
+}
+
+let fcCardCount=0;
+window.addFCCard=function(){
+  const list=document.getElementById('fc-cards-list');if(!list)return;
+  const idx=fcCardCount++;
+  const div=document.createElement('div');
+  div.style.cssText='background:var(--card2);border-radius:10px;padding:10px;margin-bottom:8px;border:1px solid var(--border)';
+  div.innerHTML=`<div style="font-size:.68rem;color:var(--dim);margin-bottom:6px">KART ${idx+1}</div>
+    <input class="input" id="fc-front-${idx}" placeholder="Ön yüz (soru/terim)..." style="margin-bottom:6px">
+    <input class="input" id="fc-back-${idx}" placeholder="Arka yüz (cevap/tanım)...">`;
+  list.appendChild(div);
+}
+
+window.saveFCSet=async function(){
+  const classCode=document.getElementById('fc-class')?.value;
+  const subjectId=document.getElementById('fc-subj')?.value;
+  const title=document.getElementById('fc-title')?.value.trim();
+  if(!classCode||!subjectId||!title){toast('Tüm alanları doldur!','w');return;}
+  const cards=[];
+  for(let i=0;i<fcCardCount;i++){
+    const front=document.getElementById('fc-front-'+i)?.value.trim();
+    const back=document.getElementById('fc-back-'+i)?.value.trim();
+    if(front&&back)cards.push({front,back});
+  }
+  if(!cards.length){toast('En az 1 kart ekle!','w');return;}
+  const id='fcset_'+Date.now();
+  await dbSet(`flashcardSets/${id}`,{id,classCode,subjectId,title,cards,
+    authorUid:session.uid,authorName:session.name,createdAt:Date.now()});
+  toast('🃏 Set oluşturuldu!','s');
+  document.querySelector('.modal-overlay')?.remove();
+  fcCardCount=0;
+  loadFCSets();
+}
+
+window.openFCStudy=async function(setId){
+  const all=await dbGet('flashcardSets')||{};
+  const set=all[setId];if(!set||!set.cards?.length)return;
+  let idx=0,flipped=false,correct=0,total=set.cards.length;
+  function render(){
+    const card=set.cards[idx];
+    const existing=document.querySelector('.modal-overlay.fc-study');
+    if(existing)existing.remove();
+    const modal=document.createElement('div');
+    modal.className='modal-overlay fc-study';
+    modal.innerHTML=`<div class="modal" style="max-width:440px;text-align:center">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+        <div style="font-size:.8rem;color:var(--dim)">${idx+1} / ${total}</div>
+        <div style="font-size:.8rem;color:var(--success)">✅ ${correct} doğru</div>
+        <button class="btn btn-ghost btn-icon" onclick="this.closest('.modal-overlay').remove()">✕</button>
+      </div>
+      <div onclick="flipFC()" style="min-height:140px;padding:24px;background:${flipped?'var(--primary-dim)':'var(--card2)'};border-radius:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;margin-bottom:16px;border:2px solid ${flipped?'var(--primary)':'var(--border)'};transition:all .3s">
+        <div>
+          <div style="font-size:.65rem;color:var(--dim);letter-spacing:.1em;margin-bottom:8px">${flipped?'CEVAP':'SORU'}</div>
+          <div style="font-size:1rem;font-weight:600;line-height:1.4">${flipped?card.back:card.front}</div>
+          ${!flipped?'<div style="font-size:.72rem;color:var(--dim);margin-top:12px">Kartı çevirmek için tıkla</div>':''}
+        </div>
+      </div>
+      ${flipped?`<div style="display:flex;gap:8px">
+        <button class="btn btn-danger" style="flex:1" onclick="fcAnswer(false)">✗ Bilmedim</button>
+        <button class="btn btn-success" style="flex:1" onclick="fcAnswer(true)">✓ Bildim</button>
+      </div>`:`<button class="btn btn-primary btn-block" onclick="flipFC()">Cevabı Gör</button>`}
+      <div style="margin-top:14px"><div style="background:var(--bg2);border-radius:4px;height:5px;overflow:hidden">
+        <div style="height:5px;background:linear-gradient(90deg,var(--primary),var(--accent));width:${(idx/total)*100}%;transition:width .3s;border-radius:4px"></div>
+      </div></div>
+    </div>`;
+    modal.onclick=e=>{if(e.target===modal)modal.remove();};
+    document.body.appendChild(modal);
+    window.flipFC=function(){flipped=!flipped;render();};
+    window.fcAnswer=function(isCorrect){
+      if(isCorrect)correct++;
+      idx++;
+      if(idx>=total){
+        modal.remove();
+        const result=document.createElement('div');
+        result.className='modal-overlay';
+        result.innerHTML=`<div class="modal" style="text-align:center">
+          <div style="font-size:3rem;margin-bottom:8px">${correct===total?'🏆':correct>total/2?'👍':'💪'}</div>
+          <div style="font-family:'Syne',sans-serif;font-size:1.2rem;font-weight:700;margin-bottom:6px">Çalışma Tamamlandı!</div>
+          <div style="font-size:.85rem;color:var(--dim);margin-bottom:16px">${correct} / ${total} doğru · %${Math.round(correct/total*100)} başarı</div>
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-primary" style="flex:1" onclick="this.closest('.modal-overlay').remove();openFCStudy('${setId}')">🔄 Tekrar</button>
+            <button class="btn btn-ghost" style="flex:1" onclick="this.closest('.modal-overlay').remove()">Kapat</button>
+          </div>
+        </div>`;
+        result.onclick=e=>{if(e.target===result)result.remove();};
+        document.body.appendChild(result);
+        return;
+      }
+      flipped=false;render();
+    };
+  }
+  render();
+}
+
+window.deleteFCSet=async function(id){
+  if(!confirm('Bu seti sil?'))return;
+  await dbSet(`flashcardSets/${id}`,null);
+  toast('🗑️ Silindi','w');
+  loadFCSets();
+}
+
+
 // ═══════════ DERS PROGRAMI ═══════════
 const DAYS = ['Pazartesi','Salı','Çarşamba','Perşembe','Cuma'];
 const HOURS = ['08:00','09:00','10:00','11:00','12:00','13:00','14:00','15:00','16:00'];
@@ -5346,11 +5813,22 @@ function buildDrawerNav(){
     {page:'dashboard',icon:'🏠',label:'Dashboard'},
     {page:'homework',icon:'📋',label:'Ödevler'},
     {page:'dersler',icon:'📚',label:'Dersler'},
+    {page:'questionbank',icon:'🗃️',label:'Soru Bankası'},
+    {page:'videos',icon:'🎬',label:'Video Dersler'},
+    {page:'flashcard',icon:'🃏',label:'Flashcard'},
+    {page:'questionbank',icon:'🧩',label:'Soru Bankası'},
+    {page:'videos',icon:'🎬',label:'Ders Videoları'},
+    {page:'flashcards',icon:'🃏',label:'Flashcard'},
     {page:'notes',icon:'📝',label:'Ders Notları'},
+    {page:'videos',icon:'🎥',label:'Video Dersler'},
+    {page:'flashcards',icon:'🃏',label:'Flashcard'},
     {page:'announcements',icon:'📢',label:'Duyurular'},
     {page:'chat',icon:'💬',label:'Sınıf Sohbeti'},
     {page:'voice',icon:'🎤',label:'Sesli Sohbet'},
     {page:'quiz',icon:'📝',label:'Quiz'},
+    {page:'questionbank',icon:'🗃️',label:'Soru Bankası'},
+    {page:'videos',icon:'🎬',label:'Video Dersler'},
+    {page:'flashcards',icon:'🃏',label:'Flashcard'},
     {page:'classes',icon:'🏫',label:'Sınıflarım'},
     {page:'profile',icon:'👤',label:'Profilim'},
     {page:'dm',icon:'✉️',label:'Mesajlar'},
@@ -5358,6 +5836,9 @@ function buildDrawerNav(){
     {page:'schedule',icon:'🗓️',label:'Ders Programı'},
     {page:'calendar',icon:'📅',label:'Takvim'},
     {page:'ai',icon:'🤖',label:'AI Asistan'},
+    {page:'qbank',icon:'🗂️',label:'Soru Bankası'},
+    {page:'videos',icon:'🎬',label:'Ders Videoları'},
+    {page:'flashcard',icon:'🃏',label:'Flashcard'},
     {page:'books',icon:'📚',label:'Kitaplarım'},
     {page:'store',icon:'🛒',label:'Mağaza'},
     {page:'leaderboard',icon:'🏆',label:'Liderboard'},
