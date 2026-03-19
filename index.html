@@ -2797,24 +2797,44 @@ window.openTopicContentModal = async function(topicId, topicTitle, subjectId, cl
   modal.id = 'topic-content-modal';
   modal.innerHTML = `<div class="modal" style="max-width:480px">
     <div class="modal-title">➕ İçerik Ekle — ${topicTitle}</div>
+    <!-- Manuel ekleme -->
+    <div style="font-size:.68rem;color:var(--dim);letter-spacing:.08em;font-weight:700;margin-bottom:8px">MANUEL EKLE</div>
     <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:16px">
       <div onclick="showTopicContentForm('video','${topicId}','${topicTitle}','${subjectId}','${classCode}')"
-        style="padding:16px;border-radius:14px;text-align:center;cursor:pointer;border:1px solid var(--border);background:var(--card2);transition:all .15s"
+        style="padding:14px;border-radius:14px;text-align:center;cursor:pointer;border:1px solid var(--border);background:var(--card2);transition:all .15s"
         onmouseover="this.style.borderColor='var(--primary)'" onmouseout="this.style.borderColor='var(--border)'">
-        <div style="font-size:1.6rem;margin-bottom:6px">🎬</div>
-        <div style="font-size:.78rem;font-weight:700">Video</div>
+        <div style="font-size:1.4rem;margin-bottom:4px">🎬</div>
+        <div style="font-size:.75rem;font-weight:700">Video</div>
       </div>
       <div onclick="showTopicContentForm('note','${topicId}','${topicTitle}','${subjectId}','${classCode}')"
-        style="padding:16px;border-radius:14px;text-align:center;cursor:pointer;border:1px solid var(--border);background:var(--card2);transition:all .15s"
+        style="padding:14px;border-radius:14px;text-align:center;cursor:pointer;border:1px solid var(--border);background:var(--card2);transition:all .15s"
         onmouseover="this.style.borderColor='var(--primary)'" onmouseout="this.style.borderColor='var(--border)'">
-        <div style="font-size:1.6rem;margin-bottom:6px">📝</div>
-        <div style="font-size:.78rem;font-weight:700">Not</div>
+        <div style="font-size:1.4rem;margin-bottom:4px">📝</div>
+        <div style="font-size:.75rem;font-weight:700">Not</div>
       </div>
       <div onclick="showTopicContentForm('flashcard','${topicId}','${topicTitle}','${subjectId}','${classCode}')"
-        style="padding:16px;border-radius:14px;text-align:center;cursor:pointer;border:1px solid var(--border);background:var(--card2);transition:all .15s"
+        style="padding:14px;border-radius:14px;text-align:center;cursor:pointer;border:1px solid var(--border);background:var(--card2);transition:all .15s"
         onmouseover="this.style.borderColor='var(--primary)'" onmouseout="this.style.borderColor='var(--border)'">
-        <div style="font-size:1.6rem;margin-bottom:6px">🃏</div>
-        <div style="font-size:.78rem;font-weight:700">Flashcard</div>
+        <div style="font-size:1.4rem;margin-bottom:4px">🃏</div>
+        <div style="font-size:.75rem;font-weight:700">Flashcard</div>
+      </div>
+    </div>
+    <!-- AI ile oluştur -->
+    <div style="font-size:.68rem;color:var(--accent);letter-spacing:.08em;font-weight:700;margin-bottom:8px">🤖 YAPAY ZEKA İLE OLUŞTUR</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px">
+      <div onclick="aiGenerateContent('note','${topicId}','${topicTitle}','${subjectId}','${classCode}')"
+        style="padding:14px;border-radius:14px;text-align:center;cursor:pointer;border:1px solid rgba(0,212,255,.3);background:rgba(0,212,255,.06);transition:all .15s"
+        onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='rgba(0,212,255,.3)'">
+        <div style="font-size:1.4rem;margin-bottom:4px">📝✨</div>
+        <div style="font-size:.75rem;font-weight:700;color:var(--accent)">Not Oluştur</div>
+        <div style="font-size:.62rem;color:var(--dim);margin-top:2px">Konu özeti + detaylı not</div>
+      </div>
+      <div onclick="aiGenerateContent('flashcard','${topicId}','${topicTitle}','${subjectId}','${classCode}')"
+        style="padding:14px;border-radius:14px;text-align:center;cursor:pointer;border:1px solid rgba(0,212,255,.3);background:rgba(0,212,255,.06);transition:all .15s"
+        onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='rgba(0,212,255,.3)'">
+        <div style="font-size:1.4rem;margin-bottom:4px">🃏✨</div>
+        <div style="font-size:.75rem;font-weight:700;color:var(--accent)">Flashcard Oluştur</div>
+        <div style="font-size:.62rem;color:var(--dim);margin-top:2px">Soru-cevap kartları</div>
       </div>
     </div>
     <div id="topic-form-area"></div>
@@ -2860,6 +2880,165 @@ window.showTopicContentForm = function(type, topicId, topicTitle, subjectId, cla
     // addFCCard fonksiyonu fc-cards-list'e yazıyor, kopyala
     if(orig && list){ list.innerHTML = orig.innerHTML; orig.innerHTML = ''; }
   }
+}
+
+// ═══════════ AI İÇERİK OLUŞTURMA ═══════════
+const GROQ_KEY_CONTENT = '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';
+
+window.aiGenerateContent = async function(type, topicId, topicTitle, subjectId, classCode){
+  const subj = getSubject(subjectId);
+
+  // Sınıf seviyesini al
+  let grade = null;
+  const allClasses = await dbGet('classes')||{};
+  const cls = Object.values(allClasses).find(c=>c.code===classCode);
+  if(cls?.grade) grade = cls.grade;
+  const gradeText = grade ? `${grade}. sınıf` : '';
+
+  // Yükleme göster
+  const formEl = document.getElementById('topic-form-area');
+  if(!formEl) return;
+  formEl.innerHTML = `<div style="border-top:1px solid var(--border);padding-top:16px;text-align:center">
+    <div style="font-size:1.5rem;margin-bottom:8px">🤖</div>
+    <div style="font-size:.85rem;font-weight:700;margin-bottom:6px">AI ${type==='note'?'not':'flashcard'} oluşturuyor...</div>
+    <div style="font-size:.75rem;color:var(--dim);margin-bottom:12px">${subj.icon} ${subj.name} — ${topicTitle}</div>
+    <div style="background:var(--bg2);border-radius:6px;height:6px;overflow:hidden">
+      <div id="ai-gen-bar" style="height:6px;background:linear-gradient(90deg,var(--accent),var(--primary));width:0%;border-radius:6px;transition:width .4s"></div>
+    </div>
+  </div>`;
+
+  let prog = 0;
+  const interval = setInterval(()=>{ prog=Math.min(prog+10,85); const b=document.getElementById('ai-gen-bar'); if(b) b.style.width=prog+'%'; },300);
+
+  try{
+    if(type === 'note'){
+      await aiGenerateNote(topicId, topicTitle, subjectId, classCode, subj, gradeText, formEl, interval);
+    } else {
+      await aiGenerateFlashcard(topicId, topicTitle, subjectId, classCode, subj, gradeText, formEl, interval);
+    }
+  } catch(err){
+    clearInterval(interval);
+    formEl.innerHTML = `<div style="color:var(--danger);padding:12px;font-size:.82rem">❌ ${err.message}</div>`;
+  }
+}
+
+async function aiGenerateNote(topicId, topicTitle, subjectId, classCode, subj, gradeText, formEl, interval){
+  const prompt = `${gradeText} ${subj.name} dersi için "${topicTitle}" konusunda detaylı bir ders notu hazırla.
+
+FORMAT:
+- Başlık: Konunun adı
+- Giriş: 2-3 cümle özet
+- Ana Başlıklar: En önemli 3-5 kavram, her biri için açıklama
+- Önemli Noktalar: Madde madde özet
+- Aklında Tut: En kritik 2-3 bilgi
+
+Türkçe yaz, ${gradeText} seviyesine uygun, net ve anlaşılır olsun. Düz metin yaz, markdown kullanma.`;
+
+  const resp = await fetch('https://api.groq.com/openai/v1/chat/completions',{
+    method:'POST',
+    headers:{'Content-Type':'application/json','Authorization':'Bearer '+GROQ_KEY_CONTENT},
+    body:JSON.stringify({model:'llama-3.3-70b-versatile',messages:[{role:'user',content:prompt}],max_tokens:2000,temperature:0.4})
+  });
+  const data = await resp.json();
+  const noteContent = data.choices?.[0]?.message?.content||'';
+  if(!noteContent) throw new Error('AI içerik üretemedi.');
+
+  clearInterval(interval);
+  const bar = document.getElementById('ai-gen-bar');
+  if(bar) bar.style.width='100%';
+
+  // Önizleme + düzenleme
+  formEl.innerHTML = `<div style="border-top:1px solid var(--border);padding-top:14px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+      <div style="font-size:.72rem;color:var(--accent);font-weight:700;letter-spacing:.08em">✨ AI TARAFINDAN OLUŞTURULDU</div>
+      <span style="font-size:.68rem;color:var(--dim)">Düzenleyebilirsiniz</span>
+    </div>
+    <div class="form-group"><label class="label">BAŞLIK</label>
+      <input class="input" id="tc-note-title" value="${topicTitle} — Ders Notu"></div>
+    <div class="form-group"><label class="label">İÇERİK</label>
+      <textarea class="input" id="tc-note-content" rows="10" style="font-size:.82rem;line-height:1.6">${noteContent.replace(/`/g,"'")}</textarea></div>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-primary" style="flex:1" onclick="saveTopicNote('${topicId}','${subjectId}','${classCode}')">💾 Kaydet</button>
+      <button class="btn btn-ghost" onclick="aiGenerateContent('note','${topicId}','${topicTitle}','${subjectId}','${classCode}')">🔄 Yeniden Üret</button>
+    </div>
+  </div>`;
+}
+
+async function aiGenerateFlashcard(topicId, topicTitle, subjectId, classCode, subj, gradeText, formEl, interval){
+  const prompt = `${gradeText} ${subj.name} dersi "${topicTitle}" konusu için 10 adet flashcard oluştur.
+
+Her kart: ön yüz = kısa soru veya kavram, arka yüz = kısa ve net cevap.
+SADECE JSON array döndür:
+[{"front":"Soru/Kavram","back":"Cevap/Açıklama"}]
+
+Türkçe, ${gradeText} seviyesine uygun, ezberlemeye yardımcı olacak şekilde.`;
+
+  const resp = await fetch('https://api.groq.com/openai/v1/chat/completions',{
+    method:'POST',
+    headers:{'Content-Type':'application/json','Authorization':'Bearer '+GROQ_KEY_CONTENT},
+    body:JSON.stringify({model:'llama-3.3-70b-versatile',messages:[{role:'user',content:prompt}],max_tokens:2000,temperature:0.4})
+  });
+  const data = await resp.json();
+  const raw = data.choices?.[0]?.message?.content||'';
+  const clean = raw.replace(/```json|```/g,'').trim();
+  const m = clean.match(/\[[\s\S]*\]/);
+  let cards = null;
+  if(m){ try{ cards=JSON.parse(m[0]); }catch(e){} }
+  if(!cards?.length) throw new Error('AI kart üretemedi.');
+
+  clearInterval(interval);
+  const bar = document.getElementById('ai-gen-bar');
+  if(bar) bar.style.width='100%';
+
+  // Önizleme
+  formEl.innerHTML = `<div style="border-top:1px solid var(--border);padding-top:14px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+      <div style="font-size:.72rem;color:var(--accent);font-weight:700;letter-spacing:.08em">✨ ${cards.length} KART OLUŞTURULDU</div>
+      <span style="font-size:.68rem;color:var(--dim)">Düzenleyebilirsiniz</span>
+    </div>
+    <div class="form-group"><label class="label">SET ADI</label>
+      <input class="input" id="tc-fc-title" value="${topicTitle} — Flashcard"></div>
+    <div id="ai-fc-preview" style="max-height:280px;overflow-y:auto;margin-bottom:12px;display:flex;flex-direction:column;gap:6px">
+      ${cards.map((c,i)=>`
+      <div style="background:var(--card2);border-radius:10px;padding:10px;border:1px solid var(--border);display:grid;grid-template-columns:1fr 1fr;gap:8px">
+        <div>
+          <div style="font-size:.6rem;color:var(--dim);margin-bottom:3px">ÖN YÜZ</div>
+          <input class="input" id="ai-fc-front-${i}" value="${c.front.replace(/"/g,'&quot;')}" style="font-size:.78rem;padding:6px 8px">
+        </div>
+        <div>
+          <div style="font-size:.6rem;color:var(--dim);margin-bottom:3px">ARKA YÜZ</div>
+          <input class="input" id="ai-fc-back-${i}" value="${c.back.replace(/"/g,'&quot;')}" style="font-size:.78rem;padding:6px 8px">
+        </div>
+      </div>`).join('')}
+    </div>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-primary" style="flex:1" onclick="saveAIFlashcard('${topicId}','${subjectId}','${classCode}',${cards.length})">💾 Kaydet</button>
+      <button class="btn btn-ghost" onclick="aiGenerateContent('flashcard','${topicId}','${topicTitle}','${subjectId}','${classCode}')">🔄 Yeniden Üret</button>
+    </div>
+  </div>`;
+}
+
+window.saveAIFlashcard = async function(topicId, subjectId, classCode, count){
+  const title = document.getElementById('tc-fc-title')?.value.trim();
+  if(!title){toast('Set adı gir!','w');return;}
+  const cards = [];
+  for(let i=0;i<count;i++){
+    const f = document.getElementById('ai-fc-front-'+i)?.value.trim();
+    const b = document.getElementById('ai-fc-back-'+i)?.value.trim();
+    if(f&&b) cards.push({front:f,back:b});
+  }
+  if(!cards.length){toast('En az 1 kart gerekli!','w');return;}
+  const id = 'fcset_'+Date.now();
+  await dbSet(`flashcardSets/${id}`,{
+    id, title, cards, subjectId, classCode, topicId,
+    authorUid:session.uid, authorName:session.name,
+    source:'ai', createdAt:Date.now()
+  });
+  const t = await dbGet(`topics/${safeKey(classCode)}/${subjectId}/${topicId}`)||{};
+  await dbSet(`topics/${safeKey(classCode)}/${subjectId}/${topicId}/fcCount`,(t.fcCount||0)+1);
+  toast(`🃏 ${cards.length} kartlık set kaydedildi!`,'s');
+  document.querySelector('.modal-overlay#topic-content-modal')?.remove();
+  loadTopics(subjectId, classCode);
 }
 
 window.saveTopicVideo = async function(topicId, subjectId, classCode){
