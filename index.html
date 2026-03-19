@@ -2159,6 +2159,15 @@ window.runAITest = async function(subjectId, settingModal){
 
   const subj = getSubject(subjectId);
 
+  // Öğrencinin sınıf seviyesini al
+  let grade = null;
+  if(session.classCode){
+    const cls = await dbGet(`classes/${session.classCode}`).catch(()=>null)
+              || Object.values(await dbGet('classes')||{}).find(c=>c.code===session.classCode);
+    if(cls?.grade) grade = cls.grade;
+  }
+  const gradeText = grade ? `${grade}. sınıf` : 'ortaokul/lise';
+
   // Yükleme ekranı
   const loadModal = document.createElement('div');
   loadModal.className = 'modal-overlay';
@@ -2166,7 +2175,7 @@ window.runAITest = async function(subjectId, settingModal){
   loadModal.innerHTML = `<div class="modal" style="max-width:340px;text-align:center">
     <div style="font-size:2rem;margin-bottom:12px">🤖</div>
     <div style="font-family:'Syne',sans-serif;font-size:1rem;font-weight:700;margin-bottom:8px">Sorular hazırlanıyor...</div>
-    <div style="font-size:.82rem;color:var(--dim);margin-bottom:16px">${subj.icon} ${subj.name} • ${count} soru • ${diff}</div>
+    <div style="font-size:.82rem;color:var(--dim);margin-bottom:16px">${subj.icon} ${subj.name} • ${gradeText} • ${count} soru • ${diff}</div>
     <div style="background:var(--bg2);border-radius:6px;height:6px;overflow:hidden">
       <div id="aitest-load-bar" style="height:6px;background:linear-gradient(90deg,var(--primary),var(--accent));width:0%;border-radius:6px;transition:width .4s"></div>
     </div>
@@ -2182,10 +2191,11 @@ window.runAITest = async function(subjectId, settingModal){
   }, 300);
 
   try{
-    const prompt = `Sen bir ${subj.name} öğretmenisin. Öğrencilere ${diff} seviyede ${count} adet çoktan seçmeli soru sor.
+    const prompt = `Sen bir ${subj.name} öğretmenisin. ${gradeText} öğrencilerine ${diff} seviyede ${count} adet çoktan seçmeli soru sor.
 
 KURALLAR:
-- Sorular ${subj.name} müfredatına uygun olsun
+- Sorular Türkiye ${gradeText} ${subj.name} müfredatına uygun olsun
+- Sorular ${gradeText} seviyesine uygun zorlukta olsun
 - Her soru 4 şık içersin (A,B,C,D)
 - Sadece 1 doğru cevap
 - SADECE JSON array döndür, başka hiçbir şey yazma
