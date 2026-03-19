@@ -2112,7 +2112,7 @@ window.dersTab=async function(tab, subjectId){
         </div>
       </div>`;
     }).join('');
-  } else {
+  } else if(tab==='notes'){
     const notes=await dbGet('notes')||{};
     const myCode=session.classCode||null;
     let list=Object.values(notes).filter(n=>n.subjectId===subjectId&&n.classCode&&(
