@@ -2976,11 +2976,9 @@ async function renderQuestionBank(){
     </div>`:''}
   </div>
   <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:16px;padding-bottom:4px">
-    <button class="btn btn-primary" id="qb-filter-all" onclick="qbFilter('all')" style="font-size:.78rem">Tümü</button>
     ${SUBJECTS.map(s=>`<button class="btn btn-ghost" id="qb-filter-${s.id}" onclick="qbFilter('${s.id}')" style="font-size:.78rem">${s.icon} ${s.name}</button>`).join('')}
   </div>
-  <div id="qb-grid"></div>`;
-  await loadQB('all');
+  <div id="qb-grid"><div class="card text-center text-dim" style="padding:40px"><div style="font-size:3rem;margin-bottom:10px">🧩</div><div>Yukarıdan bir ders seçerek soruları görüntüle.</div></div></div>`;
 }
 
 window.qbFilter=async function(filter){
@@ -3002,7 +3000,7 @@ async function loadQB(cat){
     else{const ids=SUBJECTS.filter(s=>s.cat===cat).map(s=>s.id);qs=qs.filter(q=>ids.includes(q.subjectId));}
   }
   if(!qs.length){
-    grid.innerHTML=`<div class="card text-center text-dim" style="padding:40px"><div style="font-size:3rem;margin-bottom:10px">🧩</div><div>Henüz soru yok.</div></div>`;
+    grid.innerHTML=`<div class="card text-center text-dim" style="padding:40px"><div style="font-size:3rem;margin-bottom:10px">🧩</div><div>Bu ders için henüz soru eklenmemiş.</div></div>`;
     return;
   }
 
@@ -3193,8 +3191,7 @@ window.openPDFtoQModal = async function(){
     </div>
 
     <div style="display:flex;gap:8px">
-      <button id="pq-generate-btn" class="btn btn-accent" style="flex:1" onclick="generateQuestionsFromPDF()">🤖 Soru Üret</button>
-      <button id="pq-save-btn" class="btn btn-primary" style="flex:1;display:none" onclick="savePDFQuestions()">💾 Kaydet</button>
+      <button id="pq-generate-btn" class="btn btn-accent" style="flex:1" onclick="generateQuestionsFromPDF()">🤖 Soru Üret ve Kaydet</button>
       <button class="btn btn-ghost" onclick="this.closest('.modal-overlay').remove()">İptal</button>
     </div>
   </div>`;
@@ -3280,7 +3277,9 @@ function hidePQProgress(){
 window.generateQuestionsFromPDF = async function(){
   if(!pqPDFText){toast('Önce PDF yükle!','w');return;}
   const subjectId = document.getElementById('pq-subj')?.value;
+  const classCode = document.getElementById('pq-class')?.value;
   if(!subjectId){toast('Ders seç!','w');return;}
+  if(!classCode){toast('Sınıf seç!','w');return;}
   const count = document.getElementById('pq-count')?.value || '10';
   const subj = getSubject(subjectId);
 
@@ -3332,13 +3331,18 @@ ${pqPDFText.substring(0, 4000)}`;
     if(!Array.isArray(questions)||!questions.length) throw new Error('Soru listesi boş');
 
     pqGeneratedQs = questions;
-    showPQProgress('Sorular hazır!', 100);
-    setTimeout(()=>{hidePQProgress();}, 800);
+    showPQProgress(`${questions.length} soru oluşturuldu, kaydediliyor...`, 90);
 
-    // Önizleme göster
-    renderPQPreview(questions, subj);
-    document.getElementById('pq-save-btn').style.display = 'block';
-    document.getElementById('pq-generate-btn').textContent = '🔄 Yeniden Üret';
+    // Direkt kaydet — onay beklemeden
+    await autoSavePDFQuestions(questions, subjectId, classCode);
+
+    showPQProgress('Tamamlandı!', 100);
+    setTimeout(()=>{
+      hidePQProgress();
+      document.querySelector('#pdf-to-q-modal')?.remove();
+      toast(`🧩 ${questions.length} soru soru bankasına eklendi!`, 's');
+      loadQB(subjectId);
+    }, 800);
 
   } catch(err){
     toast('❌ Hata: '+err.message, 'd');
@@ -3369,22 +3373,23 @@ window.savePDFQuestions = async function(){
   const classCode = document.getElementById('pq-class')?.value;
   const subjectId = document.getElementById('pq-subj')?.value;
   if(!classCode||!subjectId||!pqGeneratedQs.length){toast('Eksik bilgi!','w');return;}
+  await autoSavePDFQuestions(pqGeneratedQs, subjectId, classCode);
+  document.querySelector('.modal-overlay')?.remove();
+  pqPDFText=''; pqGeneratedQs=[];
+  loadQB(subjectId);
+}
 
-  let saved = 0;
-  for(const q of pqGeneratedQs){
-    const id = 'qb_'+Date.now()+'_'+saved;
+async function autoSavePDFQuestions(questions, subjectId, classCode){
+  for(let i=0;i<questions.length;i++){
+    const q=questions[i];
+    const id='qb_'+Date.now()+'_'+i+'_'+Math.random().toString(36).slice(2,6);
     await dbSet(`questionBank/${id}`,{
       id, subjectId, classCode, type:'multiple',
-      question: q.question, options: q.options, answer: q.answer,
-      authorUid: session.uid, authorName: session.name,
-      source: 'pdf_ai', createdAt: Date.now()
+      question:q.question, options:q.options, answer:q.answer,
+      authorUid:session.uid, authorName:session.name,
+      source:'pdf_ai', createdAt:Date.now()+i
     });
-    saved++;
   }
-  toast(`🧩 ${saved} soru soru bankasına eklendi!`, 's');
-  document.querySelector('.modal-overlay')?.remove();
-  pqPDFText = ''; pqGeneratedQs = [];
-  loadQB('all');
 }
 
 
