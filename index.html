@@ -846,9 +846,29 @@ if(!window.toggleTheme){
 <div id="modal-create-class" class="modal-overlay" style="display:none">
   <div class="modal">
     <div class="modal-title">🏫 Yeni Sınıf Oluştur</div>
-    <div class="form-group"><label class="label">SINIF ADI</label><input type="text" class="input" id="cls-name" placeholder="Örn: 11-A Fen Grubu" maxlength="50"></div>
-    <div class="form-group"><label class="label">AÇIKLAMA</label><input type="text" class="input" id="cls-desc" placeholder="İsteğe bağlı" maxlength="100"></div>
-    <div class="flex gap-2 mt-4"><button class="btn btn-ghost" style="flex:1" onclick="hideModal('modal-create-class')"> İptal</button><button class="btn btn-primary" style="flex:2" onclick="createClass()">Oluştur</button></div>
+    <div class="form-group"><label class="label">SINIF SEVİYESİ</label>
+      <select class="input" id="cls-grade" onchange="updateClsPreview()">
+        <option value="">— Sınıf Seç —</option>
+        <optgroup label="Ortaokul">
+          <option value="5">5. Sınıf</option>
+          <option value="6">6. Sınıf</option>
+          <option value="7">7. Sınıf</option>
+          <option value="8">8. Sınıf</option>
+        </optgroup>
+        <optgroup label="Lise">
+          <option value="9">9. Sınıf</option>
+          <option value="10">10. Sınıf</option>
+          <option value="11">11. Sınıf</option>
+          <option value="12">12. Sınıf</option>
+        </optgroup>
+      </select>
+    </div>
+    <div class="form-group"><label class="label">ŞUBE / GRUP ADI</label><input type="text" class="input" id="cls-name" placeholder="Örn: A, Fen Grubu, Matematik" maxlength="50" oninput="updateClsPreview()"></div>
+    <div class="form-group"><label class="label">AÇIKLAMA (isteğe bağlı)</label><input type="text" class="input" id="cls-desc" placeholder="Sınıf hakkında kısa bilgi" maxlength="100"></div>
+    <div id="cls-preview" style="background:var(--card2);border-radius:10px;padding:10px 14px;margin-bottom:14px;font-size:.85rem;color:var(--dim);display:none">
+      Sınıf adı: <strong id="cls-preview-name" style="color:var(--text)"></strong>
+    </div>
+    <div class="flex gap-2 mt-4"><button class="btn btn-ghost" style="flex:1" onclick="hideModal('modal-create-class')">İptal</button><button class="btn btn-primary" style="flex:2" onclick="createClass()">Oluştur</button></div>
   </div>
 </div>
 
@@ -1608,6 +1628,13 @@ async function renderDashboard(){
         <div class="text-dim" style="font-size:.82rem;padding:10px">Yükleniyor...</div>
       </div>
     </div>`:''}
+
+    <!-- Son Testler (öğrenci için) -->
+    ${session.role==='student'?`
+    <div style="margin-top:20px" id="dash-tests-wrap">
+      <div style="font-family:'Syne',sans-serif;font-size:.85rem;font-weight:700;margin-bottom:12px;color:var(--dim)">🧩 SON TESTLER</div>
+      <div id="dash-tests-grid"><div class="text-dim" style="font-size:.82rem">Yükleniyor...</div></div>
+    </div>`:''}
   `;
 
   // Hava durumu yükle
@@ -1626,6 +1653,39 @@ async function renderDashboard(){
 
   // Push bildirim kontrolü
   checkHwNotifications();
+
+  // Öğrenci son testleri yükle
+  if(session.role==='student') loadDashboardTests();
+}
+
+async function loadDashboardTests(){
+  const el=document.getElementById('dash-tests-grid');
+  if(!el)return;
+  const all=await dbGet(`aitestResults/${session.uid}`)||{};
+  const list=Object.values(all).sort((a,b)=>b.createdAt-a.createdAt).slice(0,5);
+  if(!list.length){
+    el.innerHTML='<div class="card text-center text-dim" style="padding:20px;font-size:.82rem">Henüz test çözülmedi. Dersler bölümünden test çöz!</div>';
+    return;
+  }
+  el.innerHTML=list.map(t=>{
+    const subj=getSubject(t.subjectId);
+    const color=t.pct>=70?'var(--success)':t.pct>=50?'var(--warning)':'var(--danger)';
+    return `<div class="card" style="margin-bottom:8px;display:flex;align-items:center;gap:12px;padding:12px 14px">
+      <span style="font-size:1.4rem">${subj.icon}</span>
+      <div style="flex:1;min-width:0">
+        <div style="font-weight:600;font-size:.85rem">${subj.name}</div>
+        <div style="font-size:.7rem;color:var(--dim);margin-top:2px">${t.diff||'orta'} • ${new Date(t.createdAt).toLocaleDateString('tr-TR')}</div>
+      </div>
+      <div style="text-align:right;flex-shrink:0">
+        <div style="font-size:1.1rem;font-weight:700;color:${color}">${t.pct}%</div>
+        <div style="font-size:.68rem;color:var(--dim)">${t.score}/${t.total}</div>
+      </div>
+      <!-- Mini bar -->
+      <div style="position:absolute;bottom:0;left:0;right:0;height:2px;background:var(--border);border-radius:0 0 14px 14px;overflow:hidden">
+        <div style="height:2px;width:${t.pct}%;background:${color};border-radius:inherit"></div>
+      </div>
+    </div>`;
+  }).join('');
 }
 
 async function loadDashboardStudents(){
@@ -2630,10 +2690,15 @@ async function renderClasses(){
     const clsHws=Object.values(hws).filter(h=>h.classCode===cls.code);
     const div=document.createElement('div');div.className='card card-hover mb-3';div.style.marginBottom='14px';
     div.innerHTML=`<div class="flex items-center justify-between mb-3">
-      <div><div style="font-family:'Syne',sans-serif;font-size:1.05rem;font-weight:700">${cls.name}</div><div class="text-dim" style="font-size:.82rem;margin-top:2px">${cls.desc||''}</div></div>
+      <div>
+        ${cls.grade?`<div style="font-size:.68rem;font-weight:700;color:var(--primary);letter-spacing:.08em;margin-bottom:3px">${cls.grade}. SINIF</div>`:''}
+        <div style="font-family:'Syne',sans-serif;font-size:1.05rem;font-weight:700">${cls.name}</div>
+        <div class="text-dim" style="font-size:.82rem;margin-top:2px">${cls.desc||''}</div>
+      </div>
       <div class="flex items-center gap-2">
         <div style="font-family:'Syne',sans-serif;font-size:.9rem;font-weight:700;background:var(--primary-dim);color:var(--primary);padding:6px 14px;border-radius:8px;border:1px solid rgba(108,99,255,.3);letter-spacing:.1em">${cls.code}</div>
         <button class="btn btn-ghost btn-icon" onclick="navigator.clipboard.writeText('${cls.code}').then(()=>toast('Kod kopyalandı!','i'))" title="Kopyala">📋</button>
+        ${session.role==='teacher'?`<button class="btn btn-ghost btn-icon" onclick="deleteClass('${cls.code}','${cls.name.replace(/'/g,'\\'')}\`)" title="Sınıfı Sil" style="color:var(--danger)">🗑️</button>`:''}
       </div>
     </div>
     <div class="flex gap-3">
@@ -2646,21 +2711,71 @@ async function renderClasses(){
 }
 
 window.createClass=async function(){
-  const name=document.getElementById('cls-name').value.trim();
-  if(!name){toast('Sınıf adı gir!','w');return}
+  const grade=document.getElementById('cls-grade')?.value;
+  const branch=document.getElementById('cls-name').value.trim();
+  if(!grade){toast('Sınıf seviyesi seç!','w');return}
+  if(!branch){toast('Şube/grup adı gir!','w');return}
+  const name=`${grade}. Sınıf ${branch}`;
   const desc=document.getElementById('cls-desc').value.trim();
   let code=genCode();
   while(await dbGet(`classes/${code}`))code=genCode();
-  await dbSet(`classes/${code}`,{code,name,desc,teacherName:session.name,teacherUid:session.uid,created:Date.now()});
+  await dbSet(`classes/${code}`,{code,name,grade:parseInt(grade),branch,desc,teacherName:session.name,teacherUid:session.uid,created:Date.now()});
   hideModal('modal-create-class');
-  document.getElementById('cls-name').value='';document.getElementById('cls-desc').value='';
-  toast(`✅ Sınıf oluşturuldu! Kod: ${code}`,'s');
+  document.getElementById('cls-name').value='';
+  document.getElementById('cls-desc').value='';
+  document.getElementById('cls-grade').value='';
+  document.getElementById('cls-preview').style.display='none';
+  toast(`✅ "${name}" oluşturuldu! Kod: ${code}`,'s');
   if(currentNav==='classes')renderClasses();
 }
 
+window.updateClsPreview=function(){
+  const grade=document.getElementById('cls-grade')?.value;
+  const branch=document.getElementById('cls-name')?.value.trim();
+  const preview=document.getElementById('cls-preview');
+  const previewName=document.getElementById('cls-preview-name');
+  if(!preview||!previewName)return;
+  if(grade&&branch){
+    previewName.textContent=`${grade}. Sınıf ${branch}`;
+    preview.style.display='block';
+  } else {
+    preview.style.display='none';
+  }
+}
 function genCode(){
   const c='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
   let s='CL-';for(let i=0;i<4;i++)s+=c[Math.floor(Math.random()*c.length)];return s;
+}
+
+window.deleteClass=async function(code,name){
+  const conf=confirm(`"${name}" sınıfını silmek istediğinize emin misiniz?\n\nBu işlem geri alınamaz! Sınıftaki tüm ödevler ve üyelikler silinir.`);
+  if(!conf)return;
+  const conf2=confirm(`Son onay: "${name}" kalıcı olarak silinecek.`);
+  if(!conf2)return;
+
+  try{
+    // Sınıfı sil
+    await dbSet(`classes/${code}`,null);
+    // Üyeleri sil
+    await dbSet(`classMembers/${safeKey(code)}`,null);
+    // Bekleyen öğrencileri sil
+    await dbSet(`pendingStudents/${safeKey(code)}`,null);
+    // Ödevleri sil
+    const hws=await dbGet('homeworks')||{};
+    for(const [id,hw] of Object.entries(hws)){
+      if(hw.classCode===code) await dbSet(`homeworks/${id}`,null);
+    }
+    // Ders programını sil
+    await dbSet(`schedules/${safeKey(code)}`,null);
+    // Notları sil
+    await dbSet(`grades/${safeKey(code)}`,null);
+    // Devamsızlık sil
+    await dbSet(`attendance/${safeKey(code)}`,null);
+    toast(`🗑️ "${name}" sınıfı silindi.`,'w');
+    renderClasses();
+  }catch(e){
+    toast('Silme sırasında hata: '+e.message,'d');
+  }
 }
 
 // Öğretmenin sınıflarını getir — global
@@ -2721,6 +2836,7 @@ async function renderStudents(){
   <div class="tabs">
     <div class="tab active" id="stu-tab-pending" onclick="stuTab('pending')">⏳ Bekleyenler <span id="pending-count-tab" class="nav-badge" style="display:inline;margin-left:4px">0</span></div>
     <div class="tab" id="stu-tab-approved" onclick="stuTab('approved')">✅ Onaylananlar</div>
+    <div class="tab" id="stu-tab-tests" onclick="stuTab('tests')">🧩 Test Sonuçları</div>
   </div>
   <div id="stu-content"></div>`;
   await loadStuTab('pending');
@@ -2730,6 +2846,124 @@ window.stuTab=async function(tab){
   document.querySelectorAll('[id^="stu-tab-"]').forEach(_el=>_el.classList.remove('active'));
   document.getElementById('stu-tab-'+tab)?.classList.add('active');
   await loadStuTab(tab);
+}
+
+async function loadStudentTestResults(el, classes){
+  if(!el) return;
+  el.innerHTML='<div class="text-dim" style="font-size:.82rem;padding:10px">Yükleniyor...</div>';
+
+  // Sınıf seçici
+  let selectedCode = classes[0]?.code;
+  const classSel = classes.length>1 ? `<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px">
+    ${classes.map((c,i)=>`<button onclick="loadTestResultsForClass('${c.code}',this)" class="btn ${i===0?'btn-primary':'btn-ghost'}" style="font-size:.78rem">${c.name}</button>`).join('')}
+  </div>` : '';
+
+  el.innerHTML = classSel + `<div id="test-results-content"></div>`;
+  await loadTestResultsForClass(classes[0]?.code);
+}
+
+window.loadTestResultsForClass = async function(classCode, btn){
+  if(!classCode) return;
+  if(btn){
+    document.querySelectorAll('#stu-content .btn').forEach(b=>{b.className='btn btn-ghost';b.style.fontSize='.78rem';});
+    btn.className='btn btn-primary'; btn.style.fontSize='.78rem';
+  }
+  const el = document.getElementById('test-results-content');
+  if(!el) return;
+  el.innerHTML = '<div class="text-dim" style="padding:16px;font-size:.82rem">Yükleniyor...</div>';
+
+  const members = await dbGet(`classMembers/${safeKey(classCode)}`)||{};
+  const students = Object.entries(members).map(([uid,m])=>({uid,...m}));
+
+  if(!students.length){
+    el.innerHTML='<div class="card text-center text-dim" style="padding:40px">Bu sınıfta öğrenci yok.</div>';
+    return;
+  }
+
+  // Her öğrencinin test sonuçlarını çek
+  const allResults = await Promise.all(students.map(async s=>{
+    const tests = await dbGet(`aitestResults/${s.uid}`)||{};
+    const list = Object.values(tests).sort((a,b)=>b.createdAt-a.createdAt);
+    const avgPct = list.length ? Math.round(list.reduce((sum,t)=>sum+t.pct,0)/list.length) : null;
+    return {...s, tests:list, avgPct, testCount:list.length};
+  }));
+
+  // Ortalamaya göre sırala
+  allResults.sort((a,b)=>(b.avgPct||0)-(a.avgPct||0));
+
+  // Tüm dersleri topla
+  const allSubjects = [...new Set(allResults.flatMap(s=>s.tests.map(t=>t.subjectId)))];
+
+  let html = `
+  <!-- Özet tablosu -->
+  <div style="overflow-x:auto;margin-bottom:24px">
+    <table class="table" style="min-width:500px">
+      <thead><tr>
+        <th style="text-align:left">Öğrenci</th>
+        <th style="text-align:center">Test Sayısı</th>
+        <th style="text-align:center">Ortalama</th>
+        <th style="text-align:center">En İyi</th>
+        <th style="text-align:center">Son Test</th>
+      </tr></thead>
+      <tbody>
+        ${allResults.map(s=>{
+          const best = s.tests.length ? Math.max(...s.tests.map(t=>t.pct)) : null;
+          const last = s.tests[0];
+          const avgColor = s.avgPct>=70?'var(--success)':s.avgPct>=50?'var(--warning)':'var(--danger)';
+          return `<tr onclick="toggleStudentTests('${s.uid}')" style="cursor:pointer">
+            <td style="font-weight:600;font-size:.85rem">${s.name}</td>
+            <td style="text-align:center;font-size:.85rem">${s.testCount}</td>
+            <td style="text-align:center;font-weight:700;color:${s.avgPct!==null?avgColor:'var(--dim)'}">${s.avgPct!==null?s.avgPct+'%':'—'}</td>
+            <td style="text-align:center;font-weight:700;color:var(--success)">${best!==null?best+'%':'—'}</td>
+            <td style="text-align:center;font-size:.78rem;color:var(--dim)">${last?getSubject(last.subjectId).icon+' '+last.pct+'%':'—'}</td>
+          </tr>
+          <tr id="tests-detail-${s.uid}" style="display:none">
+            <td colspan="5" style="padding:0">
+              <div style="background:var(--card2);padding:12px;border-radius:0 0 10px 10px;display:flex;flex-wrap:wrap;gap:6px">
+                ${s.tests.slice(0,10).map(t=>{
+                  const subj=getSubject(t.subjectId);
+                  const c=t.pct>=70?'var(--success)':t.pct>=50?'var(--warning)':'var(--danger)';
+                  return `<div style="padding:7px 12px;border-radius:8px;background:var(--card);border:1px solid var(--border);font-size:.75rem">
+                    <span>${subj.icon} ${subj.name}</span>
+                    <span style="font-weight:700;color:${c};margin-left:6px">${t.pct}%</span>
+                    <span style="color:var(--dim2);margin-left:4px;font-size:.68rem">${t.score}/${t.total}</span>
+                    <div style="font-size:.62rem;color:var(--dim2);margin-top:2px">${new Date(t.createdAt).toLocaleDateString('tr-TR')}</div>
+                  </div>`;
+                }).join('')}
+                ${!s.tests.length?'<div style="color:var(--dim);font-size:.78rem">Henüz test çözülmedi.</div>':''}
+              </div>
+            </td>
+          </tr>`;
+        }).join('')}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Ders bazlı özet -->
+  ${allSubjects.length ? `
+  <div style="font-family:'Syne',sans-serif;font-size:.75rem;letter-spacing:.08em;color:var(--dim);margin-bottom:10px">DERS BAZLI SINIF ORTALAMASI</div>
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px">
+    ${allSubjects.map(sid=>{
+      const subj=getSubject(sid);
+      const subjTests=allResults.flatMap(s=>s.tests.filter(t=>t.subjectId===sid));
+      const avg=subjTests.length?Math.round(subjTests.reduce((sum,t)=>sum+t.pct,0)/subjTests.length):0;
+      const c=avg>=70?'var(--success)':avg>=50?'var(--warning)':'var(--danger)';
+      return `<div class="card" style="text-align:center;padding:12px;border-left:3px solid ${subj.color}">
+        <div style="font-size:1.3rem">${subj.icon}</div>
+        <div style="font-size:.72rem;font-weight:600;margin:4px 0">${subj.name}</div>
+        <div style="font-size:1.1rem;font-weight:700;color:${c}">${avg}%</div>
+        <div style="font-size:.62rem;color:var(--dim)">${subjTests.length} test</div>
+      </div>`;
+    }).join('')}
+  </div>` : ''}`;
+
+  el.innerHTML = html;
+}
+
+window.toggleStudentTests = function(uid){
+  const row = document.getElementById('tests-detail-'+uid);
+  if(!row) return;
+  row.style.display = row.style.display==='none' ? 'table-row' : 'none';
 }
 
 async function loadStuTab(tab){
@@ -2766,6 +3000,8 @@ async function loadStuTab(tab){
         </div>
       </div>`).join('');
 
+  } else if(tab==='tests'){
+    await loadStudentTestResults(el, classes);
   } else {
     // Onaylananlar
     let approved=[];
