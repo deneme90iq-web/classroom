@@ -3051,8 +3051,12 @@ ${gradeText} ${subj.name} için TÜM ana konuları listele (10-20 konu arası):`
         continue;
       }
 
+      // Benzersiz ID için timestamp + random
+      const uid = Date.now()+'_'+i+'_'+Math.random().toString(36).slice(2,6);
+      await new Promise(r=>setTimeout(r,50)); // ID çakışmasını önle
+
       // Konu kaydet
-      const topicId = 'topic_'+Date.now()+'_'+i;
+      const topicId = 'topic_'+uid;
       await dbSet(`topics/${safeKey(classCode)}/${subjectId}/${topicId}`,{
         id:topicId, title:topic.title, desc:topic.desc||'',
         order:Object.keys(existing).length+added,
@@ -3064,24 +3068,26 @@ ${gradeText} ${subj.name} için TÜM ana konuları listele (10-20 konu arası):`
       // ADIM 2: Bu konu için flashcard üret
       try{
         afLog(`  🃏 Flashcard üretiliyor...`);
-        const fcPrompt = `${gradeText} ${subj.name} "${topic.title}" konusu için ${fcCount} flashcard.
-SADECE JSON: [{"front":"Soru/Kavram","back":"Kısa cevap"}]
-Türkçe, ${gradeText} seviyesine uygun:`;
+        const fcPrompt = `${gradeText} ${subj.name} "${topic.title}" konusu için ${fcCount} adet flashcard üret.
+Her kart: ön yüz = kısa soru veya kavram, arka yüz = kısa net cevap.
+SADECE JSON array döndür, başka hiçbir şey yazma:
+[{"front":"Soru/Kavram","back":"Kısa cevap"}]
+Türkçe, ${gradeText} seviyesine uygun, ${fcCount} kart:`;
 
         const r2 = await fetch('https://api.groq.com/openai/v1/chat/completions',{
           method:'POST',
           headers:{'Content-Type':'application/json','Authorization':'Bearer '+GROQ_KEY_AF},
-          body:JSON.stringify({model:'llama-3.3-70b-versatile',messages:[{role:'user',content:fcPrompt}],max_tokens:1200,temperature:0.4})
+          body:JSON.stringify({model:'llama-3.3-70b-versatile',messages:[{role:'user',content:fcPrompt}],max_tokens:1500,temperature:0.4})
         });
         const d2 = await r2.json();
         const raw2 = d2.choices?.[0]?.message?.content||'';
         const clean2 = raw2.replace(/```json|```/g,'').trim();
         const m2 = clean2.match(/\[[\s\S]*\]/);
         let cards = null;
-        if(m2){ try{ cards=JSON.parse(m2[0]); }catch(e){} }
+        if(m2){ try{ cards=JSON.parse(m2[0]); }catch(e){ afLog('  ⚠️ JSON parse: '+e.message); } }
 
         if(cards?.length){
-          const fcId = 'fcset_'+Date.now()+'_'+i;
+          const fcId = 'fcset_'+uid;
           await dbSet(`flashcardSets/${fcId}`,{
             id:fcId, title:topic.title+' — Flashcard',
             cards, subjectId, classCode, topicId,
@@ -3090,6 +3096,8 @@ Türkçe, ${gradeText} seviyesine uygun:`;
           });
           await dbSet(`topics/${safeKey(classCode)}/${subjectId}/${topicId}/fcCount`, cards.length);
           afLog(`  ✅ ${cards.length} kart kaydedildi`);
+        } else {
+          afLog(`  ⚠️ Kart üretilemedi, ham yanıt: `+raw2.substring(0,80));
         }
       }catch(e){ afLog(`  ⚠️ Flashcard hatası: ${e.message}`); }
 
@@ -3116,7 +3124,7 @@ Türkçe yaz, ${gradeText} öğrencisine uygun, anlaşılır bir dil kullan. Dü
         const anlatim = d3.choices?.[0]?.message?.content||'';
 
         if(anlatim.length > 100){
-          const noteId = 'note_'+Date.now()+'_'+i;
+          const noteId = 'note_'+uid;
           await dbSet(`notes/${noteId}`,{
             id:noteId,
             title:topic.title+' — Konu Anlatımı',
