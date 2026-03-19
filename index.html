@@ -713,7 +713,6 @@ if(!window.toggleTheme){
       <div class="nav-item" id="nav-schedule" onclick="navTo('schedule')"><span class="nav-icon">🗓️</span> Ders Programı</div>
       <div class="nav-item" id="nav-pomodoro" onclick="navTo('pomodoro')"><span class="nav-icon">⏱️</span> Pomodoro</div>
       <div class="nav-item" id="nav-whiteboard" onclick="navTo('whiteboard')"><span class="nav-icon">🖊️</span> Beyaz Tahta</div>
-      <div class="nav-item" id="nav-qrjoin" onclick="navTo('qrjoin')"><span class="nav-icon">📷</span> QR Katılım</div>
       <div class="nav-item" id="nav-calendar" onclick="navTo('calendar')"><span class="nav-icon">📅</span> Takvim</div>
       <div class="nav-item" id="nav-ai" onclick="navTo('ai')"><span class="nav-icon">🤖</span> AI Asistan</div>
       <div class="nav-item" id="nav-books" onclick="navTo('books')"><span class="nav-icon">📚</span> Kitaplarım</div>
@@ -1477,7 +1476,6 @@ window.navTo=function(page){
     case 'schedule': renderSchedule();break;
     case 'pomodoro': renderPomodoro();break;
     case 'whiteboard': renderWhiteboard();break;
-    case 'qrjoin': renderQRJoin();break;
     case 'calendar': renderCalendar();break;
     case 'ai': renderAI();break;
     case 'dashboard': renderDashboard();break;
@@ -2495,7 +2493,10 @@ window.dersTab=async function(tab, subjectId){
           </div></div>`
           :`<div style="aspect-ratio:16/9;background:var(--card2);display:flex;align-items:center;justify-content:center;font-size:2rem">🎬</div>`}
         <div style="padding:10px">
-          <div style="font-weight:700;font-size:.88rem;margin-bottom:3px">${v.title}</div>
+          <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:6px">
+            <div style="font-weight:700;font-size:.88rem;margin-bottom:3px;flex:1">${v.title}</div>
+            ${session.role==='teacher'?`<button onclick="event.stopPropagation();deleteVideo('${v.id}')" style="background:none;border:none;cursor:pointer;color:var(--danger);font-size:.85rem;padding:2px;flex-shrink:0" title="Sil">🗑️</button>`:''}
+          </div>
           ${v.description?`<div style="font-size:.72rem;color:var(--dim)">${v.description.substring(0,60)}...</div>`:''}
         </div>
       </div>`;
@@ -4030,7 +4031,9 @@ async function loadVideos(filter){
           <span style="font-size:.68rem;color:var(--dim2)">${new Date(v.createdAt).toLocaleDateString('tr-TR')}</span>
         </div>
         ${v.description?`<div style="font-size:.75rem;color:var(--dim);margin-top:6px">${v.description.substring(0,80)}${v.description.length>80?'...':''}</div>`:''}
-        ${isOwner?`<button onclick="deleteVideo('${v.id}')" style="background:none;border:none;cursor:pointer;color:var(--danger);font-size:.75rem;margin-top:6px;padding:2px">🗑️ Sil</button>`:''}
+        ${isOwner?`<div style="margin-top:8px;border-top:1px solid var(--border);padding-top:8px;display:flex;justify-content:flex-end">
+          <button onclick="event.stopPropagation();deleteVideo('${v.id}')" style="display:flex;align-items:center;gap:4px;padding:5px 10px;border-radius:8px;border:1px solid var(--danger);background:var(--danger-dim);color:var(--danger);cursor:pointer;font-size:.75rem;font-weight:600">🗑️ Sil</button>
+        </div>`:''}
       </div>
     </div>`;
   }).join('');
@@ -5071,218 +5074,6 @@ function wbInit(){
   };
 }
 
-// ═══════════ QR KATILIM ═══════════
-async function renderQRJoin(){
-  const mc=document.getElementById('main-content');
-  mc.innerHTML=`
-  <div style="font-family:'Syne',sans-serif;font-size:1.3rem;font-weight:700;margin-bottom:20px">📷 QR Katılım</div>
-  <div id="qr-content"></div>`;
-
-  if(session.role==='teacher'){
-    const classes=await getMyClasses();
-    if(!classes.length){
-      document.getElementById('qr-content').innerHTML='<div class="card text-center text-dim" style="padding:40px">Sınıf bulunamadı. Önce sınıf oluştur.</div>';
-      return;
-    }
-    let html=`
-    <div style="font-size:.82rem;color:var(--dim);margin-bottom:16px">Öğrenciler bu QR kodu tarayarak sınıfa katılabilir.</div>
-    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px">
-      ${classes.map((c,i)=>`<button onclick="showQR('${c.code}','${c.name}',this)" class="btn ${i===0?'btn-primary':'btn-ghost'}" style="font-size:.78rem">${c.name}</button>`).join('')}
-    </div>
-    <div id="qr-display" style="text-align:center"></div>`;
-    document.getElementById('qr-content').innerHTML=html;
-    showQR(classes[0].code, classes[0].name);
-  } else {
-    // Öğrenci — manuel kod + kamera seçeneği
-    document.getElementById('qr-content').innerHTML=`
-    <div style="max-width:400px;margin:0 auto">
-      <div class="card" style="margin-bottom:16px">
-        <div style="font-family:'Syne',sans-serif;font-size:.75rem;font-weight:700;letter-spacing:.08em;color:var(--dim);margin-bottom:12px">SINIF KODUNU GİR</div>
-        <div style="display:flex;gap:8px">
-          <input class="input" id="qr-manual-code" placeholder="CL-XXXX" style="flex:1;text-transform:uppercase;font-size:1rem;font-weight:700;letter-spacing:.1em;text-align:center">
-          <button class="btn btn-primary" style="padding:10px 20px" onclick="joinWithCode()">Katıl →</button>
-        </div>
-        <div style="font-size:.72rem;color:var(--dim);margin-top:8px">Öğretmenin verdiği 7 haneli kodu gir (örn: CL-AB23)</div>
-      </div>
-      <div class="card" style="text-align:center">
-        <div style="font-family:'Syne',sans-serif;font-size:.75rem;font-weight:700;letter-spacing:.08em;color:var(--dim);margin-bottom:12px">KAMERAYLA TARA</div>
-        <div id="qr-reader-wrap" style="width:100%;max-width:300px;margin:0 auto 12px;border-radius:12px;overflow:hidden;background:#111;aspect-ratio:1;position:relative">
-          <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#555;font-size:.8rem" id="qr-cam-placeholder">📷 Kamera başlatılıyor...</div>
-        </div>
-        <button class="btn btn-ghost" style="font-size:.78rem" onclick="startQRScanner()">📷 Kamerayı Başlat</button>
-        <div id="qr-scan-status" style="font-size:.75rem;color:var(--dim);margin-top:8px"></div>
-      </div>
-    </div>`;
-  }
-}
-
-window.showQR=function(code, name, btn){
-  if(btn){document.querySelectorAll('#qr-content .btn').forEach(b=>{b.className='btn btn-ghost';b.style.fontSize='.78rem';});btn.className='btn btn-primary';btn.style.fontSize='.78rem';}
-  const el=document.getElementById('qr-display');
-  if(!el)return;
-
-  // QR kodu oluştur — qrcode.js CDN
-  el.innerHTML=`
-  <div style="display:inline-block;padding:20px;background:#fff;border-radius:16px;box-shadow:0 4px 24px rgba(0,0,0,.15);margin-bottom:16px">
-    <div id="qr-img"></div>
-  </div>
-  <div style="font-family:'Syne',sans-serif;font-size:1.1rem;font-weight:700;margin-bottom:4px">${name}</div>
-  <div style="font-size:1.4rem;font-weight:800;color:var(--primary);letter-spacing:.15em;margin-bottom:12px">${code}</div>
-  <div style="display:flex;gap:8px;justify-content:center">
-    <button onclick="navigator.clipboard.writeText('${code}').then(()=>toast('Kod kopyalandı!','i'))" class="btn btn-ghost" style="font-size:.78rem">📋 Kodu Kopyala</button>
-    <button onclick="printQR()" class="btn btn-ghost" style="font-size:.78rem">🖨️ Yazdır</button>
-  </div>`;
-
-  // QR kütüphanesini yükle ve oluştur
-  loadQRLib().then(()=>{
-    try{
-      new QRCode(document.getElementById('qr-img'),{
-        text:code, width:200, height:200,
-        colorDark:'#1a1a2e', colorLight:'#ffffff',
-        correctLevel:QRCode.CorrectLevel.H
-      });
-    }catch(e){
-      document.getElementById('qr-img').innerHTML=`<div style="color:#333;font-size:1.2rem;font-weight:700;padding:20px">${code}</div>`;
-    }
-  });
-}
-
-function loadQRLib(){
-  return new Promise((res,rej)=>{
-    if(window.QRCode){res();return;}
-    const s=document.createElement('script');
-    s.src='https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js';
-    s.onload=res;s.onerror=()=>{res();};
-    document.head.appendChild(s);
-  });
-}
-
-window.printQR=function(){
-  const win=window.open('','_blank');
-  const qrEl=document.getElementById('qr-display');
-  win.document.write(`<html><body style="text-align:center;padding:40px;font-family:sans-serif">${qrEl.innerHTML}<script>window.onload=()=>window.print()<\/script></body></html>`);
-  win.document.close();
-}
-
-window.startQRScanner=async function(){
-  const wrap=document.getElementById('qr-reader-wrap');
-  const status=document.getElementById('qr-scan-status');
-  if(!wrap)return;
-
-  if(status) status.textContent='Kamera izni isteniyor...';
-
-  // Önce kamera izni kontrol
-  if(!navigator.mediaDevices?.getUserMedia){
-    wrap.innerHTML='<div style="color:#aaa;font-size:.78rem;padding:20px;text-align:center">Bu tarayıcı kamera erişimini desteklemiyor.<br>Manuel kod gir.</div>';
-    if(status) status.textContent='';
-    return;
-  }
-
-  // jsQR yükle
-  if(!window.jsQR){
-    if(status) status.textContent='Kütüphane yükleniyor...';
-    await new Promise(res=>{
-      const s=document.createElement('script');
-      s.src='https://cdnjs.cloudflare.com/ajax/libs/jsQR/1.4.0/jsQR.js';
-      s.onload=res; s.onerror=res;
-      document.head.appendChild(s);
-    });
-  }
-
-  try{
-    const stream=await navigator.mediaDevices.getUserMedia({
-      video:{facingMode:{ideal:'environment'},width:{ideal:640},height:{ideal:640}}
-    });
-
-    // Video elementi
-    const placeholder=document.getElementById('qr-cam-placeholder');
-    if(placeholder) placeholder.remove();
-
-    // Eski video varsa kaldır
-    wrap.querySelectorAll('video').forEach(v=>v.remove());
-
-    const video=document.createElement('video');
-    video.setAttribute('playsinline','');
-    video.setAttribute('muted','');
-    video.autoplay=true;
-    video.style.cssText='width:100%;height:100%;object-fit:cover;display:block';
-    video.srcObject=stream;
-    wrap.appendChild(video);
-
-    // Tarama çerçevesi
-    const frame=document.createElement('div');
-    frame.style.cssText='position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:60%;height:60%;border:3px solid var(--primary);border-radius:12px;box-shadow:0 0 0 1000px rgba(0,0,0,.4);pointer-events:none';
-    wrap.style.position='relative';
-    wrap.appendChild(frame);
-
-    if(status) status.textContent='QR kodu kameraya göster...';
-
-    await new Promise(r=>video.addEventListener('loadedmetadata',r,{once:true}));
-    video.play();
-
-    const canvas=document.createElement('canvas');
-    const ctx=canvas.getContext('2d',{willReadFrequently:true});
-    let scanning=true;
-    let frameCount=0;
-
-    function scan(){
-      if(!scanning||!document.getElementById('qr-reader-wrap')){
-        stream.getTracks().forEach(t=>t.stop());
-        return;
-      }
-      frameCount++;
-      // Her 3 frame'de bir tara (performans)
-      if(frameCount%3===0 && video.readyState>=2 && video.videoWidth>0){
-        canvas.width=video.videoWidth;
-        canvas.height=video.videoHeight;
-        ctx.drawImage(video,0,0);
-        try{
-          const imgData=ctx.getImageData(0,0,canvas.width,canvas.height);
-          if(window.jsQR){
-            const result=jsQR(imgData.data,imgData.width,imgData.height,{inversionAttempts:'dontInvert'});
-            if(result?.data){
-              scanning=false;
-              stream.getTracks().forEach(t=>t.stop());
-              const code=result.data.trim().toUpperCase();
-              if(status) status.textContent='✅ QR okundu: '+code;
-              frame.style.borderColor='var(--success)';
-              setTimeout(()=>joinWithCode(code),500);
-              return;
-            }
-          }
-        }catch(e){}
-      }
-      requestAnimationFrame(scan);
-    }
-    requestAnimationFrame(scan);
-
-  }catch(err){
-    console.error('QR kamera hatası:',err);
-    wrap.innerHTML=`<div style="color:#aaa;font-size:.8rem;padding:20px;text-align:center">
-      ❌ Kamera açılamadı.<br><br>
-      <span style="font-size:.72rem;color:#666">${err.message||'İzin reddedildi'}</span><br><br>
-      <span style="font-size:.72rem">Manuel kod girişini kullan.</span>
-    </div>`;
-    if(status) status.textContent='';
-  }
-}
-
-window.joinWithCode=async function(code){
-  const val=(code||document.getElementById('qr-manual-code')?.value||'').trim().toUpperCase();
-  if(!val){toast('Sınıf kodu gir!','w');return;}
-  const cls=await dbGet(`classes/${val}`);
-  if(!cls){toast('Geçersiz kod: '+val,'d');return;}
-  // Zaten üye mi?
-  const member=await dbGet(`classMembers/${safeKey(val)}/${safeKey(session.uid)}`);
-  if(member){toast('Zaten bu sınıftasın!','i');return;}
-  // Katılma isteği gönder
-  await dbSet(`pendingStudents/${safeKey(val)}/${safeKey(session.uid)}`,{
-    uid:session.uid,name:session.name,email:session.email||'',
-    classCode:val,requestedAt:Date.now(),status:'pending'
-  });
-  toast(`📩 "${cls.name}" sınıfına katılma isteği gönderildi!`,'s');
-  navTo('dashboard');
-}
 
 
 // ═══════════ DERS PROGRAMI ═══════════
@@ -7747,7 +7538,6 @@ function buildDrawerNav(){
     {page:'schedule',icon:'🗓️',label:'Ders Programı'},
     {page:'pomodoro',icon:'⏱️',label:'Pomodoro'},
     {page:'whiteboard',icon:'🖊️',label:'Beyaz Tahta'},
-    {page:'qrjoin',icon:'📷',label:'QR Katılım'},
     {page:'calendar',icon:'📅',label:'Takvim'},
     {page:'ai',icon:'🤖',label:'AI Asistan'},
     {page:'books',icon:'📚',label:'Kitaplarım'},
