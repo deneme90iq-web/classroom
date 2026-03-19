@@ -700,6 +700,7 @@ if(!window.toggleTheme){
 
       <div class="sidebar-section">ARAÇLAR</div>
       <div class="nav-item" id="nav-profile" onclick="navTo('profile')"><span class="nav-icon">👤</span> Profilim</div>
+      <div class="nav-item" id="nav-dm" onclick="navTo('dm')"><span class="nav-icon">✉️</span> Mesajlar <span class="nav-badge" id="dm-badge" style="display:none">0</span></div>
       <div class="nav-item" id="nav-classprofiles" onclick="navTo('classprofiles')" style="display:none"><span class="nav-icon">👥</span> Sınıfım</div>
       <div class="nav-item" id="nav-calendar" onclick="navTo('calendar')"><span class="nav-icon">📅</span> Takvim</div>
       <div class="nav-item" id="nav-ai" onclick="navTo('ai')"><span class="nav-icon">🤖</span> AI Asistan</div>
@@ -1342,6 +1343,7 @@ function enterApp(){
   navTo('dashboard');
   initPushNotifications();
   loadProfilePhoto();
+  setTimeout(updateDmBadge, 2000);
 }
 
 function updateSidebarXP(s){
@@ -1434,6 +1436,7 @@ window.navTo=function(page){
   const mc=document.getElementById('main-content');
   switch(page){
     case 'profile': renderProfile();break;
+    case 'dm': renderDM();break;
     case 'classprofiles': renderClassProfiles();break;
     case 'calendar': renderCalendar();break;
     case 'ai': renderAI();break;
@@ -2496,6 +2499,228 @@ window.removeStudent=async function(uid,classCode,name){
 }
 
 // ═══════════ PROFİL ═══════════
+// ═══════════ DM (Direkt Mesajlaşma) ═══════════
+let dmListener=null;
+let activeDmUid=null;
+
+function dmKey(uid1,uid2){
+  return [safeKey(uid1),safeKey(uid2)].sort().join('__');
+}
+
+async function renderDM(openUid=null){
+  const mc=document.getElementById('main-content');
+  if(!mc)return;
+
+  // Sınıf üyelerini topla
+  let peers=[];
+  if(session.role==='student'&&session.classCode){
+    const members=await dbGet(`classMembers/${safeKey(session.classCode)}`)||{};
+    Object.entries(members).forEach(([uid,m])=>{
+      if(uid!==session.uid) peers.push({uid,name:m.name,role:'student'});
+    });
+    // Öğretmeni de ekle
+    const cls=await dbGet(`classes/${session.classCode}`);
+    if(cls&&cls.teacherUid&&cls.teacherUid!==session.uid){
+      const tp=await dbGet(`users/${cls.teacherUid}/profile`)||{};
+      peers.unshift({uid:cls.teacherUid,name:tp.name||cls.teacherName||'Öğretmen',role:'teacher'});
+    }
+  } else if(session.role==='teacher'){
+    const classes=await getMyClasses();
+    for(const cls of classes){
+      const members=await dbGet(`classMembers/${safeKey(cls.code)}`)||{};
+      Object.entries(members).forEach(([uid,m])=>{
+        if(uid!==session.uid&&!peers.find(p=>p.uid===uid))
+          peers.push({uid,name:m.name,role:'student',className:cls.name});
+      });
+    }
+  }
+
+  // Okunmamış sayıları çek
+  const unreadMap={};
+  for(const p of peers){
+    const msgs=await dbGet(`dms/${dmKey(session.uid,p.uid)}`)||{};
+    const unread=Object.values(msgs).filter(m=>m.to===session.uid&&!m.read).length;
+    if(unread>0) unreadMap[p.uid]=unread;
+  }
+
+  const targetUid=openUid||activeDmUid||null;
+  const target=peers.find(p=>p.uid===targetUid)||null;
+
+  mc.innerHTML=`
+  <div style="font-family:'Syne',sans-serif;font-size:1.3rem;font-weight:700;margin-bottom:16px">✉️ Mesajlar</div>
+  <div style="display:flex;gap:0;height:calc(100vh - 130px);background:var(--card);border:1px solid var(--border);border-radius:16px;overflow:hidden">
+
+    <!-- Kişi Listesi -->
+    <div style="width:240px;flex-shrink:0;border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden">
+      <div style="padding:12px;border-bottom:1px solid var(--border)">
+        <input class="input" id="dm-search" placeholder="Kişi ara..." style="font-size:.82rem;padding:8px 12px" oninput="dmFilterPeers(this.value)">
+      </div>
+      <div id="dm-peer-list" style="flex:1;overflow-y:auto;padding:8px">
+        ${peers.length===0
+          ?`<div class="text-center text-dim" style="padding:30px;font-size:.82rem">Sınıfında henüz kimse yok.</div>`
+          :peers.map(p=>{
+            const unread=unreadMap[p.uid]||0;
+            const isActive=p.uid===targetUid;
+            const roleColor=p.role==='teacher'?'var(--warning)':'var(--primary)';
+            return `<div class="dm-peer-item" data-uid="${p.uid}" data-name="${p.name}" onclick="openDmChat('${p.uid}','${p.name}','${p.role}')"
+              style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;cursor:pointer;transition:all .2s;
+              background:${isActive?'var(--primary-dim)':'transparent'};margin-bottom:2px">
+              <div style="width:38px;height:38px;border-radius:50%;background:${p.role==='teacher'?'var(--warning-dim)':'var(--primary-dim)'};
+                border:2px solid ${roleColor};display:flex;align-items:center;justify-content:center;
+                font-weight:700;font-size:.9rem;color:${roleColor};flex-shrink:0">${p.name.charAt(0).toUpperCase()}</div>
+              <div style="flex:1;min-width:0">
+                <div style="font-weight:600;font-size:.85rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${p.name}</div>
+                <div style="font-size:.68rem;color:${roleColor}">${p.role==='teacher'?'👨‍🏫 Öğretmen':'🎓 Öğrenci'}${p.className?' · '+p.className:''}</div>
+              </div>
+              ${unread>0?`<span style="background:var(--danger);color:#fff;font-size:.6rem;font-weight:700;padding:2px 6px;border-radius:10px;min-width:18px;text-align:center">${unread}</span>`:''}
+            </div>`;
+          }).join('')}
+      </div>
+    </div>
+
+    <!-- Sohbet Alanı -->
+    <div id="dm-chat-area" style="flex:1;display:flex;flex-direction:column;min-width:0">
+      ${target
+        ?`<div id="dm-chat-header" style="padding:14px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px">
+            <div style="width:38px;height:38px;border-radius:50%;background:${target.role==='teacher'?'var(--warning-dim)':'var(--primary-dim)'};
+              border:2px solid ${target.role==='teacher'?'var(--warning)':'var(--primary)'};display:flex;align-items:center;justify-content:center;
+              font-weight:700;color:${target.role==='teacher'?'var(--warning)':'var(--primary)'}">${target.name.charAt(0).toUpperCase()}</div>
+            <div>
+              <div style="font-weight:700;font-size:.95rem">${target.name}</div>
+              <div style="font-size:.72rem;color:var(--dim)">${target.role==='teacher'?'👨‍🏫 Öğretmen':'🎓 Öğrenci'}</div>
+            </div>
+          </div>
+          <div id="dm-messages" style="flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:8px"></div>
+          <div style="padding:10px 12px;border-top:1px solid var(--border);display:flex;gap:8px;background:var(--card2)">
+            <input type="text" class="input" id="dm-input" placeholder="Mesaj yaz..." style="flex:1;padding:9px 12px;font-size:.88rem"
+              onkeydown="if(event.key==='Enter'){event.preventDefault();sendDM('${target.uid}')}">
+            <button class="btn btn-primary" style="padding:9px 16px" onclick="sendDM('${target.uid}')">→</button>
+          </div>`
+        :`<div style="flex:1;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:12px;color:var(--dim)">
+            <div style="font-size:3rem">💬</div>
+            <div style="font-size:.9rem">Mesajlaşmak için bir kişi seç</div>
+          </div>`}
+    </div>
+  </div>`;
+
+  if(target){
+    activeDmUid=target.uid;
+    startDmListener(target.uid,target.name,target.role);
+  }
+}
+
+window.dmFilterPeers=function(val){
+  const v=val.toLowerCase();
+  document.querySelectorAll('.dm-peer-item').forEach(el=>{
+    el.style.display=el.dataset.name.toLowerCase().includes(v)?'flex':'none';
+  });
+}
+
+window.openDmChat=async function(uid,name,role){
+  activeDmUid=uid;
+  if(dmListener){off(dmListener);dmListener=null;}
+  const area=document.getElementById('dm-chat-area');
+  if(!area)return;
+  const roleColor=role==='teacher'?'var(--warning)':'var(--primary)';
+  area.innerHTML=`
+    <div id="dm-chat-header" style="padding:14px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px">
+      <div style="width:38px;height:38px;border-radius:50%;background:${role==='teacher'?'var(--warning-dim)':'var(--primary-dim)'};
+        border:2px solid ${roleColor};display:flex;align-items:center;justify-content:center;
+        font-weight:700;color:${roleColor}">${name.charAt(0).toUpperCase()}</div>
+      <div>
+        <div style="font-weight:700;font-size:.95rem">${name}</div>
+        <div style="font-size:.72rem;color:var(--dim)">${role==='teacher'?'👨‍🏫 Öğretmen':'🎓 Öğrenci'}</div>
+      </div>
+    </div>
+    <div id="dm-messages" style="flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:8px"></div>
+    <div style="padding:10px 12px;border-top:1px solid var(--border);display:flex;gap:8px;background:var(--card2)">
+      <input type="text" class="input" id="dm-input" placeholder="Mesaj yaz..." style="flex:1;padding:9px 12px;font-size:.88rem"
+        onkeydown="if(event.key==='Enter'){event.preventDefault();sendDM('${uid}')}">
+      <button class="btn btn-primary" style="padding:9px 16px" onclick="sendDM('${uid}')">→</button>
+    </div>`;
+
+  // Aktif peer'ı highlight et
+  document.querySelectorAll('.dm-peer-item').forEach(el=>{
+    el.style.background=el.dataset.uid===uid?'var(--primary-dim)':'transparent';
+  });
+
+  startDmListener(uid,name,role);
+  // Mesajları okundu işaretle
+  await markDmRead(uid);
+}
+
+function startDmListener(peerUid,peerName,peerRole){
+  if(dmListener){off(dmListener);dmListener=null;}
+  const key=dmKey(session.uid,peerUid);
+  const r=dbRef(`dms/${key}`);
+  dmListener=r;
+  onValue(r,snap=>{
+    const msgs=snap.exists()?Object.values(snap.val()):[];
+    msgs.sort((a,b)=>a.createdAt-b.createdAt);
+    const el=document.getElementById('dm-messages');
+    if(!el)return;
+    el.innerHTML=msgs.length===0
+      ?`<div class="text-center text-dim" style="padding:40px;font-size:.82rem">Henüz mesaj yok. İlk mesajı sen gönder! 👋</div>`
+      :msgs.map(m=>{
+          const isMe=m.from===session.uid;
+          return `<div style="display:flex;flex-direction:${isMe?'row-reverse':'row'};align-items:flex-end;gap:8px">
+            <div style="width:28px;height:28px;border-radius:50%;background:${isMe?'var(--primary-dim)':'var(--card2)'};
+              border:1px solid ${isMe?'var(--primary)':'var(--border2)'};display:flex;align-items:center;
+              justify-content:center;font-size:.7rem;font-weight:700;color:${isMe?'var(--primary)':'var(--dim)'};flex-shrink:0">
+              ${(m.fromName||'?').charAt(0).toUpperCase()}</div>
+            <div style="max-width:65%">
+              <div style="background:${isMe?'var(--primary)':'var(--card2)'};color:${isMe?'#fff':'var(--text)'};
+                padding:9px 13px;border-radius:${isMe?'14px 14px 4px 14px':'14px 14px 14px 4px'};
+                font-size:.87rem;line-height:1.5;word-break:break-word">${m.text}</div>
+              <div style="font-size:.62rem;color:var(--dim2);margin-top:2px;text-align:${isMe?'right':'left'}">
+                ${new Date(m.createdAt).toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit'})}
+                ${isMe?'':' · '+m.fromName}</div>
+            </div>
+          </div>`;
+        }).join('');
+    el.scrollTop=el.scrollHeight;
+  });
+}
+
+window.sendDM=async function(toUid){
+  const input=document.getElementById('dm-input');
+  const text=input?.value.trim();
+  if(!text)return;
+  input.value='';
+  const key=dmKey(session.uid,toUid);
+  const msgId='msg_'+Date.now();
+  await dbSet(`dms/${key}/${msgId}`,{
+    from:session.uid,fromName:session.name,fromRole:session.role,
+    to:toUid,text,createdAt:Date.now(),read:false
+  });
+  // DM badge güncelle
+  updateDmBadge();
+}
+
+async function markDmRead(peerUid){
+  const key=dmKey(session.uid,peerUid);
+  const msgs=await dbGet(`dms/${key}`)||{};
+  const updates={};
+  Object.entries(msgs).forEach(([id,m])=>{
+    if(m.to===session.uid&&!m.read) updates[`dms/${key}/${id}/read`]=true;
+  });
+  if(Object.keys(updates).length>0) await update(ref(db),updates);
+  updateDmBadge();
+}
+
+async function updateDmBadge(){
+  // Tüm DM klasörlerini tara — okunmamış mesaj var mı?
+  const allDms=await dbGet('dms')||{};
+  let total=0;
+  Object.values(allDms).forEach(conv=>{
+    Object.values(conv).forEach(m=>{
+      if(m.to===session.uid&&!m.read) total++;
+    });
+  });
+  const badge=document.getElementById('dm-badge');
+  if(badge){badge.textContent=total;badge.style.display=total>0?'inline':'none';}
+}
+
 async function renderProfile(){
   const mc=document.getElementById('main-content');
   if(!mc)return;
@@ -4882,6 +5107,7 @@ function buildDrawerNav(){
     {page:'quiz',icon:'📝',label:'Quiz'},
     {page:'classes',icon:'🏫',label:'Sınıflarım'},
     {page:'profile',icon:'👤',label:'Profilim'},
+    {page:'dm',icon:'✉️',label:'Mesajlar'},
     {page:'classprofiles',icon:'👥',label:'Sınıfım',studentOnly:true},
     {page:'calendar',icon:'📅',label:'Takvim'},
     {page:'ai',icon:'🤖',label:'AI Asistan'},
