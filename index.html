@@ -4196,503 +4196,1263 @@ window.buyItem=async function(itemId,price){
 
 
 // ═══════════════════════════════════════════════════════
-// ⚔️ ADA SAVAŞLARI — Island Mining & Gacha Game
+// ⚔️ ADA SAVAŞLARI — 2D Canvas Oyun
 // ═══════════════════════════════════════════════════════
 
-const ISLANDS = [
-  { id:'fire',   name:'Yangın Adası', icon:'🌋', color:'#ff4d6d', bg:'#2d0a0a',
-    chars:[
-      {id:'ember',  name:'Kor',      icon:'🔥', rarity:'common',  power:8,  desc:'Ateşin ruhu'},
-      {id:'magma',  name:'Magma',    icon:'🌋', rarity:'rare',    power:18, desc:'Lavdan doğdu'},
-      {id:'phoenix',name:'Anka',     icon:'🦅', rarity:'epic',    power:35, desc:'Küllerinden doğar'},
-      {id:'inferno',name:'İnferno',  icon:'☀️', rarity:'legend',  power:60, desc:'Ateş tanrısı'},
-    ]},
-  { id:'ice',    name:'Buz Adası',   icon:'❄️', color:'#00d4ff', bg:'#0a1a2d',
-    chars:[
-      {id:'frost',  name:'Buz',      icon:'🧊', rarity:'common',  power:8,  desc:'Dondurur geçer'},
-      {id:'blizzard',name:'Fırtına', icon:'🌨️', rarity:'rare',    power:18, desc:'Buz fırtınası'},
-      {id:'glacier',name:'Buzul',    icon:'🏔️', rarity:'epic',    power:35, desc:'Yüzyıllık buz'},
-      {id:'aurora', name:'Kuzey Işığı',icon:'🌌',rarity:'legend', power:60, desc:'Ebedi ışık'},
-    ]},
-  { id:'forest', name:'Orman Adası', icon:'🌿', color:'#00d68f', bg:'#0a2010',
-    chars:[
-      {id:'sprout', name:'Filiz',    icon:'🌱', rarity:'common',  power:8,  desc:'Tohumdan filiz'},
-      {id:'wolf',   name:'Kurt',     icon:'🐺', rarity:'rare',    power:18, desc:'Ormanın bekçisi'},
-      {id:'druid',  name:'Druid',    icon:'🧙', rarity:'epic',    power:35, desc:'Doğanın sesi'},
-      {id:'treant', name:'Ağaç Dev', icon:'🌳', rarity:'legend',  power:60, desc:'Bin yıllık meşe'},
-    ]},
-  { id:'space',  name:'Uzay Adası',  icon:'🚀', color:'#a78bfa', bg:'#0d0a20',
-    chars:[
-      {id:'comet',  name:'Kuyruklu', icon:'☄️', rarity:'common',  power:8,  desc:'Uzaydan düşer'},
-      {id:'astro',  name:'Astronot', icon:'👨‍🚀',rarity:'rare',   power:18, desc:'Yıldızlara yolcu'},
-      {id:'alien',  name:'Uzaylı',   icon:'👽', rarity:'epic',    power:35, desc:'Başka galaksi'},
-      {id:'black',  name:'Kara Delik',icon:'🕳️',rarity:'legend', power:60, desc:'Her şeyi yutar'},
-    ]},
-  { id:'ocean',  name:'Okyanus Adası',icon:'🌊',color:'#38bdf8', bg:'#0a1520',
-    chars:[
-      {id:'fish',   name:'Balık',    icon:'🐟', rarity:'common',  power:8,  desc:'Denizin çocuğu'},
-      {id:'shark',  name:'Köpekbalığı',icon:'🦈',rarity:'rare',   power:18, desc:'Derinliklerin efendisi'},
-      {id:'kraken', name:'Kraken',   icon:'🐙', rarity:'epic',    power:35, desc:'Efsanevi canavar'},
-      {id:'poseidon',name:'Poseidon',icon:'🔱', rarity:'legend',  power:60, desc:'Deniz tanrısı'},
-    ]},
+const ISLANDS_2D = [
+  { id:'fire',   name:'Yangın Adası',  icon:'🌋', bgColors:['#1a0505','#2d0a0a','#3d1010'],
+    groundColor:'#8b2020', rockColor:'#c0392b', skyColor:'#1a0505',
+    starColor:'#ff6b35', enemyColor:'#ff4444', enemyName:'Kor Cini',
+    particleColor:'#ff6600', music:'🔥' },
+  { id:'ice',    name:'Buz Adası',     icon:'❄️', bgColors:['#050d1a','#0a1a2d','#0d2040'],
+    groundColor:'#1a4a7a', rockColor:'#2980b9', skyColor:'#050d1a',
+    starColor:'#00d4ff', enemyColor:'#5dade2', enemyName:'Buz Ruhu',
+    particleColor:'#00d4ff', music:'❄️' },
+  { id:'forest', name:'Orman Adası',   icon:'🌿', bgColors:['#051a05','#0a2d0a','#0d3d10'],
+    groundColor:'#1a5c1a', rockColor:'#27ae60', skyColor:'#051a05',
+    starColor:'#00d68f', enemyColor:'#2ecc71', enemyName:'Orman Eri',
+    particleColor:'#00ff88', music:'🌿' },
+  { id:'space',  name:'Uzay Adası',    icon:'🚀', bgColors:['#05050f','#0a0a1a','#0d0d25'],
+    groundColor:'#1a1a3d', rockColor:'#6c63ff', skyColor:'#05050f',
+    starColor:'#a78bfa', enemyColor:'#a78bfa', enemyName:'Uzay Varlığı',
+    particleColor:'#c084fc', music:'🚀' },
+  { id:'ocean',  name:'Okyanus Adası', icon:'🌊', bgColors:['#050d1a','#0a1520','#0d1f30'],
+    groundColor:'#1a3a5c', rockColor:'#2471a3', skyColor:'#050d1a',
+    starColor:'#38bdf8', enemyColor:'#38bdf8', enemyName:'Deniz Canavarı',
+    particleColor:'#00bcd4', music:'🌊' },
 ];
 
-const RARITY_CONF = {
-  common: {label:'Sıradan', color:'#9ca3af', chance:55, gold:30},
-  rare:   {label:'Nadir',   color:'#38bdf8', chance:30, gold:80},
-  epic:   {label:'Destansı',color:'#a78bfa', chance:12, gold:200},
-  legend: {label:'Efsane',  color:'#f59e0b', chance:3,  gold:600},
+const CHARS_2D = {
+  fire:   [{name:'Kor',icon:'🔥',hp:60,atk:12,rarity:'common'},{name:'Magma',icon:'🌋',hp:100,atk:22,rarity:'rare'},{name:'Anka',icon:'🦅',hp:160,atk:40,rarity:'epic'},{name:'İnferno',icon:'☀️',hp:280,atk:70,rarity:'legend'}],
+  ice:    [{name:'Buz',icon:'🧊',hp:60,atk:10,rarity:'common'},{name:'Fırtına',icon:'🌨️',hp:100,atk:20,rarity:'rare'},{name:'Buzul',icon:'🏔️',hp:180,atk:38,rarity:'epic'},{name:'Aurora',icon:'🌌',hp:300,atk:65,rarity:'legend'}],
+  forest: [{name:'Filiz',icon:'🌱',hp:70,atk:10,rarity:'common'},{name:'Kurt',icon:'🐺',hp:110,atk:20,rarity:'rare'},{name:'Druid',icon:'🧙',hp:170,atk:38,rarity:'epic'},{name:'Ağaç Dev',icon:'🌳',hp:290,atk:65,rarity:'legend'}],
+  space:  [{name:'Kuyruklu',icon:'☄️',hp:60,atk:11,rarity:'common'},{name:'Astronot',icon:'👨‍🚀',hp:100,atk:22,rarity:'rare'},{name:'Uzaylı',icon:'👽',hp:165,atk:40,rarity:'epic'},{name:'Kara Delik',icon:'🕳️',hp:285,atk:68,rarity:'legend'}],
+  ocean:  [{name:'Balık',icon:'🐟',hp:65,atk:10,rarity:'common'},{name:'Köpekbalığı',icon:'🦈',hp:105,atk:21,rarity:'rare'},{name:'Kraken',icon:'🐙',hp:175,atk:40,rarity:'epic'},{name:'Poseidon',icon:'🔱',hp:295,atk:67,rarity:'legend'}],
 };
 
-const EGG_COSTS = {common:50, rare:150, epic:400, legend:1200};
-const BAG_LEVELS = [
-  {level:1, slots:3,  cost:0,    label:'Deri Çanta'},
-  {level:2, slots:6,  cost:50,   label:'Bez Çanta'},
-  {level:3, slots:10, cost:150,  label:'Demir Çanta'},
-  {level:4, slots:16, cost:400,  label:'Altın Çanta'},
-  {level:5, slots:25, cost:1000, label:'Efsane Çanta'},
-];
+const RARITY_2D = {common:{label:'Sıradan',color:'#9ca3af',chance:55},rare:{label:'Nadir',color:'#38bdf8',chance:30},epic:{label:'Destansı',color:'#a78bfa',chance:12},legend:{label:'Efsane',color:'#f59e0b',chance:3}};
+const EGG_COST_2D = {common:50,rare:150,epic:400,legend:1200};
+const BAG_2D = [{level:1,slots:3,cost:0,label:'Deri Çanta'},{level:2,slots:6,cost:50,label:'Bez Çanta'},{level:3,slots:10,cost:150,label:'Demir Çanta'},{level:4,slots:16,cost:400,label:'Altın Çanta'},{level:5,slots:25,cost:1000,label:'Efsane Çanta'}];
 
-const MINE_COOLDOWN = 3000; // ms
-let mineInterval = null;
-let gameListener = null;
+function defaultGS2(){return{gold:0,diamonds:0,pickaxePower:1,bagLevel:1,island:'fire',characters:[],completedQuests:[],totalMined:0,lastMine:0};}
 
-function defaultGameState() {
-  return {
-    gold: 0, diamonds: 0,
-    pickaxePower: 1,
-    bagLevel: 1,
-    island: 'fire',
-    characters: [],   // [{id, islandId, rarity, level:1}]
-    inventory: [],    // [{charId, count}]  — character collection
-    lastMine: 0,
-    totalMined: 0,
-  };
+// ── Ana render ──
+async function renderGame(){
+  const mc=document.getElementById('main-content');
+  mc.innerHTML=`<div class="text-center text-dim" style="padding:60px;font-size:2rem">⚔️</div>`;
+  const gs=await dbGet(`users/${session.uid}/gameState2`)||defaultGS2();
+  const classCode=session.classCode;
+  let clan=null;
+  if(classCode) clan=await dbGet(`clans/${safeKey(classCode)}`)||{diamonds:0,members:{}};
+  buildGamePage(gs,clan);
 }
 
-async function renderGame() {
-  const mc = document.getElementById('main-content');
-  mc.innerHTML = `<div class="text-center text-dim" style="padding:60px">⚔️ Yükleniyor...</div>`;
-  const gs = await dbGet(`users/${session.uid}/gameState2`) || defaultGameState();
-  const classCode = session.classCode;
-  let clanData = null;
-  if (classCode) {
-    clanData = await dbGet(`clans/${safeKey(classCode)}`) || {diamonds:0, members:{}};
-  }
-  renderGameUI(gs, clanData);
-}
+function buildGamePage(gs,clan){
+  const mc=document.getElementById('main-content');
+  const isl=ISLANDS_2D.find(i=>i.id===gs.island)||ISLANDS_2D[0];
+  const bag=BAG_2D[(gs.bagLevel||1)-1];
+  const chars=gs.characters||[];
 
-function renderGameUI(gs, clanData) {
-  const mc = document.getElementById('main-content');
-  const island = ISLANDS.find(i => i.id === gs.island) || ISLANDS[0];
-  const bagConf = BAG_LEVELS[gs.bagLevel - 1];
-  const chars = gs.characters || [];
-  const slots = bagConf.slots;
-
-  mc.innerHTML = `
-  <div style="font-family:'Syne',sans-serif;font-size:1.2rem;font-weight:700;margin-bottom:14px;display:flex;align-items:center;gap:10px">
-    ⚔️ Ada Savaşları
-    <span style="margin-left:auto;display:flex;gap:12px;font-size:.85rem;font-weight:600">
-      <span style="color:#f59e0b">💰 <span id="g-gold">${gs.gold}</span></span>
-      <span style="color:#00d4ff">💎 <span id="g-dia">${gs.diamonds}</span></span>
-    </span>
+  mc.innerHTML=`
+  <!-- Header -->
+  <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap">
+    <div style="font-family:'Syne',sans-serif;font-size:1.1rem;font-weight:700">⚔️ Ada Savaşları</div>
+    <div style="margin-left:auto;display:flex;gap:10px;font-size:.85rem;font-weight:600">
+      <span style="color:#f59e0b;background:rgba(245,158,11,.1);padding:3px 10px;border-radius:8px">💰 <span id="gs-gold">${gs.gold}</span></span>
+      <span style="color:#00d4ff;background:rgba(0,212,255,.1);padding:3px 10px;border-radius:8px">💎 <span id="gs-dia">${gs.diamonds}</span></span>
+    </div>
   </div>
 
   <!-- Ada Seçimi -->
-  <div style="display:flex;gap:8px;overflow-x:auto;margin-bottom:16px;padding-bottom:4px;scrollbar-width:none">
-    ${ISLANDS.map(isl=>`
-      <div onclick="switchIsland('${isl.id}')" style="flex-shrink:0;padding:8px 14px;border-radius:12px;cursor:pointer;transition:all .2s;
-        background:${isl.id===gs.island?isl.color+'33':'var(--card)'};
-        border:2px solid ${isl.id===gs.island?isl.color:'var(--border)'};
-        color:${isl.id===gs.island?isl.color:'var(--dim)'};font-size:.82rem;font-weight:600">
-        ${isl.icon} ${isl.name}
-      </div>`).join('')}
+  <div style="display:flex;gap:6px;overflow-x:auto;margin-bottom:12px;padding-bottom:4px;scrollbar-width:none">
+    ${ISLANDS_2D.map(i=>`<div onclick="switchIsland2('${i.id}')" style="flex-shrink:0;padding:6px 12px;border-radius:10px;cursor:pointer;font-size:.78rem;font-weight:600;transition:all .2s;background:${i.id===gs.island?i.starColor+'33':'var(--card)'};border:2px solid ${i.id===gs.island?i.starColor:'var(--border)'};color:${i.id===gs.island?i.starColor:'var(--dim)'}">${i.icon} ${i.name}</div>`).join('')}
   </div>
 
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px">
-
-    <!-- Maden Alanı -->
-    <div class="card" style="background:${island.bg};border-color:${island.color}44;text-align:center;padding:20px">
-      <div style="font-size:.7rem;letter-spacing:.1em;color:${island.color};font-family:'Syne',sans-serif;margin-bottom:12px">
-        ${island.icon} ${island.name.toUpperCase()}
-      </div>
-      <div id="mine-rock" style="font-size:4rem;cursor:pointer;transition:transform .1s;user-select:none;margin-bottom:12px" onclick="mineClick()">🪨</div>
-      <div style="font-size:.75rem;color:var(--dim);margin-bottom:10px">Tıkla veya tut → altın kaz</div>
-      <div style="background:rgba(255,255,255,.06);border-radius:8px;height:8px;margin-bottom:8px;overflow:hidden">
-        <div id="mine-bar" style="height:8px;border-radius:8px;background:${island.color};width:0%;transition:width .3s"></div>
-      </div>
-      <div style="font-size:.72rem;color:var(--dim)">⛏️ Kazma Gücü: <b style="color:${island.color}">${gs.pickaxePower}</b></div>
-      <button class="btn" style="margin-top:10px;background:${island.color}22;color:${island.color};border:1px solid ${island.color}44;font-size:.75rem;padding:6px 14px" onclick="upgradePickaxe()">
-        ⛏️ Yükselt (${Math.floor(50 * Math.pow(1.8, gs.pickaxePower-1))}💰)
-      </button>
+  <!-- Canvas Oyun Alanı -->
+  <div style="position:relative;border-radius:16px;overflow:hidden;margin-bottom:12px;border:2px solid ${isl.starColor}44">
+    <canvas id="game-canvas" width="700" height="320" style="width:100%;display:block;background:${isl.skyColor}"></canvas>
+    <!-- HUD -->
+    <div style="position:absolute;top:8px;left:10px;display:flex;gap:8px;align-items:center">
+      <div id="hud-hp" style="background:rgba(0,0,0,.6);border-radius:8px;padding:4px 10px;font-size:.75rem;color:#ff6b6b;font-weight:700">❤️ 100</div>
+      <div id="hud-wave" style="background:rgba(0,0,0,.6);border-radius:8px;padding:4px 10px;font-size:.75rem;color:${isl.starColor};font-weight:700">Dalga 1</div>
     </div>
+    <div style="position:absolute;top:8px;right:10px;display:flex;gap:6px">
+      <button onclick="gameAction('attack')" style="background:rgba(255,77,109,.8);border:none;border-radius:8px;padding:6px 14px;color:#fff;cursor:pointer;font-size:.8rem;font-weight:700">⚔️ Vur</button>
+      <button onclick="gameAction('mine')" style="background:rgba(245,158,11,.8);border:none;border-radius:8px;padding:6px 14px;color:#fff;cursor:pointer;font-size:.8rem;font-weight:700">⛏️ Kaz</button>
+    </div>
+    <div style="position:absolute;bottom:8px;left:10px;display:flex;gap:6px">
+      <button onclick="moveHero(-1)" style="background:rgba(0,0,0,.5);border:1px solid rgba(255,255,255,.2);border-radius:8px;padding:5px 12px;color:#fff;cursor:pointer;font-size:.9rem">◀</button>
+      <button onclick="moveHero(1)"  style="background:rgba(0,0,0,.5);border:1px solid rgba(255,255,255,.2);border-radius:8px;padding:5px 12px;color:#fff;cursor:pointer;font-size:.9rem">▶</button>
+      <button onclick="moveHero(0)"  style="background:rgba(0,0,0,.5);border:1px solid rgba(255,255,255,.2);border-radius:8px;padding:5px 14px;color:#fff;cursor:pointer;font-size:.75rem">↑ Zıpla</button>
+    </div>
+    <div id="game-msg" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:1.2rem;font-weight:700;text-shadow:0 2px 8px rgba(0,0,0,.8);pointer-events:none;opacity:0;transition:opacity .3s"></div>
+  </div>
 
-    <!-- Yumurta / Gacha -->
-    <div class="card" style="padding:16px">
-      <div style="font-family:'Syne',sans-serif;font-size:.75rem;letter-spacing:.1em;color:var(--dim);margin-bottom:12px">🥚 YUMURTA KIR</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-        ${Object.entries(EGG_COSTS).map(([rarity, cost])=>{
-          const rc = RARITY_CONF[rarity];
-          return `<div onclick="crackEgg('${rarity}')" style="padding:10px 8px;border-radius:10px;text-align:center;cursor:pointer;transition:all .2s;
-            background:${rc.color}15;border:1px solid ${rc.color}44" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform=''">
-            <div style="font-size:1.4rem">🥚</div>
-            <div style="font-size:.65rem;font-weight:700;color:${rc.color};margin-top:3px">${rc.label}</div>
-            <div style="font-size:.68rem;color:var(--dim);margin-top:2px">💰 ${cost}</div>
+  <!-- Alt Panel -->
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+
+    <!-- Yumurta / Karakter -->
+    <div class="card" style="padding:14px">
+      <div style="font-family:'Syne',sans-serif;font-size:.7rem;letter-spacing:.08em;color:var(--dim);margin-bottom:10px">🥚 YUMURTA KIR</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+        ${Object.entries(EGG_COST_2D).map(([r,c])=>{
+          const rc=RARITY_2D[r];
+          return `<div onclick="crackEgg2('${r}')" style="padding:8px 6px;border-radius:8px;text-align:center;cursor:pointer;background:${rc.color}15;border:1px solid ${rc.color}33;transition:all .15s" onmouseover="this.style.transform='scale(1.04)'" onmouseout="this.style.transform=''">
+            <div style="font-size:1.2rem">🥚</div>
+            <div style="font-size:.6rem;font-weight:700;color:${rc.color}">${rc.label}</div>
+            <div style="font-size:.62rem;color:var(--dim)">💰${c}</div>
           </div>`;
         }).join('')}
       </div>
     </div>
-  </div>
 
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px">
-
-    <!-- Çanta / Karakterler -->
-    <div class="card" style="padding:16px">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
-        <div style="font-family:'Syne',sans-serif;font-size:.75rem;letter-spacing:.1em;color:var(--dim)">🎒 ${bagConf.label}</div>
-        <button onclick="upgradeBag()" style="background:none;border:1px solid var(--border);border-radius:6px;padding:3px 8px;cursor:pointer;font-size:.65rem;color:var(--dim)">
-          ${gs.bagLevel<5?`+Yükselt (${BAG_LEVELS[gs.bagLevel]?.cost||'—'}💎)`:'MAX'}
-        </button>
-      </div>
-      <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:5px">
-        ${Array.from({length:slots}).map((_, i) => {
-          const char = chars[i];
-          if (!char) return `<div style="width:100%;aspect-ratio:1;border:1px dashed var(--border2);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:.6rem;color:var(--dim2)">+</div>`;
-          const isl = ISLANDS.find(x=>x.id===char.islandId)||ISLANDS[0];
-          const charDef = isl.chars.find(c=>c.id===char.id)||{icon:'❓',rarity:'common'};
-          const rc = RARITY_CONF[charDef.rarity];
-          return `<div title="${charDef.name||char.id} Lv${char.level||1}" style="width:100%;aspect-ratio:1;border:2px solid ${rc.color}55;border-radius:8px;background:${rc.color}11;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;font-size:1.1rem;position:relative" onclick="showCharDetail('${char.id}','${char.islandId}')">
-            ${charDef.icon}
-            <div style="font-size:.48rem;color:${rc.color};font-weight:700">Lv${char.level||1}</div>
-          </div>`;
+    <!-- Çanta + Kazma -->
+    <div class="card" style="padding:14px">
+      <div style="font-family:'Syne',sans-serif;font-size:.7rem;letter-spacing:.08em;color:var(--dim);margin-bottom:8px">🎒 ${bag.label}</div>
+      <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:4px;margin-bottom:10px">
+        ${Array.from({length:Math.min(bag.slots,15)}).map((_,i)=>{
+          const ch=chars[i];
+          if(!ch){return `<div style="aspect-ratio:1;border:1px dashed var(--border2);border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:.55rem;color:var(--dim2)">+</div>`;}
+          const isl2=ISLANDS_2D.find(x=>x.id===ch.islandId)||ISLANDS_2D[0];
+          const cdef=CHARS_2D[isl2.id]?.find(c=>c.id===ch.id)||{icon:'❓',rarity:'common'};
+          const rc=RARITY_2D[cdef.rarity];
+          return `<div onclick="showChar2('${ch.id}','${ch.islandId}')" title="${cdef.name} Lv${ch.level||1}" style="aspect-ratio:1;border:2px solid ${rc.color}55;border-radius:6px;background:${rc.color}11;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;font-size:.95rem;position:relative">${cdef.icon}<span style="font-size:.4rem;color:${rc.color};font-weight:700;line-height:1">Lv${ch.level||1}</span></div>`;
         }).join('')}
       </div>
-      <div style="font-size:.68rem;color:var(--dim);margin-top:8px;text-align:center">${chars.length}/${slots} karakter</div>
-    </div>
-
-    <!-- Klan -->
-    <div class="card" style="padding:16px">
-      <div style="font-family:'Syne',sans-serif;font-size:.75rem;letter-spacing:.1em;color:var(--dim);margin-bottom:10px">🛡️ KLAN</div>
-      ${clanData ? `
-        <div style="text-align:center;margin-bottom:12px">
-          <div style="font-size:2rem">🛡️</div>
-          <div style="font-weight:700;font-size:.88rem;margin-top:4px">${session.classCode}</div>
-          <div style="font-size:.75rem;color:#00d4ff;margin-top:2px">💎 ${clanData.diamonds||0} Klan Elması</div>
-        </div>
-        <div style="margin-bottom:8px">
-          <div style="font-size:.7rem;color:var(--dim);margin-bottom:4px">Elmas Bağışla:</div>
-          <div style="display:flex;gap:6px">
-            <input id="donate-amt" type="number" min="1" class="input" placeholder="Miktar" style="flex:1;padding:6px 8px;font-size:.82rem">
-            <button class="btn btn-primary" style="padding:6px 12px;font-size:.75rem" onclick="donateDiamonds()">Bağışla</button>
-          </div>
-        </div>
-        <div id="clan-members" style="max-height:100px;overflow-y:auto">
-          ${Object.values(clanData.members||{}).slice(0,5).map(m=>`
-            <div style="display:flex;align-items:center;gap:6px;padding:4px 0;font-size:.75rem">
-              <span>${m.icon||'👤'}</span>
-              <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${m.name}</span>
-              <span style="color:#f59e0b">💎${m.donated||0}</span>
-            </div>`).join('')}
-        </div>
-      ` : `<div class="text-dim text-center" style="padding:20px;font-size:.82rem">Klan için bir sınıfa katıl</div>`}
+      <div style="display:flex;gap:6px">
+        <button onclick="upgradePickaxe2()" style="flex:1;background:var(--warning-dim);color:var(--warning);border:1px solid rgba(245,158,11,.3);border-radius:8px;padding:6px;cursor:pointer;font-size:.68rem;font-weight:600">⛏️ Güç:${gs.pickaxePower} Yükselt</button>
+        <button onclick="upgradeBag2()" style="flex:1;background:var(--primary-dim);color:var(--primary);border:1px solid rgba(108,99,255,.3);border-radius:8px;padding:6px;cursor:pointer;font-size:.68rem;font-weight:600">${gs.bagLevel<5?`🎒 Yükselt`:'🎒 MAX'}</button>
+      </div>
     </div>
   </div>
 
-  <!-- Son Açılan Karakterler -->
-  ${chars.length > 0 ? `
-  <div class="card" style="padding:16px">
-    <div style="font-family:'Syne',sans-serif;font-size:.75rem;letter-spacing:.1em;color:var(--dim);margin-bottom:12px">⚔️ KOLEKSIYON (${chars.length} Karakter)</div>
-    <div style="display:flex;gap:10px;overflow-x:auto;padding-bottom:4px;scrollbar-width:none">
-      ${chars.map(char => {
-        const isl = ISLANDS.find(x=>x.id===char.islandId)||ISLANDS[0];
-        const charDef = isl.chars.find(c=>c.id===char.id)||{icon:'❓',name:'?',rarity:'common',power:0};
-        const rc = RARITY_CONF[charDef.rarity];
-        return `<div onclick="showCharDetail('${char.id}','${char.islandId}')" style="flex-shrink:0;width:72px;text-align:center;cursor:pointer;padding:10px 6px;border-radius:12px;background:${rc.color}11;border:1px solid ${rc.color}33;transition:all .2s" onmouseover="this.style.transform='translateY(-3px)'" onmouseout="this.style.transform=''">
-          <div style="font-size:1.8rem">${charDef.icon}</div>
-          <div style="font-size:.6rem;font-weight:700;color:${rc.color};margin-top:3px">${charDef.name}</div>
-          <div style="font-size:.58rem;color:var(--dim)">Lv${char.level||1} · ${charDef.power*(char.level||1)}⚔️</div>
-        </div>`;
-      }).join('')}
+  <!-- Klan -->
+  ${clan?`<div class="card" style="padding:14px;margin-bottom:12px">
+    <div style="display:flex;align-items:center;gap:10px">
+      <div style="font-size:1.8rem">🛡️</div>
+      <div style="flex:1">
+        <div style="font-weight:700;font-size:.88rem">${session.classCode} Klanı</div>
+        <div style="font-size:.72rem;color:#00d4ff">💎 ${clan.diamonds||0} Klan Elması</div>
+      </div>
+      <div style="display:flex;gap:6px;align-items:center">
+        <input id="donate-in" type="number" min="1" placeholder="💎" style="width:60px;padding:5px 6px;background:var(--card2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:.78rem">
+        <button onclick="donateDia2()" class="btn btn-primary" style="padding:5px 10px;font-size:.72rem">Bağışla</button>
+      </div>
     </div>
-  </div>` : ''}
+  </div>`:''}
 
   <!-- Görevler -->
-  <div class="card" style="padding:16px;margin-top:14px">
-    <div style="font-family:'Syne',sans-serif;font-size:.75rem;letter-spacing:.1em;color:var(--dim);margin-bottom:12px">📋 GÜNLÜK GÖREVLER (💎 Kazan)</div>
-    <div id="game-quests"></div>
+  <div class="card" style="padding:14px">
+    <div style="font-family:'Syne',sans-serif;font-size:.7rem;letter-spacing:.08em;color:var(--dim);margin-bottom:10px">📋 GÖREVLER</div>
+    <div id="g-quests"></div>
   </div>`;
 
-  loadGameQuests(gs);
-  startMineListener(gs);
+  renderQuests2(gs);
+  initCanvas(gs);
 }
 
-async function loadGameQuests(gs) {
-  const el = document.getElementById('game-quests');
-  if (!el) return;
-  const quests = [
-    {id:'q_mine10',  label:'10 kez kaz',        target:10,  reward:5,  key:'totalMined', unit:'kaz'},
-    {id:'q_mine50',  label:'50 kez kaz',         target:50,  reward:15, key:'totalMined', unit:'kaz'},
-    {id:'q_chars3',  label:'3 karakter topla',   target:3,   reward:20, key:'chars',      unit:'karakter'},
-    {id:'q_chars10', label:'10 karakter topla',  target:10,  reward:50, key:'chars',      unit:'karakter'},
-    {id:'q_bag2',    label:'Çantayı yükselt',    target:2,   reward:10, key:'bagLevel',   unit:'seviye'},
+// ── CANVAS ENGINE ──
+let G = {
+  canvas:null, ctx:null, isl:null, gs:null,
+  hero:{x:80,y:220,vx:0,vy:0,w:36,h:44,onGround:false,dir:1,state:'idle',frame:0,hp:100,maxHp:100,attackTimer:0},
+  enemies:[], mines:[], particles:[], floats:[],
+  wave:1, waveTimer:200, spawnTimer:60,
+  raf:null, keys:{},
+};
+
+function initCanvas(gs){
+  G.canvas=document.getElementById('game-canvas');
+  if(!G.canvas)return;
+  G.ctx=G.canvas.getContext('2d');
+  G.isl=ISLANDS_2D.find(i=>i.id===gs.island)||ISLANDS_2D[0];
+  G.gs=gs;
+  G.hero={x:80,y:220,vx:0,vy:0,w:36,h:44,onGround:false,dir:1,state:'idle',frame:0,hp:100+gs.pickaxePower*5,maxHp:100+gs.pickaxePower*5,attackTimer:0};
+  G.enemies=[];G.mines=[];G.particles=[];G.floats=[];
+  G.wave=1;G.waveTimer=200;G.spawnTimer=80;
+  // Maden blokları yerleştir
+  for(let i=0;i<8;i++) G.mines.push({x:120+i*80,y:200,w:30,h:30,hp:3,maxHp:3,gold:5+i*3});
+  if(G.raf)cancelAnimationFrame(G.raf);
+  gameLoop();
+}
+
+function gameLoop(){
+  if(!G.canvas||!document.getElementById('game-canvas')){cancelAnimationFrame(G.raf);return;}
+  update();draw();
+  G.raf=requestAnimationFrame(gameLoop);
+}
+
+function update(){
+  const h=G.hero;
+  // Yerçekimi
+  h.vy+=0.6;
+  h.y+=h.vy;
+  h.x+=h.vx;
+  h.vx*=0.85;
+  // Zemin
+  if(h.y>=220){h.y=220;h.vy=0;h.onGround=true;}else{h.onGround=false;}
+  // Sınır
+  if(h.x<0)h.x=0;
+  if(h.x>660)h.x=660;
+  h.frame=(h.frame+0.15)%4;
+  if(h.attackTimer>0)h.attackTimer--;
+
+  // Düşmanlar
+  G.spawnTimer--;
+  if(G.spawnTimer<=0){
+    G.spawnTimer=90-G.wave*8;
+    if(G.spawnTimer<20)G.spawnTimer=20;
+    G.enemies.push({x:Math.random()>0.5?700:-30,y:220,w:32,h:38,hp:15+G.wave*8,maxHp:15+G.wave*8,vx:Math.random()>0.5?-1.2:1.2,vy:0,state:'walk',frame:0,attackTimer:0});
+  }
+  G.waveTimer--;
+  if(G.waveTimer<=0){G.wave++;G.waveTimer=300;showMsg('🌊 Dalga '+G.wave+'!',G.isl.starColor);}
+
+  G.enemies.forEach((e,ei)=>{
+    e.vy+=0.6;e.y+=e.vy;e.x+=e.vx;
+    if(e.y>=220){e.y=220;e.vy=0;}
+    e.frame=(e.frame+0.12)%4;
+    // Kahramana yönel
+    const dx=h.x-e.x;
+    if(Math.abs(dx)>10)e.vx=dx>0?1.4:(-1.4);
+    // Çarpışma saldırısı
+    if(Math.abs(e.x-h.x)<40&&Math.abs(e.y-h.y)<40){
+      if(e.attackTimer<=0){
+        h.hp-=3+G.wave;e.attackTimer=60;
+        spawnParticle(h.x+h.w/2,h.y,'#ff4444','💥');
+        if(h.hp<=0){h.hp=h.maxHp;G.wave=1;toast('💀 Kahramanın düştü! Yeniden başlıyor...','d');}
+        document.getElementById('hud-hp').textContent='❤️ '+Math.max(0,Math.round(h.hp));
+      }
+      e.attackTimer--;
+    }
+    if(e.hp<=0)G.enemies.splice(ei,1);
+  });
+
+  // Partiküller
+  G.particles.forEach((p,i)=>{p.x+=p.vx;p.y+=p.vy;p.vy+=0.2;p.life--;if(p.life<=0)G.particles.splice(i,1);});
+  G.floats.forEach((f,i)=>{f.y-=1.2;f.life--;if(f.life<=0)G.floats.splice(i,1);});
+}
+
+function draw(){
+  const c=G.ctx,w=700,h=320,isl=G.isl;
+  // Gökyüzü
+  c.fillStyle=isl.skyColor;c.fillRect(0,0,w,h);
+  // Yıldızlar
+  c.fillStyle=isl.starColor+'55';
+  for(let i=0;i<30;i++){const sx=(i*73)%700,sy=(i*41)%200;c.fillRect(sx,sy,i%3==0?2:1,i%3==0?2:1);}
+  // Zemin
+  c.fillStyle=isl.groundColor;c.fillRect(0,256,w,64);
+  c.fillStyle=isl.rockColor+'88';c.fillRect(0,254,w,6);
+  // Arka dağlar
+  c.fillStyle=isl.groundColor+'88';
+  [50,130,220,340,460,560,640].forEach((x,i)=>{
+    c.beginPath();c.moveTo(x,256);c.lineTo(x+50,210-i%3*20);c.lineTo(x+100,256);c.fill();
+  });
+
+  // Maden blokları
+  G.mines.forEach(m=>{
+    if(m.hp<=0)return;
+    const alpha=m.hp/m.maxHp;
+    c.fillStyle=isl.rockColor;
+    roundRect(c,m.x,m.y,m.w,m.h,6);c.fill();
+    // Çatlak efekti
+    if(alpha<0.7){c.strokeStyle='rgba(0,0,0,.5)';c.lineWidth=1.5;c.beginPath();c.moveTo(m.x+8,m.y+5);c.lineTo(m.x+18,m.y+20);c.stroke();}
+    if(alpha<0.4){c.beginPath();c.moveTo(m.x+20,m.y+8);c.lineTo(m.x+26,m.y+25);c.stroke();}
+    // HP bar
+    c.fillStyle='rgba(0,0,0,.5)';c.fillRect(m.x,m.y-8,m.w,4);
+    c.fillStyle=isl.starColor;c.fillRect(m.x,m.y-8,m.w*alpha,4);
+    // Altın sembolü
+    c.font='12px serif';c.textAlign='center';c.fillText('💰',m.x+m.w/2,m.y+m.h-4);
+  });
+
+  // Kahraman çiz (karikatür)
+  drawHero(c,G.hero,isl);
+
+  // Düşmanlar
+  G.enemies.forEach(e=>drawEnemy(c,e,isl));
+
+  // Partiküller
+  G.particles.forEach(p=>{
+    c.globalAlpha=p.life/20;
+    c.font='16px serif';c.textAlign='center';
+    c.fillText(p.emoji,p.x,p.y);
+    c.globalAlpha=1;
+  });
+  // Float yazılar
+  G.floats.forEach(f=>{
+    c.globalAlpha=f.life/40;
+    c.fillStyle=f.color;c.font='bold 14px sans-serif';c.textAlign='center';
+    c.fillText(f.text,f.x,f.y);
+    c.globalAlpha=1;
+  });
+
+  // Dalga
+  document.getElementById('hud-wave').textContent='🌊 Dalga '+G.wave;
+}
+
+function drawHero(c,h,isl){
+  const bobY=Math.sin(h.frame)*3;
+  const x=h.x,y=h.y-h.h+bobY;
+  c.save();
+  if(h.dir<0){c.translate(x+h.w/2,0);c.scale(-1,1);c.translate(-(x+h.w/2),0);}
+  // Vücut
+  c.fillStyle='#4a90d9';roundRect(c,x+4,y+16,28,24,6);c.fill();
+  // Kol (saldırı animasyonu)
+  c.fillStyle='#f4c28a';
+  if(h.attackTimer>30){c.fillRect(x+26,y+16,12,8);c.fillStyle='#888';c.fillRect(x+36,y+12,6,14);}
+  else{c.fillRect(x,y+18,10,7);c.fillRect(x+26,y+18,10,7);}
+  // Bacaklar
+  const legOff=h.onGround?Math.sin(h.frame*2)*5:0;
+  c.fillStyle='#2c3e50';c.fillRect(x+6,y+38,10,8+legOff);c.fillRect(x+20,y+38,10,8-legOff);
+  // Baş
+  c.fillStyle='#f4c28a';c.beginPath();c.arc(x+h.w/2,y+10,13,0,Math.PI*2);c.fill();
+  // Gözler
+  c.fillStyle='#2c3e50';c.beginPath();c.arc(x+h.w/2-4,y+8,2.5,0,Math.PI*2);c.arc(x+h.w/2+4,y+8,2.5,0,Math.PI*2);c.fill();
+  // Gülümseme
+  c.strokeStyle='#2c3e50';c.lineWidth=1.5;c.beginPath();c.arc(x+h.w/2,y+13,5,0,Math.PI);c.stroke();
+  // Şapka
+  c.fillStyle=isl.starColor;c.fillRect(x+4,y-1,28,5);c.fillRect(x+10,y-9,16,10);
+  // HP bar
+  c.fillStyle='rgba(0,0,0,.4)';c.fillRect(x,y-14,h.w,5);
+  c.fillStyle='#00d68f';c.fillRect(x,y-14,h.w*(h.hp/h.maxHp),5);
+  c.restore();
+}
+
+function drawEnemy(c,e,isl){
+  const bobY=Math.sin(e.frame)*3;
+  const x=e.x,y=e.y-e.h+bobY;
+  c.save();
+  if(e.vx>0){c.translate(x+e.w/2,0);c.scale(-1,1);c.translate(-(x+e.w/2),0);}
+  // Vücut
+  c.fillStyle=isl.enemyColor;roundRect(c,x+4,y+14,24,22,8);c.fill();
+  // Kol
+  c.fillStyle=isl.enemyColor+'cc';c.fillRect(x,y+16,8,7);c.fillRect(x+24,y+16,8,7);
+  // Bacak
+  c.fillStyle=isl.groundColor;c.fillRect(x+6,y+34,8,8);c.fillRect(x+18,y+34,8,8);
+  // Kafa
+  c.fillStyle=isl.enemyColor;c.beginPath();c.arc(x+e.w/2,y+9,12,0,Math.PI*2);c.fill();
+  // Kötü gözler
+  c.fillStyle='#ff0000';c.beginPath();c.arc(x+e.w/2-4,y+7,3,0,Math.PI*2);c.arc(x+e.w/2+4,y+7,3,0,Math.PI*2);c.fill();
+  c.fillStyle='#fff';c.beginPath();c.arc(x+e.w/2-3,y+6,1.2,0,Math.PI*2);c.arc(x+e.w/2+5,y+6,1.2,0,Math.PI*2);c.fill();
+  // HP bar
+  c.fillStyle='rgba(0,0,0,.4)';c.fillRect(x,y-10,e.w,4);
+  c.fillStyle='#ff4444';c.fillRect(x,y-10,e.w*(e.hp/e.maxHp),4);
+  c.restore();
+}
+
+function roundRect(c,x,y,w,h,r){c.beginPath();c.moveTo(x+r,y);c.lineTo(x+w-r,y);c.quadraticCurveTo(x+w,y,x+w,y+r);c.lineTo(x+w,y+h-r);c.quadraticCurveTo(x+w,y+h,x+w-r,y+h);c.lineTo(x+r,y+h);c.quadraticCurveTo(x,y+h,x,y+h-r);c.lineTo(x,y+r);c.quadraticCurveTo(x,y,x+r,y);c.closePath();}
+
+function spawnParticle(x,y,color,emoji){G.particles.push({x,y,vx:(Math.random()-.5)*4,vy:-3,life:20,color,emoji});}
+function spawnFloat(x,y,text,color){G.floats.push({x,y,text,color,life:40});}
+
+function showMsg(text,color='#fff'){
+  const el=document.getElementById('game-msg');
+  if(!el)return;
+  el.textContent=text;el.style.color=color;el.style.opacity='1';
+  setTimeout(()=>{if(el)el.style.opacity='0';},1200);
+}
+
+// Kontroller
+window.moveHero=function(dir){
+  if(dir===0){if(G.hero.onGround){G.hero.vy=-12;spawnParticle(G.hero.x+18,G.hero.y,'#ffffff','✨');}}
+  else{G.hero.vx=dir*5;G.hero.dir=dir;}
+}
+
+window.gameAction=async function(type){
+  if(type==='attack'){
+    G.hero.attackTimer=50;G.hero.state='attack';
+    let hit=false;
+    G.enemies.forEach((e,i)=>{
+      if(Math.abs(e.x-G.hero.x)<80&&Math.abs(e.y-G.hero.y)<50){
+        const dmg=8+G.gs.pickaxePower*3+G.wave;
+        e.hp-=dmg;hit=true;
+        spawnParticle(e.x+16,e.y,'#ff4444','💥');
+        spawnFloat(e.x+16,e.y-20,'-'+dmg,'#ff4d6d');
+        if(e.hp<=0){
+          G.enemies.splice(i,1);
+          const g=5+G.wave*3;
+          G.gs.gold=(G.gs.gold||0)+g;
+          spawnFloat(e.x+16,e.y-10,'+'+g+'💰','#f59e0b');
+          document.getElementById('gs-gold').textContent=G.gs.gold;
+          await dbSet(`users/${session.uid}/gameState2`,G.gs);
+        }
+      }
+    });
+    if(!hit)showMsg('Düşman uzakta!','#ff4d6d');
+  }
+  if(type==='mine'){
+    let mined=false;
+    for(let m of G.mines){
+      if(m.hp>0&&Math.abs(m.x+15-G.hero.x)<80&&Math.abs(m.y+15-G.hero.y)<80){
+        m.hp--;G.gs.totalMined=(G.gs.totalMined||0)+1;
+        spawnParticle(m.x+15,m.y,'#f59e0b','✨');
+        if(m.hp<=0){
+          const g=m.gold+G.gs.pickaxePower*2;
+          G.gs.gold=(G.gs.gold||0)+g;
+          spawnFloat(m.x+15,m.y-10,'+'+g+'💰','#f59e0b');
+          document.getElementById('gs-gold').textContent=G.gs.gold;
+          m.hp=m.maxHp;// Yeniden dol
+          toast(`⛏️ +${g}💰 altın kazıldı!`,'s');
+        }
+        mined=true;
+        await dbSet(`users/${session.uid}/gameState2`,G.gs);
+        checkQuests2(G.gs);
+        break;
+      }
+    }
+    if(!mined)showMsg('Madene yaklaş!','#f59e0b');
+  }
+}
+
+window.switchIsland2=async function(id){
+  const gs=await dbGet(`users/${session.uid}/gameState2`)||defaultGS2();
+  gs.island=id;await dbSet(`users/${session.uid}/gameState2`,gs);
+  renderGame();
+}
+
+window.crackEgg2=async function(rarity){
+  const gs=await dbGet(`users/${session.uid}/gameState2`)||defaultGS2();
+  const cost=EGG_COST_2D[rarity];
+  if((gs.gold||0)<cost){toast(`💰 Yeterli altın yok! (${cost} gerekli)`,'w');return;}
+  const isl=ISLANDS_2D.find(i=>i.id===gs.island)||ISLANDS_2D[0];
+  const pool=CHARS_2D[isl.id].filter(c=>c.rarity===rarity);
+  const picked=pool[Math.floor(Math.random()*pool.length)];
+  const bag=BAG_2D[(gs.bagLevel||1)-1];
+  if((gs.characters||[]).length>=bag.slots){toast('🎒 Çanta dolu!','w');return;}
+  gs.gold-=cost;
+  gs.characters=(gs.characters||[]);
+  gs.characters.push({id:picked.name,islandId:isl.id,rarity:picked.rarity,level:1,power:picked.atk});
+  await dbSet(`users/${session.uid}/gameState2`,gs);
+  const rc=RARITY_2D[rarity];
+  // Açılış animasyonu
+  const modal=document.createElement('div');
+  modal.className='modal-overlay';modal.style.zIndex='9999';
+  modal.innerHTML=`<div class="modal" style="text-align:center;max-width:300px">
+    <div style="font-size:4rem;animation:popIn .5s">${picked.icon}</div>
+    <div style="font-size:1.2rem;font-weight:700;color:${rc.color};font-family:'Syne',sans-serif;margin:8px 0">${picked.name}</div>
+    <div style="font-size:.75rem;color:var(--dim);margin-bottom:6px">${isl.name} karakteri</div>
+    <div style="display:flex;justify-content:center;gap:8px;margin-bottom:14px;font-size:.78rem">
+      <span style="padding:3px 10px;border-radius:10px;background:${rc.color}22;color:${rc.color};border:1px solid ${rc.color}44">${rc.label}</span>
+      <span style="padding:3px 10px;border-radius:10px;background:var(--card2);color:var(--dim)">❤️${picked.hp} ⚔️${picked.atk}</span>
+    </div>
+    <button class="btn btn-primary btn-block" onclick="this.closest('.modal-overlay').remove();renderGame()">🎉 Harika!</button>
+  </div>`;
+  modal.onclick=e=>{if(e.target===modal){modal.remove();renderGame();}};
+  document.body.appendChild(modal);
+  particles();checkQuests2(gs);
+}
+
+window.upgradePickaxe2=async function(){
+  const gs=await dbGet(`users/${session.uid}/gameState2`)||defaultGS2();
+  const cost=Math.floor(50*Math.pow(1.8,(gs.pickaxePower||1)-1));
+  if((gs.gold||0)<cost){toast(`💰 Gereken: ${cost}`,'w');return;}
+  gs.gold-=cost;gs.pickaxePower=(gs.pickaxePower||1)+1;
+  await dbSet(`users/${session.uid}/gameState2`,gs);
+  toast(`⛏️ Kazma gücü ${gs.pickaxePower}!`,'s');renderGame();
+}
+
+window.upgradeBag2=async function(){
+  const gs=await dbGet(`users/${session.uid}/gameState2`)||defaultGS2();
+  const nl=(gs.bagLevel||1)+1;if(nl>5){toast('MAX seviye!','w');return;}
+  const conf=BAG_2D[nl-1];
+  if((gs.diamonds||0)<conf.cost){toast(`💎 Gereken: ${conf.cost}`,'w');return;}
+  gs.diamonds-=conf.cost;gs.bagLevel=nl;
+  await dbSet(`users/${session.uid}/gameState2`,gs);
+  toast(`🎒 ${conf.label} açıldı!`,'s');renderGame();
+}
+
+window.donateDia2=async function(){
+  const inp=document.getElementById('donate-in');
+  const amt=parseInt(inp?.value)||0;if(amt<=0){toast('Geçersiz miktar','w');return;}
+  const gs=await dbGet(`users/${session.uid}/gameState2`)||defaultGS2();
+  if((gs.diamonds||0)<amt){toast('Yetersiz elmas','w');return;}
+  gs.diamonds-=amt;await dbSet(`users/${session.uid}/gameState2`,gs);
+  const code=safeKey(session.classCode||'');
+  const prev=await dbGet(`clans/${code}/diamonds`)||0;
+  await dbSet(`clans/${code}/diamonds`,prev+amt);
+  await dbSet(`clans/${code}/members/${safeKey(session.uid)}`,{name:session.name,donated:(await dbGet(`clans/${code}/members/${safeKey(session.uid)}/donated`)||0)+amt});
+  toast(`💎 ${amt} elmas bağışlandı!`,'s');if(inp)inp.value='';renderGame();
+}
+
+window.showChar2=async function(id,islandId){
+  const isl=ISLANDS_2D.find(i=>i.id===islandId)||ISLANDS_2D[0];
+  const cdef=CHARS_2D[isl.id]?.find(c=>c.name===id)||{icon:'❓',name:id,hp:0,atk:0,rarity:'common'};
+  const rc=RARITY_2D[cdef.rarity];
+  const gs=await dbGet(`users/${session.uid}/gameState2`)||defaultGS2();
+  const ch=(gs.characters||[]).find(c=>c.id===id&&c.islandId===islandId);
+  const lv=ch?.level||1;
+  const modal=document.createElement('div');
+  modal.className='modal-overlay';modal.style.zIndex='9999';
+  modal.innerHTML=`<div class="modal" style="text-align:center;max-width:300px">
+    <div style="font-size:3rem">${cdef.icon}</div>
+    <div style="font-weight:700;font-size:1rem;margin:6px 0">${cdef.name}</div>
+    <div style="font-size:.72rem;color:${rc.color};margin-bottom:10px">${rc.label} · ${isl.name}</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;background:var(--bg2);border-radius:10px;padding:10px;margin-bottom:12px;font-size:.78rem">
+      <div><div style="color:var(--dim);font-size:.6rem">SEVİYE</div><b style="color:var(--primary)">${lv}</b></div>
+      <div><div style="color:var(--dim);font-size:.6rem">CAN</div><b style="color:#ff6b6b">❤️${cdef.hp*lv}</b></div>
+      <div><div style="color:var(--dim);font-size:.6rem">GÜCE</div><b style="color:var(--warning)">⚔️${cdef.atk*lv}</b></div>
+    </div>
+    <button class="btn btn-primary btn-block" style="margin-bottom:6px" onclick="upChar2('${id}','${islandId}',${lv*80},this.closest('.modal-overlay'))">⬆️ Yükselt (${lv*80}💰)</button>
+    <button class="btn btn-ghost btn-block" onclick="this.closest('.modal-overlay').remove()">Kapat</button>
+  </div>`;
+  modal.onclick=e=>{if(e.target===modal)modal.remove();};
+  document.body.appendChild(modal);
+}
+
+window.upChar2=async function(id,islandId,cost,modalEl){
+  const gs=await dbGet(`users/${session.uid}/gameState2`)||defaultGS2();
+  if((gs.gold||0)<cost){toast(`💰 Gereken: ${cost}`,'w');return;}
+  gs.gold-=cost;
+  const ch=(gs.characters||[]).find(c=>c.id===id&&c.islandId===islandId);
+  if(ch)ch.level=(ch.level||1)+1;
+  await dbSet(`users/${session.uid}/gameState2`,gs);
+  toast(`⬆️ Seviye ${ch?.level}!`,'s');
+  if(modalEl)modalEl.remove();renderGame();
+}
+
+function renderQuests2(gs){
+  const el=document.getElementById('g-quests');if(!el)return;
+  const quests=[
+    {id:'q_mine10',label:'10 kez kaz',target:10,reward:5,val:gs.totalMined||0},
+    {id:'q_mine50',label:'50 kez kaz',target:50,reward:15,val:gs.totalMined||0},
+    {id:'q_chars3',label:'3 karakter topla',target:3,reward:20,val:(gs.characters||[]).length},
+    {id:'q_chars10',label:'10 karakter topla',target:10,reward:50,val:(gs.characters||[]).length},
+    {id:'q_bag2',label:'Çanta yükselt (2)',target:2,reward:10,val:gs.bagLevel||1},
+    {id:'q_wave5',label:'Dalga 5 geç',target:5,reward:25,val:0},
   ];
-  const completed = gs.completedQuests || [];
-  el.innerHTML = quests.map(q => {
-    const done = completed.includes(q.id);
-    let current = 0;
-    if (q.key === 'totalMined') current = gs.totalMined || 0;
-    else if (q.key === 'chars') current = (gs.characters||[]).length;
-    else if (q.key === 'bagLevel') current = gs.bagLevel || 1;
-    const pct = Math.min(100, Math.floor((current/q.target)*100));
-    return `<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border2)">
+  const done=gs.completedQuests||[];
+  el.innerHTML=quests.map(q=>{
+    const isDone=done.includes(q.id);
+    const pct=Math.min(100,Math.floor((q.val/q.target)*100));
+    return `<div style="display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--border2)">
       <div style="flex:1">
-        <div style="font-size:.82rem;font-weight:600;${done?'text-decoration:line-through;color:var(--dim)':''}">${q.label}</div>
-        <div style="background:var(--bg2);border-radius:4px;height:5px;margin-top:5px;overflow:hidden">
-          <div style="height:5px;border-radius:4px;background:${done?'var(--success)':'var(--primary)'};width:${pct}%"></div>
-        </div>
-        <div style="font-size:.65rem;color:var(--dim);margin-top:2px">${Math.min(current,q.target)}/${q.target} ${q.unit}</div>
+        <div style="font-size:.8rem;font-weight:600;${isDone?'text-decoration:line-through;color:var(--dim)':''}">${q.label}</div>
+        <div style="background:var(--bg2);border-radius:3px;height:4px;margin-top:4px;overflow:hidden"><div style="height:4px;border-radius:3px;background:${isDone?'var(--success)':'var(--primary)'};width:${pct}%"></div></div>
       </div>
-      <div style="text-align:center;flex-shrink:0">
-        <div style="font-size:.75rem;color:#00d4ff;font-weight:700">💎 +${q.reward}</div>
-        ${done
-          ? `<span style="font-size:.65rem;color:var(--success)">✅ Tamamlandı</span>`
-          : current >= q.target
-            ? `<button class="btn btn-primary" style="font-size:.68rem;padding:4px 10px;margin-top:3px" onclick="claimQuest('${q.id}',${q.reward})">Al!</button>`
-            : `<span style="font-size:.65rem;color:var(--dim)">${pct}%</span>`}
+      <div style="text-align:right;flex-shrink:0">
+        <div style="font-size:.7rem;color:#00d4ff;font-weight:700">💎+${q.reward}</div>
+        ${isDone?`<span style="font-size:.6rem;color:var(--success)">✅</span>`:q.val>=q.target?`<button class="btn btn-primary" style="font-size:.62rem;padding:3px 8px;margin-top:2px" onclick="claimQ2('${q.id}',${q.reward})">Al!</button>`:`<span style="font-size:.62rem;color:var(--dim)">${q.val}/${q.target}</span>`}
       </div>
     </div>`;
   }).join('');
 }
 
-let mineProgress = 0;
-let mineAnimFrame = null;
-
-function startMineListener(gs) {
-  // Auto-mine on hold
+window.claimQ2=async function(id,reward){
+  const gs=await dbGet(`users/${session.uid}/gameState2`)||defaultGS2();
+  gs.completedQuests=gs.completedQuests||[];
+  if(gs.completedQuests.includes(id)){toast('Zaten alındı','w');return;}
+  gs.completedQuests.push(id);gs.diamonds=(gs.diamonds||0)+reward;
+  await dbSet(`users/${session.uid}/gameState2`,gs);
+  toast(`💎 +${reward} elmas!`,'s');particles();renderGame();
 }
 
-window.mineClick = async function() {
-  const rock = document.getElementById('mine-rock');
-  if (rock) { rock.style.transform='scale(0.85)'; setTimeout(()=>rock.style.transform='',150); }
+async function checkQuests2(gs){
+  const quests=[
+    {id:'q_mine10',target:10,val:gs.totalMined||0,reward:5},
+    {id:'q_mine50',target:50,val:gs.totalMined||0,reward:15},
+    {id:'q_chars3',target:3,val:(gs.characters||[]).length,reward:20},
+  ];
+  const done=gs.completedQuests||[];
+  quests.forEach(q=>{if(!done.includes(q.id)&&q.val>=q.target)toast(`📋 Görev tamam! Ödülü al: +${q.reward}💎`,'i');});
+}
 
-  const gs = await dbGet(`users/${session.uid}/gameState2`) || defaultGameState();
-  const gain = gs.pickaxePower + Math.floor(Math.random() * gs.pickaxePower);
-  gs.gold = (gs.gold||0) + gain;
-  gs.totalMined = (gs.totalMined||0) + 1;
-  gs.lastMine = Date.now();
 
-  await dbSet(`users/${session.uid}/gameState2`, gs);
 
-  // UI güncelle
-  const goldEl = document.getElementById('g-gold');
-  if (goldEl) goldEl.textContent = gs.gold;
+// ═══════════════════════════════════════════════════════
+// ⛏️ ADA SAVAŞLARI — 2D Canvas Mining Game
+// ═══════════════════════════════════════════════════════
 
-  // progress bar
-  mineProgress = (mineProgress + 10) % 101;
-  const bar = document.getElementById('mine-bar');
-  if (bar) bar.style.width = mineProgress + '%';
+const GAME2D_ISLANDS = [
+  { id:'fire',   name:'Yangın Adası',  icon:'🌋', skyTop:'#1a0505', skyBot:'#3d1010', groundTop:'#8b2500', groundBot:'#5a1800', rockColor:'#c0392b', oreColor:'#f39c12', gemColor:'#ff6b35' },
+  { id:'ice',    name:'Buz Adası',     icon:'❄️', skyTop:'#050d1a', skyBot:'#0d2040', groundTop:'#1a4a6b', groundBot:'#0d2a4a', rockColor:'#4fc3f7', oreColor:'#80deea', gemColor:'#e0f7fa' },
+  { id:'forest', name:'Orman Adası',   icon:'🌿', skyTop:'#020f02', skyBot:'#0a2010', groundTop:'#1b4332', groundBot:'#0d2218', rockColor:'#4caf50', oreColor:'#8bc34a', gemColor:'#69f0ae' },
+  { id:'space',  name:'Uzay Adası',    icon:'🚀', skyTop:'#000005', skyBot:'#0d0a20', groundTop:'#1a1040', groundBot:'#0d0820', rockColor:'#7c4dff', oreColor:'#b39ddb', gemColor:'#ea80fc' },
+  { id:'ocean',  name:'Okyanus Adası', icon:'🌊', skyTop:'#010a14', skyBot:'#012030', groundTop:'#01579b', groundBot:'#013a6b', rockColor:'#0288d1', oreColor:'#26c6da', gemColor:'#00e5ff' },
+];
 
-  // Altın partikül
-  if (rock) {
-    const p = document.createElement('div');
-    p.textContent = '+' + gain + '💰';
-    p.style.cssText = `position:fixed;left:${rock.getBoundingClientRect().left+20}px;top:${rock.getBoundingClientRect().top}px;font-size:.8rem;color:#f59e0b;font-weight:700;pointer-events:none;z-index:9999;animation:floatUp .8s ease forwards`;
-    document.body.appendChild(p);
-    setTimeout(() => p.remove(), 900);
+async function renderGame() {
+  const mc = document.getElementById('main-content');
+  mc.style.padding = '0';
+  mc.style.overflow = 'hidden';
+
+  const gs = await dbGet(`users/${session.uid}/gameState2`) || getDefaultGS2();
+
+  mc.innerHTML = `
+  <div id="game2d-wrap" style="width:100%;height:100vh;display:flex;flex-direction:column;background:#0a0a0f;overflow:hidden">
+
+    <!-- HUD -->
+    <div id="g2d-hud" style="display:flex;align-items:center;gap:10px;padding:8px 14px;background:rgba(0,0,0,.6);backdrop-filter:blur(6px);flex-shrink:0;z-index:10;border-bottom:1px solid rgba(255,255,255,.08)">
+      <button onclick="g2dBackToMenu()" style="background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);border-radius:8px;padding:5px 10px;cursor:pointer;color:#fff;font-size:.75rem">← Menü</button>
+      <span style="font-family:'Syne',sans-serif;font-size:.8rem;font-weight:700;color:#f59e0b">💰 <span id="hud-gold">${gs.gold||0}</span></span>
+      <span style="font-family:'Syne',sans-serif;font-size:.8rem;font-weight:700;color:#00d4ff">💎 <span id="hud-dia">${gs.diamonds||0}</span></span>
+      <span style="font-size:.75rem;color:#aaa">⛏️ <span id="hud-pick">Güç ${gs.pickaxePower||1}</span></span>
+      <div style="flex:1"></div>
+      <!-- Ada seçimi -->
+      <select id="island-sel" onchange="g2dChangeIsland(this.value)" style="background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.2);border-radius:8px;padding:4px 8px;color:#fff;font-size:.75rem;cursor:pointer">
+        ${GAME2D_ISLANDS.map(i=>`<option value="${i.id}" ${i.id===gs.island?'selected':''}>${i.icon} ${i.name}</option>`).join('')}
+      </select>
+    </div>
+
+    <!-- Canvas -->
+    <canvas id="game2d-canvas" style="flex:1;display:block;cursor:crosshair;touch-action:none"></canvas>
+
+    <!-- Alt panel -->
+    <div id="g2d-bottom" style="display:flex;align-items:center;gap:8px;padding:8px 14px;background:rgba(0,0,0,.7);flex-shrink:0;border-top:1px solid rgba(255,255,255,.08);overflow-x:auto;scrollbar-width:none">
+      <div style="flex-shrink:0">
+        <div style="font-size:.6rem;color:#888;margin-bottom:2px">KAHRAMAN</div>
+        <div id="hero-icon" style="font-size:1.5rem">⛏️</div>
+      </div>
+      <div style="flex:1;min-width:120px">
+        <div style="font-size:.6rem;color:#888">DERINLIK <span id="depth-val">0</span>m</div>
+        <div style="background:rgba(255,255,255,.1);border-radius:4px;height:5px;margin-top:3px;overflow:hidden">
+          <div id="depth-bar" style="height:5px;border-radius:4px;background:#6c63ff;width:0%;transition:width .3s"></div>
+        </div>
+      </div>
+      <button id="btn-drill" style="flex-shrink:0;background:linear-gradient(135deg,#6c63ff,#00d4ff);border:none;border-radius:10px;padding:8px 16px;cursor:pointer;color:#fff;font-weight:700;font-size:.82rem" onmousedown="g2dStartDrill()" onmouseup="g2dStopDrill()" ontouchstart="g2dStartDrill()" ontouchend="g2dStopDrill()">
+        ⛏️ KAZ
+      </button>
+      <button onclick="g2dOpenShop()" style="flex-shrink:0;background:rgba(245,158,11,.15);border:1px solid rgba(245,158,11,.4);border-radius:10px;padding:8px 12px;cursor:pointer;color:#f59e0b;font-size:.8rem">🛒 Dükkan</button>
+      <button onclick="g2dOpenEggs()" style="flex-shrink:0;background:rgba(0,212,255,.1);border:1px solid rgba(0,212,255,.3);border-radius:10px;padding:8px 12px;cursor:pointer;color:#00d4ff;font-size:.8rem">🥚 Yumurta</button>
+    </div>
+  </div>`;
+
+  initGame2D(gs);
+}
+
+// ── GAME ENGINE ──────────────────────────────────────
+let g2d = null;
+
+function initGame2D(gs) {
+  const canvas = document.getElementById('game2d-canvas');
+  if (!canvas) return;
+
+  const wrap = document.getElementById('game2d-wrap');
+  const hud = document.getElementById('g2d-hud');
+  const bot = document.getElementById('g2d-bottom');
+
+  function resize() {
+    canvas.width = wrap.clientWidth;
+    canvas.height = wrap.clientHeight - hud.offsetHeight - bot.offsetHeight;
+  }
+  resize();
+  window.addEventListener('resize', resize);
+
+  const island = GAME2D_ISLANDS.find(i => i.id === (gs.island||'fire')) || GAME2D_ISLANDS[0];
+
+  const COLS = 20;
+  const ROWS = 40;
+  const SURFACE_ROW = 6;
+  const CELL = Math.floor(canvas.width / COLS);
+
+  // Tile types: 0=sky, 1=ground, 2=ore(gold), 3=gem(diamond), 4=empty(mined)
+  function buildMap() {
+    const map = [];
+    for (let r = 0; r < ROWS; r++) {
+      map[r] = [];
+      for (let c = 0; c < COLS; c++) {
+        if (r < SURFACE_ROW) { map[r][c] = 0; continue; }
+        const depth = r - SURFACE_ROW;
+        const rand = Math.random();
+        if (depth < 3) map[r][c] = rand < 0.08 ? 2 : 1;
+        else if (depth < 8) map[r][c] = rand < 0.12 ? 2 : rand < 0.14 ? 3 : 1;
+        else map[r][c] = rand < 0.06 ? 3 : rand < 0.15 ? 2 : 1;
+      }
+    }
+    // Pürüzlü yüzey
+    for (let c = 0; c < COLS; c++) {
+      const bump = Math.floor(Math.random() * 2);
+      for (let b = 0; b < bump; b++) {
+        if (SURFACE_ROW - 1 - b >= 0) map[SURFACE_ROW - 1 - b][c] = 1;
+      }
+    }
+    return map;
   }
 
-  checkQuestProgress(gs);
+  g2d = {
+    canvas, ctx: canvas.getContext('2d'),
+    island, gs,
+    map: buildMap(),
+    COLS, ROWS, SURFACE_ROW,
+    hero: { col: Math.floor(COLS/2), row: SURFACE_ROW, x: 0, y: 0, vy: 0, onGround: false, facing: 1 },
+    camY: 0,
+    drilling: false,
+    drillTimer: 0,
+    particles: [],
+    floatTexts: [],
+    frame: 0,
+    animReq: null,
+    keys: {},
+  };
+
+  // Hero pixel pos
+  g2d.hero.x = g2d.hero.col * CELL + CELL/2;
+  g2d.hero.y = (g2d.hero.row - 1) * CELL;
+
+  // Input
+  canvas.addEventListener('click', onCanvasClick);
+  canvas.addEventListener('touchstart', e => { e.preventDefault(); onCanvasClick({clientX: e.touches[0].clientX, clientY: e.touches[0].clientY}); }, {passive:false});
+  document.addEventListener('keydown', e => { g2d.keys[e.key] = true; if(['ArrowLeft','ArrowRight','ArrowUp',' '].includes(e.key)) e.preventDefault(); });
+  document.addEventListener('keyup', e => { g2d.keys[e.key] = false; });
+
+  startGameLoop();
 }
 
-window.crackEgg = async function(rarity) {
-  const gs = await dbGet(`users/${session.uid}/gameState2`) || defaultGameState();
-  const cost = EGG_COSTS[rarity];
-  if ((gs.gold||0) < cost) { toast(`💰 Yeterli altın yok! Gereken: ${cost}`, 'w'); return; }
-
-  const island = ISLANDS.find(i => i.id === gs.island) || ISLANDS[0];
-  const chars = gs.characters || [];
-  const bagSlots = BAG_LEVELS[(gs.bagLevel||1)-1].slots;
-  if (chars.length >= bagSlots) { toast('🎒 Çanta dolu! Yükselt veya yer aç.', 'w'); return; }
-
-  // Rarity ile filtrele — seçilen rarityden karakter çek
-  const pool = island.chars.filter(c => c.rarity === rarity);
-  if (pool.length === 0) { toast('Bu adada bu tipte karakter yok!', 'w'); return; }
-  const picked = pool[Math.floor(Math.random() * pool.length)];
-
-  gs.gold -= cost;
-  gs.characters = chars;
-  gs.characters.push({ id: picked.id, islandId: island.id, rarity: picked.rarity, level: 1, power: picked.power });
-
-  await dbSet(`users/${session.uid}/gameState2`, gs);
-
-  const rc = RARITY_CONF[rarity];
-  toast(`🥚 ${rc.label} yumurta kırıldı! ${picked.icon} ${picked.name} açıldı!`, 's');
-  particles();
-
-  // Modal göster
-  showEggResult(picked, island, rc);
-  checkQuestProgress(gs);
-  renderGame();
+function onCanvasClick(e) {
+  if (!g2d) return;
+  const rect = g2d.canvas.getBoundingClientRect();
+  const mx = e.clientX - rect.left;
+  const my = e.clientY - rect.top + g2d.camY;
+  const CELL = Math.floor(g2d.canvas.width / g2d.COLS);
+  const col = Math.floor(mx / CELL);
+  const row = Math.floor(my / CELL);
+  // Hero'yu o yöne yönlendir ve kaz
+  if (col !== g2d.hero.col || row !== Math.floor(g2d.hero.y/CELL)+1) {
+    g2d.hero.facing = col > g2d.hero.col ? 1 : -1;
+  }
+  tryMine(col, row);
 }
 
-function showEggResult(char, island, rc) {
-  const modal = document.createElement('div');
-  modal.className = 'modal-overlay';
-  modal.style.zIndex = '9999';
-  modal.innerHTML = `<div class="modal" style="text-align:center;max-width:320px">
-    <div style="font-size:4rem;margin-bottom:10px;animation:popIn .5s">${char.icon}</div>
-    <div style="font-size:1.2rem;font-weight:700;font-family:'Syne',sans-serif;color:${rc.color}">${char.name}</div>
-    <div style="font-size:.8rem;color:var(--dim);margin:6px 0">${char.desc}</div>
-    <div style="display:inline-flex;align-items:center;gap:6px;padding:4px 14px;border-radius:20px;background:${rc.color}22;color:${rc.color};font-size:.75rem;font-weight:700;border:1px solid ${rc.color}44;margin-bottom:8px">
-      ${rc.label}
-    </div>
-    <div style="font-size:.78rem;color:var(--dim);margin-bottom:16px">
-      ⚔️ Güç: ${char.power} · ${island.icon} ${island.name}
-    </div>
-    <button class="btn btn-primary btn-block" onclick="this.closest('.modal-overlay').remove()">Harika! 🎉</button>
-  </div>`;
-  modal.onclick = e => { if(e.target===modal) modal.remove(); };
-  document.body.appendChild(modal);
+function tryMine(col, row) {
+  if (!g2d) return;
+  const map = g2d.map;
+  if (row < 0 || row >= g2d.ROWS || col < 0 || col >= g2d.COLS) return;
+  if (map[row][col] === 0 || map[row][col] === 4) return;
+
+  const CELL = Math.floor(g2d.canvas.width / g2d.COLS);
+  const type = map[row][col];
+  map[row][col] = 4; // mined
+
+  const px = col * CELL + CELL/2;
+  const py = row * CELL - g2d.camY;
+
+  // Partiküller
+  const color = type === 3 ? g2d.island.gemColor : type === 2 ? g2d.island.oreColor : '#aaa';
+  for (let i = 0; i < 8; i++) {
+    g2d.particles.push({
+      x: px, y: py + g2d.camY,
+      vx: (Math.random()-0.5)*4,
+      vy: -Math.random()*5-1,
+      life: 40, color, size: Math.random()*4+2
+    });
+  }
+
+  // Ödül
+  const power = g2d.gs.pickaxePower || 1;
+  let gold = 0, diamond = 0;
+  if (type === 1) gold = power * (1 + Math.floor(Math.random()*2));
+  if (type === 2) { gold = power * (5 + Math.floor(Math.random()*8)); }
+  if (type === 3) { gold = power * 3; diamond = 1; }
+
+  g2d.gs.gold = (g2d.gs.gold||0) + gold;
+  g2d.gs.diamonds = (g2d.gs.diamonds||0) + diamond;
+  g2d.gs.totalMined = (g2d.gs.totalMined||0) + 1;
+
+  if (gold > 0) g2d.floatTexts.push({x:px, y:py+g2d.camY-10, text:`+${gold}💰`, color:'#f59e0b', life:60});
+  if (diamond > 0) g2d.floatTexts.push({x:px, y:py+g2d.camY-28, text:`+${diamond}💎`, color:'#00d4ff', life:60});
+
+  // HUD
+  updateHUD();
+  saveGS2Debounced();
 }
 
-window.upgradePickaxe = async function() {
-  const gs = await dbGet(`users/${session.uid}/gameState2`) || defaultGameState();
-  const cost = Math.floor(50 * Math.pow(1.8, (gs.pickaxePower||1)-1));
-  if ((gs.gold||0) < cost) { toast(`💰 Yeterli altın yok! Gereken: ${cost}`, 'w'); return; }
-  gs.gold -= cost;
-  gs.pickaxePower = (gs.pickaxePower||1) + 1;
-  await dbSet(`users/${session.uid}/gameState2`, gs);
-  toast(`⛏️ Kazma gücü ${gs.pickaxePower} oldu!`, 's');
-  renderGame();
+function startGameLoop() {
+  if (!g2d) return;
+  function loop() {
+    if (!document.getElementById('game2d-canvas')) return;
+    g2d.frame++;
+    updateGame();
+    drawGame();
+    g2d.animReq = requestAnimationFrame(loop);
+  }
+  loop();
 }
 
-window.upgradeBag = async function() {
-  const gs = await dbGet(`users/${session.uid}/gameState2`) || defaultGameState();
-  const nextLevel = (gs.bagLevel||1) + 1;
-  if (nextLevel > 5) { toast('🎒 Maksimum seviye!', 'w'); return; }
-  const conf = BAG_LEVELS[nextLevel - 1];
-  if ((gs.diamonds||0) < conf.cost) { toast(`💎 Yeterli elmas yok! Gereken: ${conf.cost}`, 'w'); return; }
-  gs.diamonds -= conf.cost;
-  gs.bagLevel = nextLevel;
-  await dbSet(`users/${session.uid}/gameState2`, gs);
-  toast(`🎒 ${conf.label} açıldı! ${conf.slots} slot!`, 's');
-  renderGame();
-}
+function updateGame() {
+  const CELL = Math.floor(g2d.canvas.width / g2d.COLS);
+  const h = g2d.hero;
+  const map = g2d.map;
+  const keys = g2d.keys;
 
-window.switchIsland = async function(islandId) {
-  const gs = await dbGet(`users/${session.uid}/gameState2`) || defaultGameState();
-  gs.island = islandId;
-  await dbSet(`users/${session.uid}/gameState2`, gs);
-  renderGame();
-}
+  // Yatay hareket
+  const speed = 3;
+  if (keys['ArrowLeft'] || keys['a'] || keys['A']) { h.x -= speed; h.facing = -1; }
+  if (keys['ArrowRight'] || keys['d'] || keys['D']) { h.x += speed; h.facing = 1; }
 
-window.donateDiamonds = async function() {
-  const input = document.getElementById('donate-amt');
-  const amt = parseInt(input?.value) || 0;
-  if (amt <= 0) { toast('Geçerli bir miktar gir!', 'w'); return; }
-  const gs = await dbGet(`users/${session.uid}/gameState2`) || defaultGameState();
-  if ((gs.diamonds||0) < amt) { toast('Yeterli elmasın yok!', 'w'); return; }
-  gs.diamonds -= amt;
-  await dbSet(`users/${session.uid}/gameState2`, gs);
-  const code = safeKey(session.classCode||'');
-  const prev = await dbGet(`clans/${code}/diamonds`) || 0;
-  await dbSet(`clans/${code}/diamonds`, prev + amt);
-  const prevDon = await dbGet(`clans/${code}/members/${safeKey(session.uid)}/donated`) || 0;
-  await dbSet(`clans/${code}/members/${safeKey(session.uid)}`, {
-    name: session.name, donated: prevDon + amt, icon: '👤'
+  // Sınır
+  h.x = Math.max(CELL/2, Math.min(g2d.COLS * CELL - CELL/2, h.x));
+
+  // Yerçekimi
+  h.vy += 0.5;
+  h.y += h.vy;
+
+  // Zemin çarpışma
+  const heroCol = Math.floor(h.x / CELL);
+  const heroRow = Math.floor((h.y + CELL * 0.9) / CELL);
+  h.onGround = false;
+  if (heroRow >= 0 && heroRow < g2d.ROWS && map[heroRow]?.[heroCol] && map[heroRow][heroCol] !== 0 && map[heroRow][heroCol] !== 4) {
+    h.y = heroRow * CELL - CELL * 0.9;
+    h.vy = 0;
+    h.onGround = true;
+  }
+
+  // Zıplama
+  if ((keys['ArrowUp'] || keys['w'] || keys['W'] || keys[' ']) && h.onGround) {
+    h.vy = -10;
+  }
+
+  // Otomatik kazma (basılı tut)
+  if (g2d.drilling) {
+    g2d.drillTimer++;
+    if (g2d.drillTimer % 20 === 0) {
+      const dr = Math.floor((h.y + CELL) / CELL);
+      const dc = Math.floor(h.x / CELL);
+      tryMine(dc, dr);
+      tryMine(dc + h.facing, dr);
+    }
+  }
+
+  // Kamera
+  const targetCamY = Math.max(0, h.y - g2d.canvas.height * 0.4);
+  g2d.camY += (targetCamY - g2d.camY) * 0.1;
+
+  // Hero col güncelle
+  h.col = Math.floor(h.x / CELL);
+  h.row = Math.floor(h.y / CELL);
+
+  // Derinlik HUD
+  const depth = Math.max(0, h.row - g2d.SURFACE_ROW);
+  const depthEl = document.getElementById('depth-val');
+  if (depthEl) depthEl.textContent = depth;
+  const depthBar = document.getElementById('depth-bar');
+  if (depthBar) depthBar.style.width = Math.min(100, depth * 3) + '%';
+
+  // Partiküller
+  g2d.particles = g2d.particles.filter(p => {
+    p.x += p.vx; p.y += p.vy; p.vy += 0.2; p.life--;
+    return p.life > 0;
   });
-  toast(`💎 ${amt} elmas klana bağışlandı!`, 's');
-  if (input) input.value = '';
-  renderGame();
+  g2d.floatTexts = g2d.floatTexts.filter(t => { t.y -= 0.8; t.life--; return t.life > 0; });
 }
 
-window.claimQuest = async function(questId, reward) {
-  const gs = await dbGet(`users/${session.uid}/gameState2`) || defaultGameState();
-  gs.completedQuests = gs.completedQuests || [];
-  if (gs.completedQuests.includes(questId)) { toast('Zaten tamamlandı!', 'w'); return; }
-  gs.completedQuests.push(questId);
-  gs.diamonds = (gs.diamonds||0) + reward;
+function drawGame() {
+  const c = g2d.ctx;
+  const W = g2d.canvas.width, H = g2d.canvas.height;
+  const CELL = Math.floor(W / g2d.COLS);
+  const isl = g2d.island;
+  const camY = g2d.camY;
+
+  c.clearRect(0, 0, W, H);
+
+  // Gökyüzü gradyanı
+  const skyGrad = c.createLinearGradient(0, 0, 0, H);
+  skyGrad.addColorStop(0, isl.skyTop);
+  skyGrad.addColorStop(1, isl.skyBot);
+  c.fillStyle = skyGrad;
+  c.fillRect(0, 0, W, H);
+
+  // Yıldızlar (uzay ve gece)
+  if (g2d.frame % 2 === 0) {
+    c.fillStyle = 'rgba(255,255,255,0.6)';
+    for (let i = 0; i < 30; i++) {
+      const sx = (i * 137.5 * CELL) % W;
+      const sy = (i * 71.3 + g2d.frame * 0.05) % (H * 0.5);
+      const s = i % 3 === 0 ? 2 : 1;
+      c.fillRect(sx, sy - camY * 0.1, s, s);
+    }
+  }
+
+  // Tiles
+  const startRow = Math.floor(camY / CELL) - 1;
+  const endRow = Math.ceil((camY + H) / CELL) + 1;
+
+  for (let r = Math.max(0, startRow); r < Math.min(g2d.ROWS, endRow); r++) {
+    for (let cl = 0; cl < g2d.COLS; cl++) {
+      const tile = g2d.map[r][cl];
+      if (tile === 0 || tile === 4) continue;
+      const tx = cl * CELL, ty = r * CELL - camY;
+
+      if (tile === 1) {
+        // Zemin
+        const grad = c.createLinearGradient(tx, ty, tx, ty + CELL);
+        grad.addColorStop(0, isl.groundTop);
+        grad.addColorStop(1, isl.groundBot);
+        c.fillStyle = grad;
+        c.fillRect(tx, ty, CELL, CELL);
+        // Doku çizgileri
+        c.strokeStyle = 'rgba(255,255,255,0.05)';
+        c.lineWidth = 0.5;
+        c.strokeRect(tx+1, ty+1, CELL-2, CELL-2);
+        // Kaya rengi vurgu
+        c.fillStyle = isl.rockColor + '33';
+        c.fillRect(tx+3, ty+3, CELL*0.4, CELL*0.3);
+      }
+
+      if (tile === 2) {
+        // Cevher (altın)
+        c.fillStyle = isl.groundBot;
+        c.fillRect(tx, ty, CELL, CELL);
+        // Parlak cevher
+        c.fillStyle = isl.oreColor;
+        drawStar(c, tx + CELL/2, ty + CELL/2, 5, CELL*0.3, CELL*0.15);
+        // Parıltı
+        c.fillStyle = 'rgba(255,255,255,0.4)';
+        c.beginPath();
+        c.arc(tx + CELL*0.3, ty + CELL*0.3, CELL*0.08, 0, Math.PI*2);
+        c.fill();
+      }
+
+      if (tile === 3) {
+        // Elmas
+        c.fillStyle = isl.groundBot;
+        c.fillRect(tx, ty, CELL, CELL);
+        // Elmas şekli
+        c.fillStyle = isl.gemColor;
+        const cx = tx + CELL/2, cy = ty + CELL/2, r2 = CELL*0.32;
+        c.beginPath();
+        c.moveTo(cx, cy - r2);
+        c.lineTo(cx + r2*0.7, cy - r2*0.3);
+        c.lineTo(cx + r2*0.7, cy + r2*0.3);
+        c.lineTo(cx, cy + r2);
+        c.lineTo(cx - r2*0.7, cy + r2*0.3);
+        c.lineTo(cx - r2*0.7, cy - r2*0.3);
+        c.closePath();
+        c.fill();
+        // Iç parıltı
+        c.fillStyle = 'rgba(255,255,255,0.5)';
+        c.beginPath();
+        c.moveTo(cx, cy - r2*0.8);
+        c.lineTo(cx + r2*0.4, cy - r2*0.2);
+        c.lineTo(cx, cy);
+        c.closePath();
+        c.fill();
+        // Pulsating glow
+        const glow = Math.sin(g2d.frame * 0.1) * 0.3 + 0.5;
+        c.shadowColor = isl.gemColor;
+        c.shadowBlur = 8 * glow;
+        c.fillStyle = isl.gemColor + '44';
+        c.fillRect(tx-2, ty-2, CELL+4, CELL+4);
+        c.shadowBlur = 0;
+      }
+    }
+  }
+
+  // Hero
+  const h = g2d.hero;
+  const hx = h.x - CELL/2, hy = h.y - camY;
+  const bobY = Math.sin(g2d.frame * 0.15) * 2;
+
+  // Gölge
+  c.fillStyle = 'rgba(0,0,0,0.3)';
+  c.beginPath();
+  c.ellipse(h.x, hy + CELL * 0.95, CELL * 0.3, CELL * 0.08, 0, 0, Math.PI*2);
+  c.fill();
+
+  // Vücut
+  const heroScale = h.facing;
+  c.save();
+  c.translate(h.x, hy + bobY);
+  c.scale(heroScale, 1);
+
+  // Gövde
+  c.fillStyle = '#4a90d9';
+  roundRect(c, -CELL*0.22, -CELL*0.55, CELL*0.44, CELL*0.55, 6);
+  c.fill();
+
+  // Kafa
+  c.fillStyle = '#f5cba7';
+  c.beginPath();
+  c.arc(0, -CELL*0.7, CELL*0.22, 0, Math.PI*2);
+  c.fill();
+
+  // Gözler
+  c.fillStyle = '#222';
+  c.beginPath(); c.arc(CELL*0.07, -CELL*0.72, CELL*0.04, 0, Math.PI*2); c.fill();
+  // Parlak göz
+  c.fillStyle = '#fff';
+  c.beginPath(); c.arc(CELL*0.09, -CELL*0.74, CELL*0.015, 0, Math.PI*2); c.fill();
+
+  // Şapka
+  c.fillStyle = '#8b4513';
+  c.fillRect(-CELL*0.24, -CELL*0.95, CELL*0.48, CELL*0.1);
+  c.fillRect(-CELL*0.15, -CELL*1.15, CELL*0.3, CELL*0.22);
+
+  // Kazma (animasyonlu)
+  const drillAngle = g2d.drilling ? Math.sin(g2d.frame * 0.4) * 0.4 : 0;
+  c.save();
+  c.translate(CELL*0.2, -CELL*0.4);
+  c.rotate(drillAngle);
+  c.fillStyle = '#aaa';
+  c.fillRect(0, -CELL*0.05, CELL*0.4, CELL*0.1);
+  c.fillStyle = '#f59e0b';
+  c.beginPath();
+  c.moveTo(CELL*0.4, -CELL*0.12);
+  c.lineTo(CELL*0.55, 0);
+  c.lineTo(CELL*0.4, CELL*0.12);
+  c.closePath(); c.fill();
+  c.restore();
+
+  // Bacaklar (yürüme animasyonu)
+  if (g2d.keys['ArrowLeft'] || g2d.keys['ArrowRight'] || g2d.keys['a'] || g2d.keys['d']) {
+    const legSwing = Math.sin(g2d.frame * 0.25) * 0.3;
+    c.fillStyle = '#2980b9';
+    c.save(); c.rotate(legSwing);
+    roundRect(c, -CELL*0.16, 0, CELL*0.13, CELL*0.38, 4); c.fill();
+    c.restore();
+    c.save(); c.rotate(-legSwing);
+    roundRect(c, CELL*0.03, 0, CELL*0.13, CELL*0.38, 4); c.fill();
+    c.restore();
+  } else {
+    c.fillStyle = '#2980b9';
+    roundRect(c, -CELL*0.16, 0, CELL*0.13, CELL*0.35, 4); c.fill();
+    roundRect(c, CELL*0.03, 0, CELL*0.13, CELL*0.35, 4); c.fill();
+  }
+
+  c.restore();
+
+  // Partiküller
+  g2d.particles.forEach(p => {
+    c.globalAlpha = p.life / 40;
+    c.fillStyle = p.color;
+    c.beginPath();
+    c.arc(p.x, p.y - camY, p.size, 0, Math.PI*2);
+    c.fill();
+  });
+  c.globalAlpha = 1;
+
+  // Yüzen yazılar
+  g2d.floatTexts.forEach(t => {
+    c.globalAlpha = t.life / 60;
+    c.fillStyle = t.color;
+    c.font = `bold ${CELL*0.35}px 'DM Sans',sans-serif`;
+    c.textAlign = 'center';
+    c.fillText(t.text, t.x, t.y - camY);
+  });
+  c.globalAlpha = 1;
+  c.textAlign = 'left';
+}
+
+function drawStar(ctx, cx, cy, spikes, outerR, innerR) {
+  let rot = -Math.PI/2;
+  const step = Math.PI / spikes;
+  ctx.beginPath();
+  ctx.moveTo(cx + Math.cos(rot) * outerR, cy + Math.sin(rot) * outerR);
+  for (let i = 0; i < spikes*2; i++) {
+    rot += step;
+    const r = i % 2 === 0 ? innerR : outerR;
+    ctx.lineTo(cx + Math.cos(rot) * r, cy + Math.sin(rot) * r);
+  }
+  ctx.closePath();
+  ctx.fill();
+}
+
+function roundRect(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x+r, y);
+  ctx.lineTo(x+w-r, y); ctx.arcTo(x+w,y,x+w,y+r,r);
+  ctx.lineTo(x+w,y+h-r); ctx.arcTo(x+w,y+h,x+w-r,y+h,r);
+  ctx.lineTo(x+r,y+h); ctx.arcTo(x,y+h,x,y+h-r,r);
+  ctx.lineTo(x,y+r); ctx.arcTo(x,y,x+r,y,r);
+  ctx.closePath();
+}
+
+function updateHUD() {
+  const gs = g2d?.gs;
+  if (!gs) return;
+  const goldEl = document.getElementById('hud-gold');
+  if (goldEl) goldEl.textContent = gs.gold||0;
+  const diaEl = document.getElementById('hud-dia');
+  if (diaEl) diaEl.textContent = gs.diamonds||0;
+}
+
+let saveTimer2 = null;
+function saveGS2Debounced() {
+  if (saveTimer2) clearTimeout(saveTimer2);
+  saveTimer2 = setTimeout(async () => {
+    if (g2d?.gs) await dbSet(`users/${session.uid}/gameState2`, g2d.gs);
+  }, 1500);
+}
+
+window.g2dStartDrill = function() { if (g2d) g2d.drilling = true; }
+window.g2dStopDrill = function() { if (g2d) { g2d.drilling = false; g2d.drillTimer = 0; } }
+
+window.g2dChangeIsland = async function(id) {
+  const gs = await dbGet(`users/${session.uid}/gameState2`) || getDefaultGS2();
+  gs.island = id;
   await dbSet(`users/${session.uid}/gameState2`, gs);
-  toast(`💎 +${reward} elmas kazandın!`, 's');
-  particles();
+  if (g2d?.animReq) cancelAnimationFrame(g2d.animReq);
+  g2d = null;
   renderGame();
 }
 
-window.showCharDetail = async function(charId, islandId) {
-  const isl = ISLANDS.find(i => i.id === islandId) || ISLANDS[0];
-  const charDef = isl.chars.find(c => c.id === charId) || {icon:'❓',name:'?',rarity:'common',power:0,desc:''};
-  const rc = RARITY_CONF[charDef.rarity];
-  const gs = await dbGet(`users/${session.uid}/gameState2`) || defaultGameState();
-  const char = (gs.characters||[]).find(c => c.id === charId && c.islandId === islandId);
-  const level = char?.level || 1;
-  const upgCost = level * 80;
+window.g2dBackToMenu = function() {
+  if (g2d?.animReq) cancelAnimationFrame(g2d.animReq);
+  g2d = null;
+  window.removeEventListener('resize', ()=>{});
+  const mc = document.getElementById('main-content');
+  mc.style.padding = '24px';
+  mc.style.overflow = 'auto';
+  renderGameMenu();
+}
 
-  const modal = document.createElement('div');
-  modal.className = 'modal-overlay';
-  modal.style.zIndex = '9999';
-  modal.innerHTML = `<div class="modal" style="text-align:center;max-width:320px">
-    <div style="font-size:3.5rem;margin-bottom:8px">${charDef.icon}</div>
-    <div style="font-size:1.1rem;font-weight:700;font-family:'Syne',sans-serif">${charDef.name}</div>
-    <div style="font-size:.75rem;color:var(--dim);margin:4px 0 8px">${charDef.desc}</div>
-    <div style="display:flex;justify-content:center;gap:10px;margin-bottom:14px">
-      <span style="padding:3px 12px;border-radius:20px;background:${rc.color}22;color:${rc.color};font-size:.72rem;font-weight:700;border:1px solid ${rc.color}44">${rc.label}</span>
-      <span style="padding:3px 12px;border-radius:20px;background:var(--card2);color:var(--dim);font-size:.72rem">${isl.icon} ${isl.name}</span>
+async function renderGameMenu() {
+  const mc = document.getElementById('main-content');
+  const gs = await dbGet(`users/${session.uid}/gameState2`) || getDefaultGS2();
+  const island = GAME2D_ISLANDS.find(i=>i.id===(gs.island||'fire'))||GAME2D_ISLANDS[0];
+
+  mc.innerHTML = `
+  <div style="font-family:'Syne',sans-serif;font-size:1.3rem;font-weight:700;margin-bottom:16px">⚔️ Ada Savaşları</div>
+
+  <!-- Stat bar -->
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:10px;margin-bottom:16px">
+    <div class="stat-card"><div class="lbl">ALTIN</div><div class="val text-warning">💰 ${gs.gold||0}</div></div>
+    <div class="stat-card"><div class="lbl">ELMAS</div><div class="val text-accent">💎 ${gs.diamonds||0}</div></div>
+    <div class="stat-card"><div class="lbl">KAZMA</div><div class="val text-primary">⛏️ ${gs.pickaxePower||1}</div></div>
+    <div class="stat-card"><div class="lbl">ÇANTA</div><div class="val text-success">🎒 Lv${gs.bagLevel||1}</div></div>
+  </div>
+
+  <!-- Büyük oyna butonu -->
+  <div class="card" style="padding:30px;text-align:center;margin-bottom:16px;background:linear-gradient(135deg,${island.skyTop},${island.skyBot});border-color:${island.rockColor}44">
+    <div style="font-size:3.5rem;margin-bottom:8px">${island.icon}</div>
+    <div style="font-family:'Syne',sans-serif;font-size:1.1rem;font-weight:700;margin-bottom:6px">${island.name}</div>
+    <div style="font-size:.8rem;color:rgba(255,255,255,.6);margin-bottom:16px">2D animasyonlu maden oyunu</div>
+    <button class="btn btn-primary btn-lg" style="font-size:1rem;padding:14px 40px" onclick="renderGame()">▶ OYNA</button>
+  </div>
+
+  <!-- Ada seçimi -->
+  <div class="card" style="padding:16px;margin-bottom:16px">
+    <div style="font-family:'Syne',sans-serif;font-size:.75rem;letter-spacing:.1em;color:var(--dim);margin-bottom:12px">🗺️ ADA SEÇ</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px">
+      ${GAME2D_ISLANDS.map(isl=>`
+        <div onclick="selectIsland2D('${isl.id}')" style="padding:14px;border-radius:12px;text-align:center;cursor:pointer;transition:all .2s;
+          background:${isl.id===gs.island?isl.skyBot:'var(--card2)'};
+          border:2px solid ${isl.id===gs.island?isl.rockColor:'var(--border)'}" onmouseover="this.style.transform='translateY(-3px)'" onmouseout="this.style.transform=''">
+          <div style="font-size:1.8rem;margin-bottom:6px">${isl.icon}</div>
+          <div style="font-size:.78rem;font-weight:700">${isl.name}</div>
+        </div>`).join('')}
     </div>
-    <div style="background:var(--bg2);border-radius:12px;padding:12px;margin-bottom:14px">
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:.78rem">
-        <div><div style="color:var(--dim);font-size:.65rem">SEVİYE</div><div style="font-weight:700;color:var(--primary);font-size:1.1rem">${level}</div></div>
-        <div><div style="color:var(--dim);font-size:.65rem">GÜCE</div><div style="font-weight:700;color:var(--warning);font-size:1.1rem">⚔️ ${charDef.power * level}</div></div>
+  </div>
+
+  <!-- Dükkan -->
+  <div class="card" style="padding:16px;margin-bottom:16px">
+    <div style="font-family:'Syne',sans-serif;font-size:.75rem;letter-spacing:.1em;color:var(--dim);margin-bottom:12px">🛒 DÜKKAN</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+      <div class="card-sm" style="text-align:center;cursor:pointer" onclick="buyPickaxe()">
+        <div style="font-size:1.5rem">⛏️</div>
+        <div style="font-size:.78rem;font-weight:700;margin:4px 0">Kazma Yükselt</div>
+        <div style="font-size:.72rem;color:var(--warning)">💰 ${Math.floor(50*Math.pow(1.8,(gs.pickaxePower||1)-1))} Altın</div>
+        <div style="font-size:.65rem;color:var(--dim)">Güç: ${gs.pickaxePower||1} → ${(gs.pickaxePower||1)+1}</div>
+      </div>
+      <div class="card-sm" style="text-align:center;cursor:pointer" onclick="buyBag2D()">
+        <div style="font-size:1.5rem">🎒</div>
+        <div style="font-size:.78rem;font-weight:700;margin:4px 0">Çanta Yükselt</div>
+        ${gs.bagLevel>=5
+          ? `<div style="font-size:.72rem;color:var(--success)">MAX SEVİYE</div>`
+          : `<div style="font-size:.72rem;color:#00d4ff">💎 ${[0,50,150,400,1000][gs.bagLevel||1]} Elmas</div>`}
       </div>
     </div>
-    <button class="btn btn-primary btn-block" style="margin-bottom:8px" onclick="upgradeChar('${charId}','${islandId}',${upgCost},this.closest('.modal-overlay'))">
-      ⬆️ Yükselt (${upgCost}💰)
-    </button>
-    <button class="btn btn-ghost btn-block" onclick="this.closest('.modal-overlay').remove()">Kapat</button>
-  </div>`;
-  modal.onclick = e => { if(e.target===modal) modal.remove(); };
-  document.body.appendChild(modal);
+  </div>
+
+  <!-- Yumurta kır -->
+  <div class="card" style="padding:16px;margin-bottom:16px">
+    <div style="font-family:'Syne',sans-serif;font-size:.75rem;letter-spacing:.1em;color:var(--dim);margin-bottom:12px">🥚 YUMURTA KIR</div>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px">
+      ${[['common','Sıradan','#9ca3af',50],['rare','Nadir','#38bdf8',150],['epic','Destansı','#a78bfa',400],['legend','Efsane','#f59e0b',1200]].map(([r,l,c,cost])=>`
+        <div onclick="crackEgg2D('${r}')" style="padding:10px 6px;border-radius:10px;text-align:center;cursor:pointer;background:${c}15;border:1px solid ${c}44;transition:all .2s" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform=''">
+          <div style="font-size:1.3rem">🥚</div>
+          <div style="font-size:.62rem;font-weight:700;color:${c};margin-top:2px">${l}</div>
+          <div style="font-size:.62rem;color:var(--dim)">💰${cost}</div>
+        </div>`).join('')}
+    </div>
+  </div>
+
+  <!-- Koleksiyon -->
+  ${(gs.characters||[]).length > 0 ? `
+  <div class="card" style="padding:16px">
+    <div style="font-family:'Syne',sans-serif;font-size:.75rem;letter-spacing:.1em;color:var(--dim);margin-bottom:12px">🎴 KOLEKSİYON (${(gs.characters||[]).length})</div>
+    <div style="display:flex;flex-wrap:wrap;gap:8px">
+      ${(gs.characters||[]).map(ch=>{
+        const isl2=GAME2D_ISLANDS.find(x=>x.id===ch.islandId)||GAME2D_ISLANDS[0];
+        const cd=ISLANDS.find(x=>x.id===ch.islandId)?.chars.find(c=>c.id===ch.id)||{icon:'❓',name:'?',rarity:'common'};
+        const rc2=RARITY_CONF?.[cd.rarity]||{color:'#aaa',label:'?'};
+        return `<div style="width:56px;padding:8px 4px;border-radius:10px;text-align:center;background:${rc2.color}11;border:1px solid ${rc2.color}33">
+          <div style="font-size:1.3rem">${cd.icon}</div>
+          <div style="font-size:.52rem;color:${rc2.color};font-weight:700;margin-top:2px">${cd.name}</div>
+          <div style="font-size:.5rem;color:var(--dim)">Lv${ch.level||1}</div>
+        </div>`;
+      }).join('')}
+    </div>
+  </div>` : ''}`;
 }
 
-window.upgradeChar = async function(charId, islandId, cost, modalEl) {
-  const gs = await dbGet(`users/${session.uid}/gameState2`) || defaultGameState();
-  if ((gs.gold||0) < cost) { toast(`💰 Yeterli altın yok! Gereken: ${cost}`, 'w'); return; }
-  gs.gold -= cost;
-  const char = (gs.characters||[]).find(c => c.id === charId && c.islandId === islandId);
-  if (char) char.level = (char.level||1) + 1;
+window.selectIsland2D = async function(id) {
+  const gs = await dbGet(`users/${session.uid}/gameState2`) || getDefaultGS2();
+  gs.island = id;
   await dbSet(`users/${session.uid}/gameState2`, gs);
-  toast(`⬆️ Karakter yükseltildi! Seviye ${char?.level}`, 's');
-  if (modalEl) modalEl.remove();
-  renderGame();
+  renderGameMenu();
 }
 
-async function checkQuestProgress(gs) {
-  // Quest otomatik bildirim
-  const quests = [
-    {id:'q_mine10', target:10, key:'totalMined', reward:5},
-    {id:'q_mine50', target:50, key:'totalMined', reward:15},
-    {id:'q_chars3', target:3, key:'chars', reward:20},
-    {id:'q_chars10',target:10,key:'chars',  reward:50},
-    {id:'q_bag2',   target:2, key:'bagLevel',reward:10},
-  ];
-  const completed = gs.completedQuests || [];
-  quests.forEach(q => {
-    if (completed.includes(q.id)) return;
-    let val = 0;
-    if (q.key==='totalMined') val = gs.totalMined||0;
-    else if (q.key==='chars') val = (gs.characters||[]).length;
-    else if (q.key==='bagLevel') val = gs.bagLevel||1;
-    if (val >= q.target) toast(`📋 Görev tamamlandı! Ödülü al: +${q.reward}💎`, 'i');
-  });
+window.buyPickaxe = async function() {
+  const gs = await dbGet(`users/${session.uid}/gameState2`) || getDefaultGS2();
+  const cost = Math.floor(50*Math.pow(1.8,(gs.pickaxePower||1)-1));
+  if ((gs.gold||0)<cost) { toast(`💰 Yeterli altın yok! Gereken: ${cost}`,'w'); return; }
+  gs.gold -= cost;
+  gs.pickaxePower = (gs.pickaxePower||1)+1;
+  await dbSet(`users/${session.uid}/gameState2`, gs);
+  toast(`⛏️ Kazma güçlendi! Seviye ${gs.pickaxePower}`,'s');
+  renderGameMenu();
 }
 
-// Float-up animasyonu CSS ekle
-if (!document.getElementById('game-css')) {
-  const s = document.createElement('style');
-  s.id = 'game-css';
-  s.textContent = '@keyframes floatUp{0%{opacity:1;transform:translateY(0)}100%{opacity:0;transform:translateY(-50px)}}';
-  document.head.appendChild(s);
+window.buyBag2D = async function() {
+  const gs = await dbGet(`users/${session.uid}/gameState2`) || getDefaultGS2();
+  const next = (gs.bagLevel||1)+1;
+  if (next>5) { toast('MAX seviye!','w'); return; }
+  const cost=[0,50,150,400,1000][gs.bagLevel||1];
+  if ((gs.diamonds||0)<cost) { toast(`💎 Yeterli elmas yok! Gereken: ${cost}`,'w'); return; }
+  gs.diamonds -= cost;
+  gs.bagLevel = next;
+  await dbSet(`users/${session.uid}/gameState2`, gs);
+  toast(`🎒 Çanta yükseltildi! Seviye ${next}`,'s');
+  renderGameMenu();
 }
 
+window.crackEgg2D = async function(rarity) {
+  const gs = await dbGet(`users/${session.uid}/gameState2`) || getDefaultGS2();
+  const costs={common:50,rare:150,epic:400,legend:1200};
+  const cost=costs[rarity]||50;
+  if ((gs.gold||0)<cost) { toast(`💰 Yeterli altın yok! Gereken: ${cost}`,'w'); return; }
+  const islandDef = ISLANDS?.find(i=>i.id===(gs.island||'fire'));
+  if (!islandDef) { toast('Ada verisi yok!','w'); return; }
+  const pool = islandDef.chars.filter(c=>c.rarity===rarity);
+  if (!pool.length) { toast('Bu adada bu tipte karakter yok!','w'); return; }
+  const bagConf = BAG_LEVELS?.[(gs.bagLevel||1)-1];
+  if ((gs.characters||[]).length >= (bagConf?.slots||3)) { toast('🎒 Çanta dolu!','w'); return; }
+  const picked = pool[Math.floor(Math.random()*pool.length)];
+  gs.gold -= cost;
+  gs.characters = gs.characters||[];
+  gs.characters.push({id:picked.id, islandId:gs.island||'fire', rarity:picked.rarity, level:1});
+  await dbSet(`users/${session.uid}/gameState2`, gs);
+  const rc2=RARITY_CONF?.[rarity]||{label:'?',color:'#aaa'};
+  toast(`🥚 ${picked.icon} ${picked.name} (${rc2.label}) açıldı!`,'s');
+  particles();
+  renderGameMenu();
+}
+
+window.g2dOpenShop = function() { g2dStopDrill(); renderGame(); setTimeout(()=>{ g2dStopDrill(); renderGameMenu(); renderGame(); },0); }
+window.g2dOpenEggs = function() { g2dStopDrill(); if(g2d?.animReq) cancelAnimationFrame(g2d.animReq); g2d=null; const mc=document.getElementById('main-content'); mc.style.padding='24px'; mc.style.overflow='auto'; renderGameMenu(); }
+
+function getDefaultGS2() {
+  return { gold:0, diamonds:0, pickaxePower:1, bagLevel:1, island:'fire', characters:[], totalMined:0, completedQuests:[] };
+}
+
+// Override renderGame to show menu first
+const _origRenderGame = window.renderGame;
+window.renderGame = async function() {
+  const mc = document.getElementById('main-content');
+  mc.style.cssText = 'padding:24px;overflow-y:auto;height:100vh';
+  await renderGameMenu();
+}
+
+GAMECODE
+wc -l /tmp/game2d.js
+echo "✅"
 
 // ═══════════ ANALYTICS (Teacher) ═══════════
 async function renderAnalytics(){
