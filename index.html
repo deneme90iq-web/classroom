@@ -2624,32 +2624,55 @@ async function renderDM(openUid=null){
 }
 
 function renderDmChatScreen(target,peers,unreadMap){
-  const mc=document.getElementById('main-content');
   const roleColor=target.role==='teacher'?'var(--warning)':'var(--primary)';
-  // Mobil nav yüksekliği (58px) + güvenli alan
-  const navH=document.getElementById('mobile-nav')?.offsetHeight||58;
-  mc.style.cssText='padding:0;height:calc(100vh - '+navH+'px);overflow:hidden;display:flex;flex-direction:column';
+  const navEl=document.getElementById('mobile-nav');
+  const navH=navEl?navEl.offsetHeight:58;
+
+  // Ana içerik alanını temizle
+  const mc=document.getElementById('main-content');
+  mc.style.cssText='padding:0;overflow:hidden;height:calc(100vh - '+navH+'px);position:relative';
+
   mc.innerHTML=`
-  <div style="display:flex;flex-direction:column;height:100%">
-    <!-- Header -->
-    <div style="padding:12px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;background:var(--card2);flex-shrink:0">
-      <button onclick="const _m=document.getElementById('main-content');_m.style.cssText='padding:24px;overflow-y:auto;height:100vh';activeDmUid=null;renderDM()" style="border:none;cursor:pointer;color:var(--primary);font-size:1.1rem;padding:6px 10px;border-radius:8px;background:var(--primary-dim)">←</button>
-      <div style="width:36px;height:36px;border-radius:50%;background:${target.role==='teacher'?'var(--warning-dim)':'var(--primary-dim)'};border:2px solid ${roleColor};display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.9rem;color:${roleColor};flex-shrink:0">${target.name.charAt(0).toUpperCase()}</div>
-      <div style="flex:1;min-width:0">
-        <div style="font-weight:700;font-size:.92rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${target.name}</div>
-        <div style="font-size:.68rem;color:${roleColor}">${target.role==='teacher'?'👨‍🏫 Öğretmen':'🎓 Öğrenci'}</div>
+    <div id="dm-screen" style="position:absolute;inset:0;display:flex;flex-direction:column;background:var(--bg)">
+      <!-- Header -->
+      <div style="padding:12px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;background:var(--card2);flex-shrink:0;z-index:2">
+        <button id="dm-back-btn" style="border:none;cursor:pointer;color:var(--primary);font-size:1.1rem;padding:6px 10px;border-radius:8px;background:var(--primary-dim)">←</button>
+        <div style="width:36px;height:36px;border-radius:50%;background:${target.role==='teacher'?'var(--warning-dim)':'var(--primary-dim)'};border:2px solid ${roleColor};display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.9rem;color:${roleColor};flex-shrink:0">${target.name.charAt(0).toUpperCase()}</div>
+        <div style="flex:1;min-width:0">
+          <div style="font-weight:700;font-size:.92rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${target.name}</div>
+          <div style="font-size:.68rem;color:${roleColor}">${target.role==='teacher'?'👨\u200d🏫 Öğretmen':'🎓 Öğrenci'}</div>
+        </div>
       </div>
-    </div>
-    <!-- Mesajlar -->
-    <div id="dm-messages" style="flex:1;overflow-y:auto;padding:12px 14px;display:flex;flex-direction:column;gap:8px;-webkit-overflow-scrolling:touch;min-height:0"></div>
-    <!-- Input — her zaman görünür -->
-    <div style="padding:10px 12px;padding-bottom:calc(10px + env(safe-area-inset-bottom,0px));border-top:1px solid var(--border);background:var(--card2);display:flex;gap:8px;align-items:center;flex-shrink:0">
-      <input type="text" class="input" id="dm-input" placeholder="Mesaj yaz..." style="flex:1;padding:10px 12px;font-size:16px;min-width:0"
-        onkeydown="if(event.key==='Enter'){event.preventDefault();sendDM('${target.uid}')}"
-        autocomplete="off" autocorrect="off" autocapitalize="sentences">
-      <button class="btn btn-primary" style="padding:10px 16px;flex-shrink:0" onclick="sendDM('${target.uid}')">→</button>
-    </div>
-  </div>`;
+      <!-- Mesajlar -->
+      <div id="dm-messages" style="flex:1;overflow-y:auto;padding:12px 14px;display:flex;flex-direction:column;gap:8px;-webkit-overflow-scrolling:touch"></div>
+      <!-- Input -->
+      <div id="dm-input-bar" style="padding:10px 12px;padding-bottom:max(10px,env(safe-area-inset-bottom));border-top:1px solid var(--border);background:var(--card2);display:flex;gap:8px;align-items:center;flex-shrink:0;z-index:2">
+        <input type="text" id="dm-input" placeholder="Mesaj yaz..." style="flex:1;padding:10px 12px;font-size:16px;background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:10px;color:var(--text);outline:none;min-width:0"
+          autocomplete="off" autocorrect="off" autocapitalize="sentences">
+        <button id="dm-send-btn" class="btn btn-primary" style="padding:10px 16px;flex-shrink:0">→</button>
+      </div>
+    </div>`;
+
+  // Event listener'ları JS ile bağla (inline onclick yerine)
+  document.getElementById('dm-back-btn').onclick=()=>{
+    activeDmUid=null;
+    if(dmListener){off(dmListener);dmListener=null;}
+    mc.style.cssText='padding:24px;overflow-y:auto;height:100vh';
+    renderDM();
+  };
+  const inp=document.getElementById('dm-input');
+  const sendFn=()=>sendDM(target.uid);
+  inp.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();sendFn();}});
+  document.getElementById('dm-send-btn').onclick=sendFn;
+
+  // Klavye açılınca mesajları aşağı kaydır
+  inp.addEventListener('focus',()=>{
+    setTimeout(()=>{
+      const msgs=document.getElementById('dm-messages');
+      if(msgs)msgs.scrollTop=msgs.scrollHeight;
+    },400);
+  });
+
   activeDmUid=target.uid;
   startDmListener(target.uid,target.name,target.role);
   markDmRead(target.uid);
@@ -2666,13 +2689,10 @@ window.openDmChat=async function(uid,name,role){
   activeDmUid=uid;
   const mobile=window.innerWidth<=768;
   if(dmListener){off(dmListener);dmListener=null;}
-
   if(mobile){
-    // Mobilde tam ekran sohbet aç
     renderDM(uid);
     return;
   }
-
   // Masaüstü: sağ paneli güncelle
   const area=document.getElementById('dm-chat-area');
   if(!area)return;
@@ -2698,39 +2718,6 @@ window.openDmChat=async function(uid,name,role){
   await markDmRead(uid);
 }
 
-function startDmListener(peerUid,peerName,peerRole){
-  if(dmListener){off(dmListener);dmListener=null;}
-  const key=dmKey(session.uid,peerUid);
-  const r=dbRef(`dms/${key}`);
-  dmListener=r;
-  onValue(r,snap=>{
-    const msgs=snap.exists()?Object.values(snap.val()):[];
-    msgs.sort((a,b)=>a.createdAt-b.createdAt);
-    const el=document.getElementById('dm-messages');
-    if(!el)return;
-    el.innerHTML=msgs.length===0
-      ?`<div class="text-center text-dim" style="padding:40px;font-size:.82rem">Henüz mesaj yok. İlk mesajı sen gönder! 👋</div>`
-      :msgs.map(m=>{
-          const isMe=m.from===session.uid;
-          return `<div style="display:flex;flex-direction:${isMe?'row-reverse':'row'};align-items:flex-end;gap:8px">
-            <div style="width:28px;height:28px;border-radius:50%;background:${isMe?'var(--primary-dim)':'var(--card2)'};
-              border:1px solid ${isMe?'var(--primary)':'var(--border2)'};display:flex;align-items:center;
-              justify-content:center;font-size:.7rem;font-weight:700;color:${isMe?'var(--primary)':'var(--dim)'};flex-shrink:0">
-              ${(m.fromName||'?').charAt(0).toUpperCase()}</div>
-            <div style="max-width:65%">
-              <div style="background:${isMe?'var(--primary)':'var(--card2)'};color:${isMe?'#fff':'var(--text)'};
-                padding:9px 13px;border-radius:${isMe?'14px 14px 4px 14px':'14px 14px 14px 4px'};
-                font-size:.87rem;line-height:1.5;word-break:break-word">${m.text}</div>
-              <div style="font-size:.62rem;color:var(--dim2);margin-top:2px;text-align:${isMe?'right':'left'}">
-                ${new Date(m.createdAt).toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit'})}
-                ${isMe?'':' · '+m.fromName}</div>
-            </div>
-          </div>`;
-        }).join('');
-    el.scrollTop=el.scrollHeight;
-  });
-}
-
 window.sendDM=async function(toUid){
   const input=document.getElementById('dm-input');
   const text=input?.value.trim();
@@ -2742,7 +2729,6 @@ window.sendDM=async function(toUid){
     from:session.uid,fromName:session.name,fromRole:session.role,
     to:toUid,text,createdAt:Date.now(),read:false
   });
-  // DM badge güncelle
   updateDmBadge();
 }
 
@@ -2758,7 +2744,6 @@ async function markDmRead(peerUid){
 }
 
 async function updateDmBadge(){
-  // Tüm DM klasörlerini tara — okunmamış mesaj var mı?
   const allDms=await dbGet('dms')||{};
   let total=0;
   Object.values(allDms).forEach(conv=>{
