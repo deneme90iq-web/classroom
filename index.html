@@ -708,6 +708,9 @@ if(!window.toggleTheme){
       <div class="nav-item" id="nav-join-class" onclick="showModal('modal-join-class')" style="display:none"><span class="nav-icon">➕</span> Sınıfa Katıl</div>
 
       <div class="sidebar-section">ARAÇLAR</div>
+      <div class="nav-item" id="nav-attendance" onclick="navTo('attendance')"><span class="nav-icon">📊</span> Devamsızlık</div>
+      <div class="nav-item" id="nav-gradebook" onclick="navTo('gradebook')"><span class="nav-icon">📒</span> Not Defteri</div>
+      <div class="nav-item" id="nav-parent" onclick="navTo('parent')"><span class="nav-icon">👨‍👩‍👧</span> Veli Mesajları</div>
       <div class="nav-item" id="nav-profile" onclick="navTo('profile')"><span class="nav-icon">👤</span> Profilim</div>
       <div class="nav-item" id="nav-dm" onclick="navTo('dm')"><span class="nav-icon">✉️</span> Mesajlar <span class="nav-badge" id="dm-badge" style="display:none">0</span></div>
       <div class="nav-item" id="nav-classprofiles" onclick="navTo('classprofiles')" style="display:none"><span class="nav-icon">👥</span> Sınıfım</div>
@@ -1450,6 +1453,9 @@ window.navTo=function(page){
     case 'profile': renderProfile();break;
     case 'dm': renderDM();break;
     case 'classprofiles': renderClassProfiles();break;
+    case 'attendance': renderAttendance();break;
+    case 'gradebook': renderGradebook();break;
+    case 'parent': renderParent();break;
     case 'schedule': renderSchedule();break;
     case 'calendar': renderCalendar();break;
     case 'ai': renderAI();break;
@@ -3351,6 +3357,463 @@ window.deleteFCSet=async function(id){
   await dbSet(`flashcardSets/${id}`,null);
   toast('🗑️ Silindi','w');
   loadFCSets();
+}
+
+
+
+// ═══════════ DEVAMSIZLIK TAKİBİ ═══════════
+async function renderAttendance(){
+  const mc=document.getElementById('main-content');
+  const isT=session.role==='teacher';
+  mc.innerHTML=`
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px">
+    <div style="font-family:'Syne',sans-serif;font-size:1.3rem;font-weight:700">📊 Devamsızlık Takibi</div>
+    ${isT?`<button class="btn btn-primary" onclick="openAttendanceModal()">+ Yoklama Al</button>`:''}
+  </div>
+  <div id="attendance-content"></div>`;
+
+  if(isT){
+    const classes=await getMyClasses();
+    if(!classes.length){
+      document.getElementById('attendance-content').innerHTML='<div class="card text-center text-dim" style="padding:40px">Sınıf bulunamadı.</div>';
+      return;
+    }
+    // Sınıf seçici
+    let html=`<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px">
+      ${classes.map((c,i)=>`<button onclick="loadAttendance('${c.code}',this)" class="btn ${i===0?'btn-primary':'btn-ghost'}" style="font-size:.78rem">${c.name}</button>`).join('')}
+    </div><div id="att-table"></div>`;
+    document.getElementById('attendance-content').innerHTML=html;
+    loadAttendance(classes[0].code);
+  } else {
+    // Öğrenci kendi devamsızlığını görür
+    if(!session.classCode){
+      document.getElementById('attendance-content').innerHTML='<div class="card text-center text-dim" style="padding:40px">Sınıfa katılman gerekiyor.</div>';
+      return;
+    }
+    loadStudentAttendance();
+  }
+}
+
+window.loadAttendance=async function(classCode,btn){
+  if(btn){document.querySelectorAll('#attendance-content .btn').forEach(b=>{b.className='btn btn-ghost';b.style.fontSize='.78rem';});btn.className='btn btn-primary';btn.style.fontSize='.78rem';}
+  const el=document.getElementById('att-table');if(!el)return;
+  const records=await dbGet(`attendance/${safeKey(classCode)}`)||{};
+  const members=await dbGet(`classMembers/${safeKey(classCode)}`)||{};
+  const students=Object.entries(members).map(([uid,m])=>({uid,...m}));
+  if(!students.length){el.innerHTML='<div class="card text-center text-dim" style="padding:30px">Öğrenci yok.</div>';return;}
+
+  // Tarihleri al
+  const dates=[...new Set(Object.values(records).flatMap(r=>Object.keys(r||{})))].sort().reverse().slice(0,14);
+
+  if(!dates.length){
+    el.innerHTML=`<div class="card text-center text-dim" style="padding:40px"><div style="font-size:2rem;margin-bottom:8px">📋</div><div>Henüz yoklama alınmamış.</div></div>`;
+    return;
+  }
+
+  // İstatistikler
+  let tableHtml=`<div style="overflow-x:auto;margin-bottom:20px"><table class="table" style="min-width:500px">
+    <thead><tr>
+      <th style="text-align:left;min-width:120px">Öğrenci</th>
+      ${dates.map(d=>`<th style="text-align:center;font-size:.68rem;min-width:52px">${d.slice(5)}</th>`).join('')}
+      <th style="text-align:center">Devam %</th>
+    </tr></thead><tbody>`;
+
+  students.forEach(s=>{
+    const sRec=records[safeKey(s.uid)]||{};
+    let present=0;
+    tableHtml+=`<tr><td style="font-size:.82rem;font-weight:600">${s.name}</td>`;
+    dates.forEach(d=>{
+      const status=sRec[d]||'?';
+      if(status==='P')present++;
+      tableHtml+=`<td style="text-align:center;font-size:1rem">${status==='P'?'✅':status==='A'?'❌':status==='E'?'🟡':'—'}</td>`;
+    });
+    const pct=dates.length?Math.round(present/dates.length*100):0;
+    tableHtml+=`<td style="text-align:center;font-weight:700;color:${pct>=85?'var(--success)':pct>=70?'var(--warning)':'var(--danger)'}">${pct}%</td></tr>`;
+  });
+  tableHtml+='</tbody></table></div>';
+
+  // Açıklama
+  tableHtml+=`<div style="display:flex;gap:12px;flex-wrap:wrap;font-size:.72rem;color:var(--dim)">
+    <span>✅ Geldi</span><span>❌ Gelmedi</span><span>🟡 Mazeretli</span>
+  </div>`;
+  el.innerHTML=tableHtml;
+  el.dataset.classCode=classCode;
+}
+
+async function loadStudentAttendance(){
+  const el=document.getElementById('attendance-content');
+  const records=await dbGet(`attendance/${safeKey(session.classCode)}/${safeKey(session.uid)}`)||{};
+  const entries=Object.entries(records).sort((a,b)=>b[0].localeCompare(a[0]));
+  if(!entries.length){el.innerHTML='<div class="card text-center text-dim" style="padding:40px">Henüz yoklama kaydın yok.</div>';return;}
+  const total=entries.length;
+  const present=entries.filter(([,v])=>v==='P').length;
+  const pct=Math.round(present/total*100);
+  let html=`
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:12px;margin-bottom:16px">
+    <div class="stat-card"><div class="lbl">DEVAM</div><div class="val" style="color:${pct>=85?'var(--success)':pct>=70?'var(--warning)':'var(--danger)'}">${pct}%</div></div>
+    <div class="stat-card"><div class="lbl">GELDİ</div><div class="val text-success">${present}</div></div>
+    <div class="stat-card"><div class="lbl">GELMEDİ</div><div class="val text-danger">${entries.filter(([,v])=>v==='A').length}</div></div>
+    <div class="stat-card"><div class="lbl">MAZERETLİ</div><div class="val text-warning">${entries.filter(([,v])=>v==='E').length}</div></div>
+  </div>
+  <div class="card"><div style="font-family:'Syne',sans-serif;font-size:.75rem;letter-spacing:.1em;color:var(--dim);margin-bottom:12px">DETAY</div>
+  ${entries.map(([d,v])=>`<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border2)">
+    <span style="font-size:.85rem">${d}</span>
+    <span style="font-size:1rem">${v==='P'?'✅ Geldi':v==='A'?'❌ Gelmedi':'🟡 Mazeretli'}</span>
+  </div>`).join('')}
+  </div>`;
+  el.innerHTML=html;
+}
+
+window.openAttendanceModal=async function(){
+  const classes=await getMyClasses();
+  if(!classes.length){toast('Önce sınıf oluştur!','w');return;}
+  const today=new Date().toISOString().slice(0,10);
+  const modal=document.createElement('div');modal.className='modal-overlay';
+  modal.innerHTML=`<div class="modal" style="max-width:500px;max-height:90vh;overflow-y:auto">
+    <div class="modal-title">📋 Yoklama Al</div>
+    <div class="form-group"><label class="label">SINIF</label>
+      <select class="input" id="att-class" onchange="loadAttModal(this.value)">
+        ${classes.map(c=>`<option value="${c.code}">${c.name}</option>`).join('')}
+      </select></div>
+    <div class="form-group"><label class="label">TARİH</label>
+      <input class="input" type="date" id="att-date" value="${today}"></div>
+    <div id="att-students-list" style="margin-bottom:14px"></div>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-primary" style="flex:1" onclick="saveAttendance()">💾 Kaydet</button>
+      <button class="btn btn-ghost" onclick="this.closest('.modal-overlay').remove()">İptal</button>
+    </div>
+  </div>`;
+  modal.onclick=e=>{if(e.target===modal)modal.remove();};
+  document.body.appendChild(modal);
+  loadAttModal(classes[0].code);
+}
+
+window.loadAttModal=async function(classCode){
+  const el=document.getElementById('att-students-list');if(!el)return;
+  const members=await dbGet(`classMembers/${safeKey(classCode)}`)||{};
+  const students=Object.entries(members).map(([uid,m])=>({uid,...m}));
+  if(!students.length){el.innerHTML='<div class="text-dim" style="font-size:.82rem">Bu sınıfta öğrenci yok.</div>';return;}
+  el.innerHTML=`<div style="font-family:'Syne',sans-serif;font-size:.72rem;letter-spacing:.08em;color:var(--dim);margin-bottom:8px">ÖĞRENCİLER</div>
+  <div style="display:flex;justify-content:flex-end;gap:6px;margin-bottom:8px">
+    <button class="btn btn-ghost" style="font-size:.7rem;padding:4px 10px" onclick="attMarkAll('P')">✅ Tümü Geldi</button>
+    <button class="btn btn-ghost" style="font-size:.7rem;padding:4px 10px" onclick="attMarkAll('A')">❌ Tümü Gelmedi</button>
+  </div>
+  ${students.map(s=>`<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--border2)">
+    <div style="flex:1;font-size:.85rem;font-weight:600">${s.name}</div>
+    <div style="display:flex;gap:4px">
+      <button onclick="attSet(this,'P')" class="att-btn" data-uid="${safeKey(s.uid)}" data-status="P" style="padding:5px 10px;border-radius:8px;font-size:.75rem;cursor:pointer;background:rgba(0,214,143,.15);border:1px solid rgba(0,214,143,.3);color:var(--success);transition:all .15s">✅</button>
+      <button onclick="attSet(this,'A')" class="att-btn" data-uid="${safeKey(s.uid)}" data-status="A" style="padding:5px 10px;border-radius:8px;font-size:.75rem;cursor:pointer;background:rgba(255,77,109,.15);border:1px solid rgba(255,77,109,.3);color:var(--danger);transition:all .15s">❌</button>
+      <button onclick="attSet(this,'E')" class="att-btn" data-uid="${safeKey(s.uid)}" data-status="E" style="padding:5px 10px;border-radius:8px;font-size:.75rem;cursor:pointer;background:rgba(255,170,0,.15);border:1px solid rgba(255,170,0,.3);color:var(--warning);transition:all .15s">🟡</button>
+    </div>
+  </div>`).join('')}`;
+  // Tümünü P olarak başlat
+  setTimeout(()=>attMarkAll('P'),50);
+}
+
+window.attSet=function(btn,status){
+  const uid=btn.dataset.uid;
+  document.querySelectorAll(`.att-btn[data-uid="${uid}"]`).forEach(b=>{
+    b.style.opacity='0.4';b.style.transform='scale(0.95)';
+  });
+  btn.style.opacity='1';btn.style.transform='scale(1.05)';
+  btn.dataset.selected='true';
+  document.querySelectorAll(`.att-btn[data-uid="${uid}"]`).forEach(b=>{
+    b.dataset.selected= b.dataset.status===status?'true':'false';
+  });
+}
+
+window.attMarkAll=function(status){
+  const uids=[...new Set([...document.querySelectorAll('.att-btn')].map(b=>b.dataset.uid))];
+  uids.forEach(uid=>{
+    const btn=document.querySelector(`.att-btn[data-uid="${uid}"][data-status="${status}"]`);
+    if(btn)attSet(btn,status);
+  });
+}
+
+window.saveAttendance=async function(){
+  const classCode=document.getElementById('att-class')?.value;
+  const date=document.getElementById('att-date')?.value;
+  if(!classCode||!date){toast('Sınıf ve tarih seç!','w');return;}
+  const uids=[...new Set([...document.querySelectorAll('.att-btn')].map(b=>b.dataset.uid))];
+  for(const uid of uids){
+    const selected=document.querySelector(`.att-btn[data-uid="${uid}"][data-selected="true"]`);
+    const status=selected?.dataset.status||'P';
+    await dbSet(`attendance/${safeKey(classCode)}/${uid}/${date}`,status);
+  }
+  toast('✅ Yoklama kaydedildi!','s');
+  document.querySelector('.modal-overlay')?.remove();
+  loadAttendance(classCode);
+}
+
+// ═══════════ NOT DEFTERİ ═══════════
+async function renderGradebook(){
+  const mc=document.getElementById('main-content');
+  const isT=session.role==='teacher';
+  mc.innerHTML=`
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px">
+    <div style="font-family:'Syne',sans-serif;font-size:1.3rem;font-weight:700">📒 Not Defteri</div>
+    ${isT?`<button class="btn btn-primary" onclick="openGradeModal()">+ Not Ekle</button>`:''}
+  </div>
+  <div id="gradebook-content"></div>`;
+
+  if(isT){
+    const classes=await getMyClasses();
+    if(!classes.length){document.getElementById('gradebook-content').innerHTML='<div class="card text-center text-dim" style="padding:40px">Sınıf bulunamadı.</div>';return;}
+    let html=`<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px">
+      ${classes.map((c,i)=>`<button onclick="loadGrades('${c.code}',this)" class="btn ${i===0?'btn-primary':'btn-ghost'}" style="font-size:.78rem">${c.name}</button>`).join('')}
+    </div><div id="grade-table"></div>`;
+    document.getElementById('gradebook-content').innerHTML=html;
+    loadGrades(classes[0].code);
+  } else {
+    if(!session.classCode){document.getElementById('gradebook-content').innerHTML='<div class="card text-center text-dim" style="padding:40px">Sınıfa katılman gerekiyor.</div>';return;}
+    loadStudentGrades();
+  }
+}
+
+window.loadGrades=async function(classCode,btn){
+  if(btn){document.querySelectorAll('#gradebook-content .btn').forEach(b=>{b.className='btn btn-ghost';b.style.fontSize='.78rem';});btn.className='btn btn-primary';btn.style.fontSize='.78rem';}
+  const el=document.getElementById('grade-table');if(!el)return;
+  el.dataset.classCode=classCode;
+  const grades=await dbGet(`grades/${safeKey(classCode)}`)||{};
+  const members=await dbGet(`classMembers/${safeKey(classCode)}`)||{};
+  const students=Object.entries(members).map(([uid,m])=>({uid,...m}));
+  if(!students.length){el.innerHTML='<div class="card text-center text-dim" style="padding:30px">Öğrenci yok.</div>';return;}
+
+  // Sınav başlıklarını topla
+  const examKeys=[...new Set(Object.values(grades).flatMap(g=>Object.keys(g||{})))].sort();
+  if(!examKeys.length){
+    el.innerHTML=`<div class="card text-center text-dim" style="padding:40px"><div style="font-size:2rem;margin-bottom:8px">📒</div><div>Henüz not girilmemiş.</div></div>`;
+    return;
+  }
+
+  let html=`<div style="overflow-x:auto"><table class="table" style="min-width:400px">
+    <thead><tr>
+      <th style="text-align:left;min-width:120px">Öğrenci</th>
+      ${examKeys.map(k=>`<th style="text-align:center;font-size:.7rem;min-width:70px">${k}</th>`).join('')}
+      <th style="text-align:center;min-width:60px">Ort.</th>
+    </tr></thead><tbody>`;
+
+  students.forEach(s=>{
+    const sGrades=grades[safeKey(s.uid)]||{};
+    let sum=0,cnt=0;
+    html+=`<tr><td style="font-size:.82rem;font-weight:600">${s.name}</td>`;
+    examKeys.forEach(k=>{
+      const g=sGrades[k];
+      const num=parseFloat(g);
+      if(!isNaN(num)){sum+=num;cnt++;}
+      const color=isNaN(num)?'var(--dim)':num>=85?'var(--success)':num>=60?'var(--warning)':'var(--danger)';
+      html+=`<td style="text-align:center;font-weight:700;color:${color};font-size:.85rem" onclick="${session.role==='teacher'?`editGrade('${classCode}','${safeKey(s.uid)}','${k}','${g||''}')`:''}" style="cursor:${session.role==='teacher'?'pointer':'default'}">${g||'—'}</td>`;
+    });
+    const avg=cnt?Math.round(sum/cnt):'—';
+    const avgColor=typeof avg==='number'?(avg>=85?'var(--success)':avg>=60?'var(--warning)':'var(--danger)'):'var(--dim)';
+    html+=`<td style="text-align:center;font-weight:700;color:${avgColor}">${avg}</td></tr>`;
+  });
+  html+='</tbody></table></div>';
+  el.innerHTML=html;
+}
+
+async function loadStudentGrades(){
+  const el=document.getElementById('gradebook-content');
+  const grades=await dbGet(`grades/${safeKey(session.classCode)}/${safeKey(session.uid)}`)||{};
+  const entries=Object.entries(grades);
+  if(!entries.length){el.innerHTML='<div class="card text-center text-dim" style="padding:40px">Henüz not girilmemiş.</div>';return;}
+  const nums=entries.map(([,v])=>parseFloat(v)).filter(n=>!isNaN(n));
+  const avg=nums.length?Math.round(nums.reduce((a,b)=>a+b,0)/nums.length):0;
+  let html=`
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(100px,1fr));gap:12px;margin-bottom:16px">
+    <div class="stat-card"><div class="lbl">ORTALAMA</div><div class="val" style="color:${avg>=85?'var(--success)':avg>=60?'var(--warning)':'var(--danger)'}">${avg}</div></div>
+    <div class="stat-card"><div class="lbl">SINAV</div><div class="val text-primary">${entries.length}</div></div>
+    <div class="stat-card"><div class="lbl">EN YÜKSEK</div><div class="val text-success">${nums.length?Math.max(...nums):'—'}</div></div>
+    <div class="stat-card"><div class="lbl">EN DÜŞÜK</div><div class="val text-danger">${nums.length?Math.min(...nums):'—'}</div></div>
+  </div>
+  <div class="card">
+    <div style="font-family:'Syne',sans-serif;font-size:.75rem;letter-spacing:.1em;color:var(--dim);margin-bottom:12px">NOTLARIM</div>
+    ${entries.map(([k,v])=>{
+      const num=parseFloat(v);const c=isNaN(num)?'var(--dim)':num>=85?'var(--success)':num>=60?'var(--warning)':'var(--danger)';
+      return`<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border2)">
+        <span style="font-size:.88rem;font-weight:600">${k}</span>
+        <span style="font-size:1.1rem;font-weight:700;color:${c}">${v}</span>
+      </div>`;
+    }).join('')}
+  </div>`;
+  el.innerHTML=html;
+}
+
+window.openGradeModal=async function(){
+  const classes=await getMyClasses();
+  if(!classes.length){toast('Önce sınıf oluştur!','w');return;}
+  const modal=document.createElement('div');modal.className='modal-overlay';
+  modal.innerHTML=`<div class="modal" style="max-width:480px;max-height:90vh;overflow-y:auto">
+    <div class="modal-title">📝 Not Ekle / Güncelle</div>
+    <div class="form-group"><label class="label">SINIF</label>
+      <select class="input" id="gr-class" onchange="loadGradeStudents(this.value)">
+        ${classes.map(c=>`<option value="${c.code}">${c.name}</option>`).join('')}
+      </select></div>
+    <div class="form-group"><label class="label">SINAV / DEĞERLENDIRME ADI</label>
+      <input class="input" id="gr-exam" placeholder="ör: 1. Yazılı, Performans Ödevi..."></div>
+    <div id="gr-students" style="margin-bottom:12px"></div>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-primary" style="flex:1" onclick="saveGrades()">💾 Kaydet</button>
+      <button class="btn btn-ghost" onclick="this.closest('.modal-overlay').remove()">İptal</button>
+    </div>
+  </div>`;
+  modal.onclick=e=>{if(e.target===modal)modal.remove();};
+  document.body.appendChild(modal);
+  loadGradeStudents(classes[0].code);
+}
+
+window.loadGradeStudents=async function(classCode){
+  const el=document.getElementById('gr-students');if(!el)return;
+  const members=await dbGet(`classMembers/${safeKey(classCode)}`)||{};
+  const students=Object.entries(members).map(([uid,m])=>({uid,...m}));
+  el.innerHTML=`<div style="font-family:'Syne',sans-serif;font-size:.72rem;letter-spacing:.08em;color:var(--dim);margin-bottom:8px">NOTLAR (0-100)</div>
+  ${students.map(s=>`<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border2)">
+    <div style="flex:1;font-size:.85rem;font-weight:600">${s.name}</div>
+    <input class="input" id="gr-${safeKey(s.uid)}" type="number" min="0" max="100" placeholder="Not" style="width:80px;padding:6px 10px;text-align:center">
+  </div>`).join('')}`;
+  el.dataset.classCode=classCode;
+}
+
+window.saveGrades=async function(){
+  const classCode=document.getElementById('gr-students')?.dataset.classCode||document.getElementById('gr-class')?.value;
+  const exam=document.getElementById('gr-exam')?.value.trim();
+  if(!classCode||!exam){toast('Sınıf ve sınav adı gir!','w');return;}
+  const members=await dbGet(`classMembers/${safeKey(classCode)}`)||{};
+  let saved=0;
+  for(const [uid] of Object.entries(members)){
+    const inp=document.getElementById('gr-'+safeKey(uid));
+    if(inp?.value.trim()){
+      await dbSet(`grades/${safeKey(classCode)}/${safeKey(uid)}/${exam}`,inp.value.trim());
+      saved++;
+    }
+  }
+  toast(`📒 ${saved} öğrenci için not kaydedildi!`,'s');
+  document.querySelector('.modal-overlay')?.remove();
+  loadGrades(classCode);
+}
+
+window.editGrade=async function(classCode,uid,exam,current){
+  const val=prompt(`${exam} notu (mevcut: ${current||'—'}):`,current||'');
+  if(val===null)return;
+  if(val===''){await dbSet(`grades/${safeKey(classCode)}/${uid}/${exam}`,null);}
+  else await dbSet(`grades/${safeKey(classCode)}/${uid}/${exam}`,val);
+  toast('📒 Not güncellendi','s');
+  loadGrades(classCode);
+}
+
+// ═══════════ VELİ BİLGİLENDİRME ═══════════
+async function renderParent(){
+  const mc=document.getElementById('main-content');
+  mc.innerHTML=`
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px">
+    <div style="font-family:'Syne',sans-serif;font-size:1.3rem;font-weight:700">👨‍👩‍👧 Veli Mesajları</div>
+    <button class="btn btn-primary" onclick="openParentMsgModal()">+ Mesaj Gönder</button>
+  </div>
+  <div id="parent-content"></div>`;
+  loadParentMsgs();
+}
+
+async function loadParentMsgs(){
+  const el=document.getElementById('parent-content');if(!el)return;
+  const all=await dbGet('parentMessages')||{};
+  let msgs=[];
+  if(session.role==='teacher'){
+    msgs=Object.values(all).filter(m=>m.teacherUid===session.uid);
+  } else {
+    msgs=Object.values(all).filter(m=>m.studentUid===session.uid||m.classCode===session.classCode);
+  }
+  msgs.sort((a,b)=>b.createdAt-a.createdAt);
+  if(!msgs.length){
+    el.innerHTML=`<div class="card text-center text-dim" style="padding:50px"><div style="font-size:3rem;margin-bottom:10px">👨‍👩‍👧</div><div>Henüz veli mesajı yok.</div></div>`;
+    return;
+  }
+  el.innerHTML=msgs.map(m=>{
+    const typeColors={bilgi:'var(--primary)',uyari:'var(--warning)',acil:'var(--danger)',olumlu:'var(--success)'};
+    const typeLabels={bilgi:'📘 Bilgi',uyari:'⚠️ Uyarı',acil:'🚨 Acil',olumlu:'🌟 Olumlu'};
+    const c=typeColors[m.type]||'var(--primary)';
+    return `<div class="card" style="margin-bottom:12px;border-left:3px solid ${c}">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:8px;gap:8px">
+        <div>
+          <span style="font-size:.7rem;padding:2px 8px;border-radius:6px;background:${c}22;color:${c};font-weight:700">${typeLabels[m.type]||m.type}</span>
+          ${m.studentName?`<span style="font-size:.72rem;color:var(--dim);margin-left:6px">→ ${m.studentName}</span>`:''}
+        </div>
+        <span style="font-size:.7rem;color:var(--dim2);flex-shrink:0">${new Date(m.createdAt).toLocaleDateString('tr-TR')}</span>
+      </div>
+      <div style="font-weight:700;font-size:.92rem;margin-bottom:4px">${m.subject}</div>
+      <div style="font-size:.83rem;color:var(--dim);line-height:1.5">${m.message}</div>
+      <div style="font-size:.72rem;color:var(--dim2);margin-top:8px">👤 ${m.teacherName}</div>
+    </div>`;
+  }).join('');
+}
+
+window.openParentMsgModal=async function(){
+  const classes=await getMyClasses();
+  const isT=session.role==='teacher';
+  let studentsHTML='';
+  if(isT&&classes.length){
+    const members=await dbGet(`classMembers/${safeKey(classes[0].code)}`)||{};
+    const students=Object.entries(members).map(([uid,m])=>({uid,...m}));
+    studentsHTML=`<div class="form-group"><label class="label">SINIF</label>
+      <select class="input" id="pm-class" onchange="loadPMStudents(this.value)">
+        ${classes.map(c=>`<option value="${c.code}">${c.name}</option>`).join('')}
+      </select></div>
+    <div class="form-group"><label class="label">ÖĞRENCİ (boş = tüm sınıf)</label>
+      <select class="input" id="pm-student">
+        <option value="">— Tüm Sınıf —</option>
+        ${students.map(s=>`<option value="${s.uid}">${s.name}</option>`).join('')}
+      </select></div>`;
+  }
+  const modal=document.createElement('div');modal.className='modal-overlay';
+  modal.innerHTML=`<div class="modal" style="max-width:480px">
+    <div class="modal-title">✉️ Veli Mesajı Gönder</div>
+    ${studentsHTML}
+    <div class="form-group"><label class="label">TİP</label>
+      <select class="input" id="pm-type">
+        <option value="bilgi">📘 Bilgi</option>
+        <option value="olumlu">🌟 Olumlu Gelişme</option>
+        <option value="uyari">⚠️ Uyarı</option>
+        <option value="acil">🚨 Acil</option>
+      </select></div>
+    <div class="form-group"><label class="label">KONU</label>
+      <input class="input" id="pm-subject" placeholder="Mesaj konusu..."></div>
+    <div class="form-group"><label class="label">MESAJ</label>
+      <textarea class="input" id="pm-message" rows="4" placeholder="Veliye iletilecek mesaj..."></textarea></div>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-primary" style="flex:1" onclick="saveParentMsg()">📨 Gönder</button>
+      <button class="btn btn-ghost" onclick="this.closest('.modal-overlay').remove()">İptal</button>
+    </div>
+  </div>`;
+  modal.onclick=e=>{if(e.target===modal)modal.remove();};
+  document.body.appendChild(modal);
+}
+
+window.loadPMStudents=async function(classCode){
+  const sel=document.getElementById('pm-student');if(!sel)return;
+  const members=await dbGet(`classMembers/${safeKey(classCode)}`)||{};
+  sel.innerHTML=`<option value="">— Tüm Sınıf —</option>`;
+  Object.entries(members).forEach(([uid,m])=>{
+    sel.innerHTML+=`<option value="${uid}">${m.name}</option>`;
+  });
+}
+
+window.saveParentMsg=async function(){
+  const type=document.getElementById('pm-type')?.value;
+  const subject=document.getElementById('pm-subject')?.value.trim();
+  const message=document.getElementById('pm-message')?.value.trim();
+  const classCode=document.getElementById('pm-class')?.value||session.classCode;
+  const studentUid=document.getElementById('pm-student')?.value||'';
+  const studentName=studentUid?document.getElementById('pm-student')?.options[document.getElementById('pm-student').selectedIndex]?.text:'';
+  if(!subject||!message){toast('Konu ve mesaj gerekli!','w');return;}
+  const id='pm_'+Date.now();
+  await dbSet(`parentMessages/${id}`,{
+    id,type,subject,message,classCode,
+    studentUid,studentName:studentName||'',
+    teacherUid:session.uid,teacherName:session.name,
+    createdAt:Date.now()
+  });
+  toast('📨 Veli mesajı gönderildi!','s');
+  document.querySelector('.modal-overlay')?.remove();
+  loadParentMsgs();
 }
 
 
@@ -5810,6 +6273,9 @@ function buildDrawerNav(){
     {page:'voice',icon:'🎤',label:'Sesli Sohbet'},
     {page:'quiz',icon:'📝',label:'Quiz'},
     {page:'classes',icon:'🏫',label:'Sınıflarım'},
+    {page:'attendance',icon:'📊',label:'Devamsızlık'},
+    {page:'gradebook',icon:'📒',label:'Not Defteri'},
+    {page:'parent',icon:'👨‍👩‍👧',label:'Veli Mesajları'},
     {page:'profile',icon:'👤',label:'Profilim'},
     {page:'dm',icon:'✉️',label:'Mesajlar'},
     {page:'classprofiles',icon:'👥',label:'Sınıfım',studentOnly:true},
