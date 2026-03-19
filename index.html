@@ -805,17 +805,20 @@ const SUBJECTS=[
   {id:'physics',name:'Fizik',icon:'⚛️',color:'#00d4ff',cat:'Fen'},
   {id:'chem',name:'Kimya',icon:'🧪',color:'#00d68f',cat:'Fen'},
   {id:'bio',name:'Biyoloji',icon:'🧬',color:'#22d3a0',cat:'Fen'},
-  {id:'tr',name:'Türkçe',icon:'📖',color:'#f97316',cat:'Sözel'},
-  {id:'lit',name:'Edebiyat',icon:'✍️',color:'#e879f9',cat:'Sözel'},
+  {id:'tr',name:'Türk Dili ve Edebiyatı',icon:'📖',color:'#f97316',cat:'Sözel'},
   {id:'hist',name:'Tarih',icon:'🏛️',color:'#facc15',cat:'Sözel'},
   {id:'geo',name:'Coğrafya',icon:'🌍',color:'#84cc16',cat:'Sözel'},
-  {id:'eng',name:'İngilizce',icon:'🇬🇧',color:'#38bdf8',cat:'Dil'},
-  {id:'lang',name:'Yabancı Dil',icon:'🌐',color:'#818cf8',cat:'Dil'},
-  {id:'music',name:'Müzik',icon:'🎵',color:'#f43f5e',cat:'Sanat'},
-  {id:'art',name:'Görsel Sanatlar',icon:'🎨',color:'#fb923c',cat:'Sanat'},
-  {id:'pe',name:'Beden Eğitimi',icon:'⚽',color:'#4ade80',cat:'Sanat'},
-  {id:'siyer',name:'Siyer',icon:'📿',color:'#fbbf24',cat:'Din'},
-  {id:'tinkercad',name:'Tinkercad',icon:'🖨️',color:'#00d4ff',cat:'Teknoloji'},
+  {id:'lang',name:'Yabancı Dil',icon:'🌐',color:'#38bdf8',cat:'Dil'},
+  {id:'pe',name:'Beden Eğitimi ve Spor',icon:'⚽',color:'#4ade80',cat:'Spor'},
+  {id:'din',name:'Din Kültürü ve Ahlak Bilgisi',icon:'☪️',color:'#fbbf24',cat:'Din'},
+  {id:'siyer',name:'Peygamberimizin Hayatı',icon:'📿',color:'#f59e0b',cat:'Din'},
+  {id:'adab',name:'Adab-ı Muaşeret',icon:'🤝',color:'#c084fc',cat:'Seçmeli'},
+  {id:'dusegt',name:'Düşünme Eğitimi',icon:'🧠',color:'#818cf8',cat:'Seçmeli'},
+  {id:'btt',name:'Bilişim Teknolojileri Temelleri',icon:'💻',color:'#00d4ff',cat:'Teknoloji'},
+  {id:'btu',name:'Bilgisayarlı Tasarım Uygulamaları',icon:'🖥️',color:'#06b6d4',cat:'Teknoloji'},
+  {id:'prgtml',name:'Programlama Temelleri',icon:'👨‍💻',color:'#6366f1',cat:'Teknoloji'},
+  {id:'mga',name:'Mesleki Gelişim Atölyesi',icon:'🔧',color:'#fb923c',cat:'Teknoloji'},
+  {id:'tinkercad',name:'Tinkercad',icon:'🖨️',color:'#f97316',cat:'Teknoloji'},
 ];
 const RANKS=['Acemi','Geliştirici','Tasarımcı','Mühendis','Mimar','Efsane'];
 const BADGES_DEF=[
@@ -3713,15 +3716,14 @@ async function renderAnalytics(){
   if(classes.length===0){document.getElementById('analytics-content').innerHTML='<div class="card text-center text-dim" style="padding:50px">Sınıf bulunamadı.</div>';return}
   const hws=await dbGet('homeworks')||{};
   const myHws=Object.values(hws).filter(h=>h.teacherUid===session.uid);
-  // Ders bazlı ödev sayısı
-  const subjCount={};
-  myHws.forEach(h=>{subjCount[h.subjectId]=(subjCount[h.subjectId]||0)+1});
-  // Tamamlanma oranları
+
+  // Tamamlanma oranları (bar chart)
   const completionData=myHws.slice(0,8).map(h=>({
     label:h.title.substring(0,15),
     total:h.assignedTo?.length||0,
     done:h.submittedBy?.length||0
   }));
+
   // Öğrenci XP
   let stuXP=[];
   for(const cls of classes.slice(0,1)){
@@ -3732,15 +3734,103 @@ async function renderAnalytics(){
     }
   }
   stuXP.sort((a,b)=>b.xp-a.xp);
+
+  // ── ISINMA HARİTASI: konu bazlı başarı oranı ──
+  // Her konuda: kaç ödev var, ortalama tamamlanma oranı
+  const heatSubjects={};
+  myHws.forEach(h=>{
+    if(!h.subjectId)return;
+    if(!heatSubjects[h.subjectId])heatSubjects[h.subjectId]={total:0,doneSum:0,hwCount:0};
+    const assigned=h.assignedTo?.length||0;
+    const done=h.submittedBy?.length||0;
+    if(assigned>0){
+      heatSubjects[h.subjectId].total+=assigned;
+      heatSubjects[h.subjectId].doneSum+=done;
+      heatSubjects[h.subjectId].hwCount++;
+    }
+  });
+  // Tüm SUBJECTS için veri oluştur (ödev yoksa boş göster)
+  const heatData=SUBJECTS.map(s=>{
+    const d=heatSubjects[s.id];
+    const rate=d&&d.total>0?Math.round((d.doneSum/d.total)*100):null;
+    return{id:s.id,name:s.name,icon:s.icon,color:s.color,cat:s.cat,rate,hwCount:d?.hwCount||0};
+  }).filter(s=>s.hwCount>0); // sadece ödev atananları göster
+
+  // Isı haritası renk fonksiyonu: %0-40 kırmızı, 41-70 sarı, 71-100 yeşil
+  function heatColor(rate){
+    if(rate===null)return'rgba(255,255,255,.05)';
+    if(rate<=40)return`rgba(255,77,109,${0.25+rate/80})`;
+    if(rate<=70)return`rgba(255,170,0,${0.3+rate/200})`;
+    return`rgba(0,214,143,${0.3+rate/250})`;
+  }
+  function heatTextColor(rate){
+    if(rate===null)return'var(--dim)';
+    if(rate<=40)return'#ff4d6d';
+    if(rate<=70)return'#ffaa00';
+    return'#00d68f';
+  }
+  function heatLabel(rate){
+    if(rate===null)return'—';
+    if(rate<=40)return'Zorlanıyor 🔴';
+    if(rate<=70)return'Orta 🟡';
+    return'İyi 🟢';
+  }
+
+  const heatHTML=heatData.length===0
+    ? `<div style="text-align:center;color:var(--dim);padding:30px;font-size:.85rem">Henüz yeterli veri yok. Ödev atadıkça ısı haritası oluşur.</div>`
+    : heatData.map(s=>`
+      <div style="background:${heatColor(s.rate)};border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:16px 14px;display:flex;flex-direction:column;gap:6px;position:relative;overflow:hidden;transition:transform .2s" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
+        <div style="display:flex;align-items:center;justify-content:space-between">
+          <span style="font-size:1.4rem">${s.icon}</span>
+          <span style="font-size:1.1rem;font-weight:700;font-family:'Syne',sans-serif;color:${heatTextColor(s.rate)}">${s.rate!==null?s.rate+'%':'—'}</span>
+        </div>
+        <div style="font-weight:600;font-size:.82rem;color:var(--text)">${s.name}</div>
+        <div style="font-size:.7rem;color:var(--dim)">${s.hwCount} ödev</div>
+        <div style="font-size:.68rem;color:${heatTextColor(s.rate)};font-weight:600">${heatLabel(s.rate)}</div>
+        ${s.rate!==null?`<div style="position:absolute;bottom:0;left:0;height:3px;width:${s.rate}%;background:${heatTextColor(s.rate)};border-radius:0 0 0 14px;transition:width .6s ease"></div>`:''}
+      </div>`).join('');
+
+  // Ortalama genel tamamlanma
+  const totalAssigned=myHws.reduce((a,h)=>a+(h.assignedTo?.length||0),0);
+  const totalDone=myHws.reduce((a,h)=>a+(h.submittedBy?.length||0),0);
+  const avgRate=totalAssigned>0?Math.round((totalDone/totalAssigned)*100):0;
+
+  // En çok zorlanan konu
+  const hardest=heatData.filter(s=>s.rate!==null).sort((a,b)=>a.rate-b.rate)[0];
+  const easiest=heatData.filter(s=>s.rate!==null).sort((a,b)=>b.rate-a.rate)[0];
+
   document.getElementById('analytics-content').innerHTML=`
-  <div class="grid-2 mb-4" style="margin-bottom:20px">
-    <div class="stat-card"><div class="lbl">${'Ödevler'.toUpperCase()}</div><div class="val text-primary">${myHws.length}</div></div>
-    <div class="stat-card"><div class="lbl">${'Sınıflarım'.toUpperCase()}</div><div class="val text-success">${classes.length}</div></div>
+  <!-- Özet Kartlar -->
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px;margin-bottom:20px">
+    <div class="stat-card"><div class="lbl">ÖDEVLER</div><div class="val text-primary">${myHws.length}</div></div>
+    <div class="stat-card"><div class="lbl">SINIFLARIM</div><div class="val text-success">${classes.length}</div></div>
+    <div class="stat-card"><div class="lbl">ORT. TAMAMLANMA</div><div class="val" style="color:${avgRate<=40?'var(--danger)':avgRate<=70?'var(--warning)':'var(--success)'}">${avgRate}%</div></div>
+    ${hardest?`<div class="stat-card"><div class="lbl">EN ZOR KONU</div><div style="font-size:1.1rem;margin:6px 0 2px">${hardest.icon} ${hardest.name}</div><div style="font-size:.75rem;color:var(--danger)">${hardest.rate}% başarı</div></div>`:''}
+    ${easiest&&easiest.id!==hardest?.id?`<div class="stat-card"><div class="lbl">EN KOLAY KONU</div><div style="font-size:1.1rem;margin:6px 0 2px">${easiest.icon} ${easiest.name}</div><div style="font-size:.75rem;color:var(--success)">${easiest.rate}% başarı</div></div>`:''}
   </div>
+
+  <!-- Isı Haritası -->
+  <div class="card" style="margin-bottom:20px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+      <div style="font-family:'Syne',sans-serif;font-size:.85rem;font-weight:700;letter-spacing:.06em">🗺️ SINIF ISI HARİTASI</div>
+      <div style="display:flex;gap:10px;font-size:.68rem;color:var(--dim)">
+        <span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;border-radius:3px;background:#ff4d6d;display:inline-block"></span>Zorlanıyor (0–40%)</span>
+        <span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;border-radius:3px;background:#ffaa00;display:inline-block"></span>Orta (41–70%)</span>
+        <span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;border-radius:3px;background:#00d68f;display:inline-block"></span>İyi (71–100%)</span>
+      </div>
+    </div>
+    <div style="font-size:.75rem;color:var(--dim);margin-bottom:16px">Ödev tamamlanma oranlarına göre sınıfın hangi konuda zorlandığını gösterir</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px">
+      ${heatHTML}
+    </div>
+  </div>
+
+  <!-- Grafikler -->
   <div class="grid-2" style="gap:20px">
     <div class="card"><div style="font-family:'Syne',sans-serif;font-size:.75rem;letter-spacing:.1em;color:var(--dim);margin-bottom:14px">📋 ÖDEV TAMAMLANMA</div><canvas id="chart-completion" height="200"></canvas></div>
     <div class="card"><div style="font-family:'Syne',sans-serif;font-size:.75rem;letter-spacing:.1em;color:var(--dim);margin-bottom:14px">🏆 ÖĞRENCİ XP SIRASI</div><canvas id="chart-xp" height="200"></canvas></div>
   </div>`;
+
   // Charts
   setTimeout(()=>{
     if(window.Chart){
@@ -3756,7 +3846,7 @@ async function renderAnalytics(){
         options:{responsive:true,plugins:{legend:{labels:{color:'#a0a0b8',font:{size:11}}}},scales:{x:{ticks:{color:'#a0a0b8',font:{size:10}}},y:{ticks:{color:'#a0a0b8'},grid:{color:'rgba(255,255,255,.05)'}}}}
       });
       new Chart(document.getElementById('chart-xp'),{
-        type:'horizontalBar'||'bar',
+        type:'bar',
         data:{
           labels:stuXP.map(s=>s.name),
           datasets:[{label:'Toplam XP',data:stuXP.map(s=>s.xp),backgroundColor:stuXP.map((_,i)=>`hsl(${250+i*20},70%,65%)`)}]
