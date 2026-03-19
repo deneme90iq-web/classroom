@@ -2931,47 +2931,35 @@ window.showTopicContentForm = function(type, topicId, topicTitle, subjectId, cla
 
 
 // ═══════════ AI OTOMATİK KONU DOLDURMA ═══════════
-// ═══════════ YouTube Video Arama — CORS Proxy + RSS ═══════════
+// ═══════════ YouTube Video Arama — Anthropic API Web Search ═══════════
 async function searchYouTubeVideo(query){
-  // Yöntem 1: allorigins.win proxy üzerinden YouTube RSS feed
   try{
-    const rssUrl = `https://www.youtube.com/feeds/videos.xml?search_query=${encodeURIComponent(query)}`;
-    const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(rssUrl)}`;
-    const resp = await fetch(proxyUrl, {signal: AbortSignal.timeout(8000)});
-    if(resp.ok){
-      const data = await resp.json();
-      const xml = data.contents;
-      // video ID ve başlığı parse et
-      const idMatch = xml.match(/yt:videoId>([^<]+)</);
-      const titleMatch = xml.match(/<title>([^<]+)<\/title>/g);
-      if(idMatch?.[1]){
-        const videoId = idMatch[1].trim();
-        // 2. title (1. title kanal adı olabilir)
-        const title = titleMatch?.[1]?.replace(/<\/?title>/g,'') || query;
+    const resp = await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        model:'claude-sonnet-4-20250514',
+        max_tokens:200,
+        tools:[{type:'web_search_20250305',name:'web_search'}],
+        messages:[{
+          role:'user',
+          content:`YouTube'da "${query}" için en uygun Türkçe ders videosunu bul. Sadece şu formatta yanıt ver: VIDEO_ID:başlık - Başka hiçbir şey yazma. Örnek: dQw4w9WgXcQ:Konu Anlatımı`
+        }]
+      })
+    });
+    const data = await resp.json();
+    // Tüm content bloklarını birleştir
+    const text = (data.content||[]).filter(b=>b.type==='text').map(b=>b.text).join('');
+    const m = text.match(/([a-zA-Z0-9_-]{11}):(.+)/);
+    if(m){
+      const videoId = m[1].trim();
+      const title = m[2].trim();
+      // Geçerli YouTube ID formatı kontrolü
+      if(/^[a-zA-Z0-9_-]{11}$/.test(videoId)){
         return { id:videoId, title, url:`https://www.youtube.com/watch?v=${videoId}` };
       }
     }
-  }catch(e){ console.warn('RSS proxy hata:',e.message); }
-
-  // Yöntem 2: corsproxy.io üzerinden dene
-  try{
-    const ytSearch = `https://www.youtube.com/results?search_query=${encodeURIComponent(query)}&sp=EgIQAQ%253D%253D`;
-    const proxyUrl2 = `https://corsproxy.io/?${encodeURIComponent(ytSearch)}`;
-    const resp2 = await fetch(proxyUrl2, {signal: AbortSignal.timeout(8000)});
-    if(resp2.ok){
-      const html = await resp2.text();
-      const idMatch = html.match(/"videoId":"([a-zA-Z0-9_-]{11})"/);
-      const titleMatch = html.match(/"title":\{"runs":\[\{"text":"([^"]+)"/);
-      if(idMatch?.[1]){
-        return {
-          id: idMatch[1],
-          title: titleMatch?.[1] || query,
-          url: `https://www.youtube.com/watch?v=${idMatch[1]}`
-        };
-      }
-    }
-  }catch(e){ console.warn('corsproxy hata:',e.message); }
-
+  }catch(e){ console.warn('Anthropic video arama hata:',e.message); }
   return null;
 }
 
