@@ -2116,50 +2116,44 @@ async function renderDersler(){
 
 
 // ═══════════ AI ANLIK TEST SİSTEMİ ═══════════
-// ═══════════ ANTHROPIC CLAUDE API — Merkezi Fonksiyon ═══════════
-const ANTHROPIC_KEY = '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';
+// ═══════════ GOOGLE GEMINI API — Merkezi Fonksiyon ═══════════
+const GEMINI_KEY = 'AIzaSyD0wnzIQaqjU5UpOCzHhowfKC7oiNackOM';
 
-async function claudeFetch(prompt, maxTokens=1024, system=''){
-  for(let attempt=0; attempt<3; attempt++){
+async function claudeFetch(prompt, maxTokens, system){
+  maxTokens = maxTokens || 1024;
+  var fullPrompt = system ? system + '\n\n' + prompt : prompt;
+  for(var attempt=0; attempt<3; attempt++){
     try{
-      const body = {
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: maxTokens,
-        messages: [{role:'user', content: prompt}]
-      };
-      if(system) body.system = system;
-
-      const resp = await fetch('https://api.anthropic.com/v1/messages',{
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-api-key': ANTHROPIC_KEY,
-          'anthropic-version': '2023-06-01',
-          'anthropic-dangerous-direct-browser-access': 'true'
-        },
-        body: JSON.stringify(body)
-      });
-
-      if(resp.status === 529 || resp.status === 503){
-        const wait = (attempt+1)*8000;
-        console.warn('Claude overloaded, waiting', wait/1000, 's');
-        await new Promise(r=>setTimeout(r,wait));
+      var resp = await fetch(
+        'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key='+GEMINI_KEY,
+        {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({
+            contents: [{parts: [{text: fullPrompt}]}],
+            generationConfig: {maxOutputTokens: maxTokens, temperature: 0.4}
+          })
+        }
+      );
+      if(resp.status === 429){
+        await new Promise(function(r){setTimeout(r,(attempt+1)*8000);});
         continue;
       }
       if(!resp.ok){
-        const err = await resp.json().catch(()=>({}));
-        throw new Error(err.error?.message || 'HTTP '+resp.status);
+        var errData = await resp.json().catch(function(){return {};});
+        throw new Error(errData.error ? errData.error.message : 'HTTP '+resp.status);
       }
-      const data = await resp.json();
-      return data.content?.[0]?.text || '';
+      var data = await resp.json();
+      return (data.candidates && data.candidates[0] && data.candidates[0].content &&
+              data.candidates[0].content.parts && data.candidates[0].content.parts[0])
+              ? data.candidates[0].content.parts[0].text : '';
     }catch(e){
       if(attempt===2) throw e;
-      await new Promise(r=>setTimeout(r,3000));
+      await new Promise(function(r){setTimeout(r,3000);});
     }
   }
   return '';
 }
-
 // (eski Groq key kaldırıldı)
 
 window.startAITest = async function(subjectId){
