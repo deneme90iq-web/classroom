@@ -2970,7 +2970,10 @@ async function renderQuestionBank(){
   mc.innerHTML=`
   <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px">
     <div style="font-family:'Syne',sans-serif;font-size:1.3rem;font-weight:700">🧩 Soru Bankası</div>
-    ${isT?`<button class="btn btn-primary" onclick="openQBModal()">+ Soru Ekle</button>`:''}
+    ${isT?`<div style="display:flex;gap:8px">
+      <button class="btn btn-accent" onclick="openPDFtoQModal()">📄 PDF'den Üret</button>
+      <button class="btn btn-primary" onclick="openQBModal()">+ Manuel Ekle</button>
+    </div>`:''}
   </div>
   <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:16px;padding-bottom:4px">
     <button class="btn btn-primary" id="qb-filter-all" onclick="qbFilter('all')" style="font-size:.78rem">Tümü</button>
@@ -3023,6 +3026,246 @@ async function loadQB(cat){
     </div>`;
   }).join('');
 }
+
+// ═══════════ PDF → SORU BANKASI (AI) ═══════════
+window.openPDFtoQModal = async function(){
+  const classes = await getMyClasses();
+  if(!classes.length){toast('Önce sınıf oluştur!','w');return;}
+
+  const modal = document.createElement('div');
+  modal.className = 'modal-overlay';
+  modal.id = 'pdf-to-q-modal';
+  modal.innerHTML = `<div class="modal" style="max-width:500px">
+    <div class="modal-title">📄 PDF'den Soru Üret</div>
+    <div style="font-size:.8rem;color:var(--dim);margin-bottom:16px">PDF yükle, yapay zeka otomatik çoktan seçmeli sorular oluştursun.</div>
+
+    <div class="form-group"><label class="label">SINIF</label>
+      <select class="input" id="pq-class">${classes.map(c=>`<option value="${c.code}">${c.name}</option>`).join('')}</select></div>
+    <div class="form-group"><label class="label">DERS</label>
+      <select class="input" id="pq-subj"><option value="">— Seç —</option>${SUBJECTS.map(s=>`<option value="${s.id}">${s.icon} ${s.name}</option>`).join('')}</select></div>
+    <div class="form-group"><label class="label">SORU SAYISI</label>
+      <select class="input" id="pq-count">
+        <option value="5">5 soru</option>
+        <option value="10" selected>10 soru</option>
+        <option value="15">15 soru</option>
+        <option value="20">20 soru</option>
+      </select></div>
+    <div class="form-group"><label class="label">PDF DOSYASI</label>
+      <div id="pq-drop" style="border:2px dashed var(--border2);border-radius:12px;padding:28px;text-align:center;cursor:pointer;transition:all .2s" onclick="document.getElementById('pq-file').click()" ondragover="event.preventDefault();this.style.borderColor='var(--primary)'" ondragleave="this.style.borderColor='var(--border2)'" ondrop="handlePQDrop(event)">
+        <div style="font-size:2rem;margin-bottom:6px">📄</div>
+        <div style="font-size:.85rem;color:var(--dim)">PDF'i buraya sürükle veya tıkla</div>
+        <div style="font-size:.72rem;color:var(--dim2);margin-top:4px">Max 10MB</div>
+        <div id="pq-file-name" style="font-size:.8rem;color:var(--primary);margin-top:8px;font-weight:600"></div>
+      </div>
+      <input type="file" id="pq-file" accept=".pdf" style="display:none" onchange="handlePQFile(this)"></div>
+
+    <div id="pq-progress" style="display:none;margin-bottom:14px">
+      <div style="font-size:.82rem;color:var(--dim);margin-bottom:6px" id="pq-status">PDF okunuyor...</div>
+      <div style="background:var(--bg2);border-radius:6px;height:8px;overflow:hidden">
+        <div id="pq-bar" style="height:8px;background:linear-gradient(90deg,var(--primary),var(--accent));width:0%;transition:width .5s;border-radius:6px"></div>
+      </div>
+    </div>
+
+    <div id="pq-preview" style="display:none;margin-bottom:14px">
+      <div style="font-family:'Syne',sans-serif;font-size:.72rem;letter-spacing:.08em;color:var(--dim);margin-bottom:8px">OLUŞTURULAN SORULAR (düzenleyebilirsiniz)</div>
+      <div id="pq-questions-list"></div>
+    </div>
+
+    <div style="display:flex;gap:8px">
+      <button id="pq-generate-btn" class="btn btn-accent" style="flex:1" onclick="generateQuestionsFromPDF()">🤖 Soru Üret</button>
+      <button id="pq-save-btn" class="btn btn-primary" style="flex:1;display:none" onclick="savePDFQuestions()">💾 Kaydet</button>
+      <button class="btn btn-ghost" onclick="this.closest('.modal-overlay').remove()">İptal</button>
+    </div>
+  </div>`;
+  modal.onclick = e => {if(e.target===modal) modal.remove();};
+  document.body.appendChild(modal);
+}
+
+let pqPDFText = '';
+let pqGeneratedQs = [];
+
+window.handlePQDrop = function(e){
+  e.preventDefault();
+  const file = e.dataTransfer.files[0];
+  if(file?.type === 'application/pdf') processPQFile(file);
+}
+
+window.handlePQFile = function(input){
+  const file = input.files[0];
+  if(file) processPQFile(file);
+}
+
+async function processPQFile(file){
+  if(file.size > 10*1024*1024){toast('PDF max 10MB olabilir!','w');return;}
+  document.getElementById('pq-file-name').textContent = '📄 '+file.name;
+  document.getElementById('pq-drop').style.borderColor = 'var(--primary)';
+
+  // PDF.js ile metni çıkar
+  showPQProgress('PDF metni okunuyor...', 20);
+  try{
+    const arrayBuffer = await file.arrayBuffer();
+    const pdfjsLib = window['pdfjs-dist/build/pdf'];
+    if(!pdfjsLib){ // PDF.js yüklü değilse yükle
+      await loadScript('https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js');
+      window.pdfjsLib = window['pdfjs-dist/build/pdf'];
+      window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    }
+    const lib = window.pdfjsLib || pdfjsLib;
+    lib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+    const pdf = await lib.getDocument({data: arrayBuffer}).promise;
+    let text = '';
+    const maxPages = Math.min(pdf.numPages, 15); // Max 15 sayfa
+
+    for(let i=1; i<=maxPages; i++){
+      showPQProgress(`Sayfa ${i}/${maxPages} okunuyor...`, 20 + (i/maxPages)*40);
+      const page = await pdf.getPage(i);
+      const content = await page.getTextContent();
+      text += content.items.map(item=>item.str).join(' ') + '\n';
+    }
+
+    pqPDFText = text.trim().substring(0, 6000); // Max 6000 karakter
+    showPQProgress('PDF hazır! Soru üretmek için butona bas.', 60);
+    setTimeout(()=>{
+      document.getElementById('pq-progress').style.display='none';
+    }, 1500);
+    toast(`✅ PDF okundu (${pdf.numPages} sayfa)`, 's');
+  } catch(err){
+    toast('❌ PDF okunamadı: '+err.message, 'd');
+    hidePQProgress();
+  }
+}
+
+function loadScript(src){
+  return new Promise((res,rej)=>{
+    if(document.querySelector(`script[src="${src}"]`)){res();return;}
+    const s=document.createElement('script');s.src=src;s.onload=res;s.onerror=rej;document.head.appendChild(s);
+  });
+}
+
+function showPQProgress(msg, pct){
+  const prog = document.getElementById('pq-progress');
+  if(prog) prog.style.display = 'block';
+  const status = document.getElementById('pq-status');
+  if(status) status.textContent = msg;
+  const bar = document.getElementById('pq-bar');
+  if(bar) bar.style.width = pct + '%';
+}
+function hidePQProgress(){
+  const prog = document.getElementById('pq-progress');
+  if(prog) prog.style.display = 'none';
+}
+
+window.generateQuestionsFromPDF = async function(){
+  if(!pqPDFText){toast('Önce PDF yükle!','w');return;}
+  const subjectId = document.getElementById('pq-subj')?.value;
+  if(!subjectId){toast('Ders seç!','w');return;}
+  const count = document.getElementById('pq-count')?.value || '10';
+  const subj = getSubject(subjectId);
+
+  showPQProgress('Yapay zeka sorular oluşturuyor...', 70);
+  document.getElementById('pq-generate-btn').disabled = true;
+
+  try{
+    const GROQ_KEY = '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';
+    const prompt = `Sen bir ${subj.name} öğretmenisin. Aşağıdaki ders içeriğinden ${count} adet çoktan seçmeli soru oluştur.
+
+KURALLAR:
+- Her soru SADECE verilen içerikten olsun
+- Her soru 4 şık içersin (A, B, C, D)
+- Sadece 1 doğru cevap olsun
+- Sorular açık ve anlaşılır olsun
+- SADECE JSON dizisi döndür, başka hiçbir şey yazma
+
+FORMAT (tam bu JSON formatında döndür):
+[
+  {
+    "question": "Soru metni?",
+    "options": ["A şıkkı", "B şıkkı", "C şıkkı", "D şıkkı"],
+    "answer": 0
+  }
+]
+(answer: doğru şıkkın index'i, 0=A, 1=B, 2=C, 3=D)
+
+DERS İÇERİĞİ:
+${pqPDFText.substring(0, 4000)}`;
+
+    const resp = await fetch('https://api.groq.com/openai/v1/chat/completions',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+GROQ_KEY},
+      body: JSON.stringify({
+        model:'llama-3.3-70b-versatile',
+        messages:[{role:'user',content:prompt}],
+        max_tokens: 3000,
+        temperature: 0.4
+      })
+    });
+    const data = await resp.json();
+    const raw = data.choices?.[0]?.message?.content || '';
+
+    // JSON parse
+    const jsonMatch = raw.match(/\[[\s\S]*\]/);
+    if(!jsonMatch) throw new Error('AI geçerli JSON döndürmedi');
+    const questions = JSON.parse(jsonMatch[0]);
+
+    if(!Array.isArray(questions)||!questions.length) throw new Error('Soru listesi boş');
+
+    pqGeneratedQs = questions;
+    showPQProgress('Sorular hazır!', 100);
+    setTimeout(()=>{hidePQProgress();}, 800);
+
+    // Önizleme göster
+    renderPQPreview(questions, subj);
+    document.getElementById('pq-save-btn').style.display = 'block';
+    document.getElementById('pq-generate-btn').textContent = '🔄 Yeniden Üret';
+
+  } catch(err){
+    toast('❌ Hata: '+err.message, 'd');
+    hidePQProgress();
+  }
+  document.getElementById('pq-generate-btn').disabled = false;
+}
+
+function renderPQPreview(questions, subj){
+  const list = document.getElementById('pq-questions-list');
+  if(!list) return;
+  document.getElementById('pq-preview').style.display = 'block';
+  list.innerHTML = questions.map((q,qi)=>`
+    <div style="background:var(--card2);border-radius:12px;padding:14px;margin-bottom:10px;border:1px solid var(--border)">
+      <div style="font-size:.72rem;color:var(--dim);margin-bottom:4px">SORU ${qi+1}</div>
+      <div style="font-weight:600;font-size:.88rem;margin-bottom:10px">${q.question}</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+        ${(q.options||[]).map((o,i)=>`<div style="padding:6px 10px;border-radius:8px;font-size:.78rem;
+          ${i===q.answer?'background:var(--success-dim);border:1px solid var(--success);color:var(--success);font-weight:600'
+          :'background:var(--card);border:1px solid var(--border)'}">
+          ${String.fromCharCode(65+i)}. ${o}
+        </div>`).join('')}
+      </div>
+    </div>`).join('');
+}
+
+window.savePDFQuestions = async function(){
+  const classCode = document.getElementById('pq-class')?.value;
+  const subjectId = document.getElementById('pq-subj')?.value;
+  if(!classCode||!subjectId||!pqGeneratedQs.length){toast('Eksik bilgi!','w');return;}
+
+  let saved = 0;
+  for(const q of pqGeneratedQs){
+    const id = 'qb_'+Date.now()+'_'+saved;
+    await dbSet(`questionBank/${id}`,{
+      id, subjectId, classCode, type:'multiple',
+      question: q.question, options: q.options, answer: q.answer,
+      authorUid: session.uid, authorName: session.name,
+      source: 'pdf_ai', createdAt: Date.now()
+    });
+    saved++;
+  }
+  toast(`🧩 ${saved} soru soru bankasına eklendi!`, 's');
+  document.querySelector('.modal-overlay')?.remove();
+  pqPDFText = ''; pqGeneratedQs = [];
+  loadQB('all');
+}
+
 
 window.openQBModal=async function(edit=null){
   const classes=await getMyClasses();
