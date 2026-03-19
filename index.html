@@ -2928,6 +2928,38 @@ window.showTopicContentForm = function(type, topicId, topicTitle, subjectId, cla
 
 
 // ═══════════ AI OTOMATİK KONU DOLDURMA ═══════════
+// ═══════════ GROQ RATE LIMIT HANDLER ═══════════
+async function groqFetch(prompt, maxTokens=1500, temp=0.4){
+  const GROQ_KEY = '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';
+  for(let attempt=0; attempt<4; attempt++){
+    try{
+      const resp = await fetch('https://api.groq.com/openai/v1/chat/completions',{
+        method:'POST',
+        headers:{'Content-Type':'application/json','Authorization':'Bearer '+GROQ_KEY},
+        body:JSON.stringify({
+          model:'llama-3.3-70b-versatile',
+          messages:[{role:'user',content:prompt}],
+          max_tokens:maxTokens, temperature:temp
+        })
+      });
+      if(resp.status===429){
+        const wait = (attempt+1)*15000; // 15s, 30s, 45s
+        afLog('  ⏳ Rate limit, '+Math.round(wait/1000)+'sn bekleniyor...');
+        afStatus('Rate limit — bekleniyor...', -1);
+        await new Promise(r=>setTimeout(r,wait));
+        continue;
+      }
+      if(!resp.ok) throw new Error('HTTP '+resp.status);
+      const data = await resp.json();
+      return data.choices?.[0]?.message?.content||'';
+    }catch(e){
+      if(attempt===3) throw e;
+      await new Promise(r=>setTimeout(r,5000));
+    }
+  }
+  return '';
+}
+
 const GROQ_KEY_AF = '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';
 
 window.aiAutoFillTopics = async function(subjectId){
@@ -2975,6 +3007,7 @@ window.aiAutoFillTopics = async function(subjectId){
 }
 
 function afLog(msg){ 
+  console.log('[AF]', msg);
   const el=document.getElementById('af-log');
   if(el){ el.innerHTML+=`<div>• ${msg}</div>`; el.scrollTop=el.scrollHeight; }
 }
@@ -3016,13 +3049,7 @@ SADECE JSON array döndür, başka hiçbir şey yazma:
 
 ${gradeText} ${subj.name} için TÜM ana konuları listele (10-20 konu arası):`;
 
-    const r1 = await fetch('https://api.groq.com/openai/v1/chat/completions',{
-      method:'POST',
-      headers:{'Content-Type':'application/json','Authorization':'Bearer '+GROQ_KEY_AF},
-      body:JSON.stringify({model:'llama-3.3-70b-versatile',messages:[{role:'user',content:topicsPrompt}],max_tokens:3000,temperature:0.3})
-    });
-    const d1 = await r1.json();
-    const raw1 = d1.choices?.[0]?.message?.content||'';
+    const raw1 = await groqFetch(topicsPrompt, 3000, 0.3);
     const clean1 = raw1.replace(/```json|```/g,'').trim();
     const m1 = clean1.match(/\[[\s\S]*\]/);
     let topicList = null;
@@ -3053,7 +3080,7 @@ ${gradeText} ${subj.name} için TÜM ana konuları listele (10-20 konu arası):`
 
       // Benzersiz ID için timestamp + random
       const uid = Date.now()+'_'+i+'_'+Math.random().toString(36).slice(2,6);
-      await new Promise(r=>setTimeout(r,50)); // ID çakışmasını önle
+      if(i>0) await new Promise(r=>setTimeout(r,3000)); // Rate limit önleme — 3sn bekle
 
       // Konu kaydet
       const topicId = 'topic_'+uid;
@@ -3074,17 +3101,15 @@ SADECE JSON array döndür, başka hiçbir şey yazma:
 [{"front":"Soru/Kavram","back":"Kısa cevap"}]
 Türkçe, ${gradeText} seviyesine uygun, ${fcCount} kart:`;
 
-        const r2 = await fetch('https://api.groq.com/openai/v1/chat/completions',{
-          method:'POST',
-          headers:{'Content-Type':'application/json','Authorization':'Bearer '+GROQ_KEY_AF},
-          body:JSON.stringify({model:'llama-3.3-70b-versatile',messages:[{role:'user',content:fcPrompt}],max_tokens:1500,temperature:0.4})
-        });
-        const d2 = await r2.json();
-        const raw2 = d2.choices?.[0]?.message?.content||'';
-        const clean2 = raw2.replace(/```json|```/g,'').trim();
-        const m2 = clean2.match(/\[[\s\S]*\]/);
+        const raw2 = await groqFetch(fcPrompt, 1500, 0.4);
+        console.log('[FC RAW '+i+']', raw2.substring(0,200));
+        afLog('  📋 AI yanıtı: '+raw2.substring(0,60)+'...');
         let cards = null;
-        if(m2){ try{ cards=JSON.parse(m2[0]); }catch(e){ afLog('  ⚠️ JSON parse: '+e.message); } }
+        try{
+          const c2 = raw2.replace(/```json|```/g,'').trim();
+          if(c2.startsWith('[')) cards=JSON.parse(c2);
+          else{ const mm=c2.match(/\[[\s\S]*\]/); if(mm) cards=JSON.parse(mm[0]); }
+        }catch(e){ afLog('  ⚠️ Parse hatası: '+e.message); }
 
         if(cards?.length){
           const fcId = 'fcset_'+uid;
@@ -3115,15 +3140,10 @@ Türkçe, ${gradeText} seviyesine uygun, ${fcCount} kart:`;
 
 Türkçe yaz, ${gradeText} öğrencisine uygun, anlaşılır bir dil kullan. Düz metin, başlıkları satır başı büyük harfle yaz.`;
 
-        const r3 = await fetch('https://api.groq.com/openai/v1/chat/completions',{
-          method:'POST',
-          headers:{'Content-Type':'application/json','Authorization':'Bearer '+GROQ_KEY_AF},
-          body:JSON.stringify({model:'llama-3.3-70b-versatile',messages:[{role:'user',content:anlatimPrompt}],max_tokens:1500,temperature:0.3})
-        });
-        const d3 = await r3.json();
-        const anlatim = d3.choices?.[0]?.message?.content||'';
+        const anlatim = await groqFetch(anlatimPrompt, 1500, 0.3);
 
-        if(anlatim.length > 100){
+        console.log('[NOTE RAW]', anlatim.substring(0,100), 'len:', anlatim.length);
+        if(anlatim.length > 50){
           const noteId = 'note_'+uid;
           await dbSet(`notes/${noteId}`,{
             id:noteId,
