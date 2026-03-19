@@ -2708,7 +2708,7 @@ async function renderClasses(){
       <div class="flex items-center gap-2">
         <div style="font-family:'Syne',sans-serif;font-size:.9rem;font-weight:700;background:var(--primary-dim);color:var(--primary);padding:6px 14px;border-radius:8px;border:1px solid rgba(108,99,255,.3);letter-spacing:.1em">${cls.code}</div>
         <button class="btn btn-ghost btn-icon" onclick="navigator.clipboard.writeText('${cls.code}').then(()=>toast('Kod kopyalandı!','i'))" title="Kopyala">📋</button>
-        ${session.role==='teacher'?`<button class="btn btn-ghost btn-icon" onclick="deleteClass('${cls.code}','${cls.name.replace(/'/g,'\\'')}\`)" title="Sınıfı Sil" style="color:var(--danger)">🗑️</button>`:''}
+        ${session.role==='teacher'?'<button class="btn btn-ghost btn-icon" onclick="deleteClass(\''+cls.code+'\',\''+cls.name.replace(/'/g,"\\'")+'\')" title="Sınıfı Sil" style="color:var(--danger)">🗑️</button>':''}
       </div>
     </div>
     <div class="flex gap-3">
