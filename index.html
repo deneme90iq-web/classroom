@@ -2931,35 +2931,59 @@ window.showTopicContentForm = function(type, topicId, topicTitle, subjectId, cla
 
 
 // ═══════════ AI OTOMATİK KONU DOLDURMA ═══════════
-// ═══════════ INVIDİOUS API — YouTube Video Arama ═══════════
-const INVIDIOUS_INSTANCES = [
-  'https://inv.nadeko.net',
-  'https://yewtu.be',
-  'https://invidious.nerdvpn.de',
-  'https://invidious.privacydev.net',
-];
-
+// ═══════════ YouTube InnerTube API — API Key Gerektirmez ═══════════
 async function searchYouTubeVideo(query){
-  const encoded = encodeURIComponent(query);
-  for(const inst of INVIDIOUS_INSTANCES){
-    try{
-      const url = `${inst}/api/v1/search?q=${encoded}&type=video&fields=videoId,title,author&page=1`;
-      const resp = await fetch(url, {signal: AbortSignal.timeout(6000)});
-      if(!resp.ok) continue;
-      const data = await resp.json();
-      if(Array.isArray(data) && data.length > 0){
-        const first = data[0];
-        if(first.videoId){
+  try{
+    // YouTube InnerTube API — YouTube'un kendi iç API'si, key gerektirmez
+    const resp = await fetch('https://www.youtube.com/youtubei/v1/search', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-YouTube-Client-Name': '1',
+        'X-YouTube-Client-Version': '2.20231121.01.00',
+      },
+      body: JSON.stringify({
+        context: {
+          client: {
+            clientName: 'WEB',
+            clientVersion: '2.20231121.01.00',
+            hl: 'tr',
+            gl: 'TR',
+          }
+        },
+        query: query,
+        params: 'EgIQAQ%3D%3D' // video filtresi
+      }),
+      signal: AbortSignal.timeout(8000)
+    });
+
+    if(!resp.ok) throw new Error('InnerTube yanıt vermedi');
+    const data = await resp.json();
+
+    // Sonuçları parse et
+    const contents = data?.contents?.twoColumnSearchResultsRenderer
+      ?.primaryContents?.sectionListRenderer?.contents;
+
+    if(!contents) throw new Error('Sonuç yapısı bulunamadı');
+
+    for(const section of contents){
+      const items = section?.itemSectionRenderer?.contents;
+      if(!items) continue;
+      for(const item of items){
+        const vr = item?.videoRenderer;
+        if(vr?.videoId){
           return {
-            id: first.videoId,
-            title: first.title || query,
-            url: `https://www.youtube.com/watch?v=${first.videoId}`
+            id: vr.videoId,
+            title: vr.title?.runs?.[0]?.text || query,
+            url: `https://www.youtube.com/watch?v=${vr.videoId}`
           };
         }
       }
-    }catch(e){ continue; }
+    }
+  }catch(e){
+    console.warn('InnerTube hata:', e.message);
   }
-  return null; // hiçbir instance çalışmadı
+  return null;
 }
 
 const GROQ_KEY_AF = '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';
