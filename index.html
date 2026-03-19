@@ -2931,6 +2931,37 @@ window.showTopicContentForm = function(type, topicId, topicTitle, subjectId, cla
 
 
 // ═══════════ AI OTOMATİK KONU DOLDURMA ═══════════
+// ═══════════ INVIDİOUS API — YouTube Video Arama ═══════════
+const INVIDIOUS_INSTANCES = [
+  'https://inv.nadeko.net',
+  'https://yewtu.be',
+  'https://invidious.nerdvpn.de',
+  'https://invidious.privacydev.net',
+];
+
+async function searchYouTubeVideo(query){
+  const encoded = encodeURIComponent(query);
+  for(const inst of INVIDIOUS_INSTANCES){
+    try{
+      const url = `${inst}/api/v1/search?q=${encoded}&type=video&fields=videoId,title,author&page=1`;
+      const resp = await fetch(url, {signal: AbortSignal.timeout(6000)});
+      if(!resp.ok) continue;
+      const data = await resp.json();
+      if(Array.isArray(data) && data.length > 0){
+        const first = data[0];
+        if(first.videoId){
+          return {
+            id: first.videoId,
+            title: first.title || query,
+            url: `https://www.youtube.com/watch?v=${first.videoId}`
+          };
+        }
+      }
+    }catch(e){ continue; }
+  }
+  return null; // hiçbir instance çalışmadı
+}
+
 const GROQ_KEY_AF = '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';
 
 window.aiAutoFillTopics = async function(subjectId){
@@ -3096,68 +3127,65 @@ Türkçe, ${gradeText} seviyesine uygun:`;
         }
       }catch(e){ afLog(`  ⚠️ Flashcard hatası: ${e.message}`); }
 
-      // ADIM 3: Konu anlatımı not olarak kaydet + YouTube video ID bul
+      // ADIM 3: Konu anlatımı (AI) + YouTube video (Invidious)
       try{
-        afLog(`  📝 Konu anlatımı + video üretiliyor...`);
-        const contentPrompt = `${gradeText} ${subj.name} "${topic.title}" konusu için aşağıdakileri üret.
-SADECE JSON döndür:
-{
-  "anlatim": "Konunun detaylı anlatımı (500-800 kelime). Giriş, ana kavramlar, örnekler, özet içersin. Türkçe yaz.",
-  "youtubeId": "Bu konu için Türkçe YouTube ders videosu ID'si. Örnek: dQw4w9WgXcQ formatında. Türkiye'de bilinen eğitim kanallarından (örn: Khan Academy Türkçe, TED-Ed Türkçe, Tonguç Akademi, Hocalara Geldik, vb.) gerçek bir video ID yaz. Bilmiyorsan null yaz.",
-  "videoTitle": "Videonun başlığı"
-}`;
+        afLog(`  📝 Konu anlatımı yazılıyor...`);
+        const anlatimPrompt = `${gradeText} ${subj.name} "${topic.title}" konusunu detaylı anlat.
+
+Şu bölümleri içersin:
+1. Giriş (2-3 cümle)
+2. Temel Kavramlar (her kavramı açıkla)
+3. Örnekler ve Uygulamalar
+4. Önemli Noktalar (madde madde)
+5. Özet
+
+Türkçe yaz, ${gradeText} öğrencisine uygun, anlaşılır bir dil kullan. Düz metin, başlıkları satır başı büyük harfle yaz.`;
 
         const r3 = await fetch('https://api.groq.com/openai/v1/chat/completions',{
           method:'POST',
           headers:{'Content-Type':'application/json','Authorization':'Bearer '+GROQ_KEY_AF},
-          body:JSON.stringify({model:'llama-3.3-70b-versatile',messages:[{role:'user',content:contentPrompt}],max_tokens:2000,temperature:0.3})
+          body:JSON.stringify({model:'llama-3.3-70b-versatile',messages:[{role:'user',content:anlatimPrompt}],max_tokens:1500,temperature:0.3})
         });
         const d3 = await r3.json();
-        const raw3 = d3.choices?.[0]?.message?.content||'';
-        const clean3 = raw3.replace(/```json|```/g,'').trim();
-        const m3 = clean3.match(/\{[\s\S]*\}/);
-        let parsed3 = null;
-        if(m3){ try{ parsed3=JSON.parse(m3[0]); }catch(e){} }
+        const anlatim = d3.choices?.[0]?.message?.content||'';
 
-        // Konu anlatımını not olarak kaydet
-        if(parsed3?.anlatim){
+        if(anlatim.length > 100){
           const noteId = 'note_'+Date.now()+'_'+i;
           await dbSet(`notes/${noteId}`,{
             id:noteId,
             title:topic.title+' — Konu Anlatımı',
-            content:parsed3.anlatim,
+            content:anlatim,
             subjectId, classCode, topicId,
             authorUid:session.uid, authorName:session.name,
             source:'ai', createdAt:Date.now()
           });
           await dbSet(`topics/${safeKey(classCode)}/${subjectId}/${topicId}/noteCount`, 1);
-          afLog(`  📝 Konu anlatımı kaydedildi`);
+          afLog(`  ✅ Konu anlatımı kaydedildi`);
         }
+      }catch(e){ afLog(`  ⚠️ Anlatım hatası: ${e.message}`); }
 
-        // YouTube video kaydet
-        if(parsed3?.youtubeId && parsed3.youtubeId !== 'null'){
-          // ID doğrulama — sadece harf/rakam/- _ içermeli
-          const ytId = String(parsed3.youtubeId).replace(/[^a-zA-Z0-9_-]/g,'').slice(0,11);
-          if(ytId.length >= 10){
-            const vidId = 'vid_'+Date.now()+'_'+i;
-            await dbSet(`classVideos/${vidId}`,{
-              id:vidId,
-              title:parsed3.videoTitle||topic.title+' Ders Videosu',
-              url:`https://www.youtube.com/watch?v=${ytId}`,
-              description:`${gradeText} ${subj.name} — ${topic.title}`,
-              subjectId, classCode, topicId,
-              authorUid:session.uid, authorName:session.name,
-              source:'ai', createdAt:Date.now()
-            });
-            await dbSet(`topics/${safeKey(classCode)}/${subjectId}/${topicId}/videoCount`, 1);
-            afLog(`  🎬 Video eklendi (${ytId})`);
-          } else {
-            afLog(`  🎬 Video bulunamadı, atlandı`);
-          }
+      // YouTube video — Invidious API ile gerçek arama
+      try{
+        afLog(`  🎬 YouTube'da video aranıyor...`);
+        const query = `${gradeText} ${subj.name} ${topic.title} konu anlatımı`;
+        const ytResult = await searchYouTubeVideo(query);
+        if(ytResult){
+          const vidId2 = 'vid_'+Date.now()+'_'+i;
+          await dbSet(`classVideos/${vidId2}`,{
+            id:vidId2,
+            title:ytResult.title,
+            url:ytResult.url,
+            description:`${gradeText} ${subj.name} — ${topic.title}`,
+            subjectId, classCode, topicId,
+            authorUid:session.uid, authorName:session.name,
+            source:'invidious', createdAt:Date.now()
+          });
+          await dbSet(`topics/${safeKey(classCode)}/${subjectId}/${topicId}/videoCount`, 1);
+          afLog(`  ✅ Video bulundu: ${ytResult.title.substring(0,40)}...`);
         } else {
-          afLog(`  🎬 Bu konu için video ID bilinmiyor, atlandı`);
+          afLog(`  ⚠️ Video bulunamadı (Invidious erişilemedi)`);
         }
-      }catch(e){ afLog(`  ⚠️ Anlatım/video hatası: ${e.message}`); }
+      }catch(e){ afLog(`  ⚠️ Video arama hatası: ${e.message}`); }
 
       added++;
       // Rate limit için bekleme
