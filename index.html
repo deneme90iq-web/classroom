@@ -388,7 +388,7 @@ textarea.input{resize:vertical;min-height:80px}
   /* Not filtre butonları scroll */
   .flex.gap-2.mb-4{flex-wrap:nowrap!important;overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:4px;scrollbar-width:none}
   .flex.gap-2.mb-4::-webkit-scrollbar{display:none}
-  .flex.gap-2.mb-4 .btn{white-space:nowrap;flex-shrink:0}
+  .flex.gap-2.mb-4 .btn{}
 
 
   /* ── GENEL İÇERİK MOBİL ── */
@@ -2129,18 +2129,19 @@ async function renderNotes(){
     <div style="font-family:'Syne',sans-serif;font-size:1.3rem;font-weight:700">📝 Ders Notları</div>
     <button class="btn btn-success" onclick="openNoteModal()">+ Not Paylaş</button>
   </div>
-  <div class="flex gap-2 mb-4" style="flex-wrap:wrap">
-    <button class="btn btn-ghost" style="font-size:.8rem" id="note-filter-all" onclick="filterNotes('all')">Tümü</button>
-    ${['Fen','Sözel','Dil','Spor','Din','Seçmeli','Teknoloji'].map(cat=>`<button class="btn btn-ghost" style="font-size:.8rem" id="note-filter-${cat}" onclick="filterNotes('${cat}')">${cat}</button>`).join('')}
+  <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:16px">
+    <button class="btn btn-primary" style="font-size:.78rem" id="note-filter-all" onclick="filterNotes('all')">Tümü</button>
+    ${SUBJECTS.map(s=>`<button class="btn btn-ghost" style="font-size:.78rem" id="note-filter-${s.id}" onclick="filterNotes('${s.id}')">${s.icon} ${s.name}</button>`).join('')}
   </div>
   <div id="notes-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px"></div>`;
   await loadNotes('all');
 }
 
-window.filterNotes=async function(cat){
-  document.querySelectorAll('[id^="note-filter-"]').forEach(b=>b.classList.remove('btn-primary'));
-  document.getElementById('note-filter-'+cat)?.classList.add('btn-primary');
-  await loadNotes(cat);
+window.filterNotes=async function(filter){
+  document.querySelectorAll('[id^="note-filter-"]').forEach(b=>{b.classList.remove('btn-primary');b.classList.add('btn-ghost');});
+  const el=document.getElementById('note-filter-'+filter);
+  if(el){el.classList.remove('btn-ghost');el.classList.add('btn-primary');}
+  await loadNotes(filter);
 }
 
 async function loadNotes(cat){
@@ -2166,8 +2167,14 @@ async function loadNotes(cat){
   }
 
   if(cat!=='all'){
-    const ids=SUBJECTS.filter(s=>s.cat===cat).map(s=>s.id);
-    filtered=filtered.filter(n=>ids.includes(n.subjectId));
+    // Hem subject id hem kategori destekle
+    const isSubjectId = SUBJECTS.some(s=>s.id===cat);
+    if(isSubjectId){
+      filtered=filtered.filter(n=>n.subjectId===cat);
+    } else {
+      const ids=SUBJECTS.filter(s=>s.cat===cat).map(s=>s.id);
+      filtered=filtered.filter(n=>ids.includes(n.subjectId));
+    }
   }
   filtered.sort((a,b)=>b.createdAt-a.createdAt);
   if(filtered.length===0){
@@ -2917,26 +2924,30 @@ async function renderQuestionBank(){
     <div style="font-family:'Syne',sans-serif;font-size:1.3rem;font-weight:700">🧩 Soru Bankası</div>
     ${isT?`<button class="btn btn-primary" onclick="openQBModal()">+ Soru Ekle</button>`:''}
   </div>
-  <div class="flex gap-2 mb-4" style="flex-wrap:wrap;margin-bottom:16px">
-    <button class="btn btn-ghost btn-primary" id="qb-filter-all" onclick="qbFilter('all')" style="font-size:.78rem">Tümü</button>
-    ${['Fen','Sözel','Dil','Spor','Din','Seçmeli','Teknoloji'].map(c=>`<button class="btn btn-ghost" id="qb-filter-${c}" onclick="qbFilter('${c}')" style="font-size:.78rem;white-space:nowrap">${c}</button>`).join('')}
+  <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:16px;padding-bottom:4px">
+    <button class="btn btn-primary" id="qb-filter-all" onclick="qbFilter('all')" style="font-size:.78rem">Tümü</button>
+    ${SUBJECTS.map(s=>`<button class="btn btn-ghost" id="qb-filter-${s.id}" onclick="qbFilter('${s.id}')" style="font-size:.78rem">${s.icon} ${s.name}</button>`).join('')}
   </div>
   <div id="qb-grid"></div>`;
   await loadQB('all');
 }
 
-window.qbFilter=async function(cat){
+window.qbFilter=async function(filter){
   document.querySelectorAll('[id^="qb-filter-"]').forEach(b=>{b.classList.remove('btn-primary');b.classList.add('btn-ghost');});
-  const el=document.getElementById('qb-filter-'+cat);
+  const el=document.getElementById('qb-filter-'+filter);
   if(el){el.classList.remove('btn-ghost');el.classList.add('btn-primary');}
-  await loadQB(cat);
+  await loadQB(filter);
 }
 
 async function loadQB(cat){
   const grid=document.getElementById('qb-grid');if(!grid)return;
   const all=await dbGet('questionBank')||{};
   let qs=Object.values(all).filter(q=>q.authorUid===session.uid||session.role==='student'&&q.classCode===session.classCode);
-  if(cat!=='all'){const ids=SUBJECTS.filter(s=>s.cat===cat).map(s=>s.id);qs=qs.filter(q=>ids.includes(q.subjectId));}
+  if(cat!=='all'){
+    const isSubjectId=SUBJECTS.some(s=>s.id===cat);
+    if(isSubjectId){qs=qs.filter(q=>q.subjectId===cat);}
+    else{const ids=SUBJECTS.filter(s=>s.cat===cat).map(s=>s.id);qs=qs.filter(q=>ids.includes(q.subjectId));}
+  }
   qs.sort((a,b)=>b.createdAt-a.createdAt);
   if(!qs.length){grid.innerHTML=`<div class="card text-center text-dim" style="padding:40px"><div style="font-size:3rem;margin-bottom:10px">🧩</div><div>Henüz soru yok.</div></div>`;return;}
   grid.innerHTML=qs.map(q=>{
