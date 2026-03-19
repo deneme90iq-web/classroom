@@ -57,7 +57,8 @@ body.light-mode .sidebar-section{color:rgba(17,24,39,.4)}
 body.light-mode .voice-participant{background:#f5f6fc;border-color:var(--border)}
 body.light-mode .toast{background:#fff;border-color:var(--border2);color:#111827}
 *{box-sizing:border-box;margin:0;padding:0}
-html,body{width:100%;min-height:100vh;background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;font-size:15px;overflow-x:hidden}
+html,body{width:100%;min-height:100vh;background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;font-size:15px;overflow:hidden}
+html::-webkit-scrollbar,body::-webkit-scrollbar{display:none}
 body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellipse at 10% 5%,rgba(108,99,255,.05),transparent 50%),radial-gradient(ellipse at 90% 95%,rgba(0,212,255,.04),transparent 50%);pointer-events:none;z-index:0}
 
 /* ── TYPE ── */
@@ -171,8 +172,9 @@ textarea.input{resize:vertical;min-height:80px}
 .err-msg{background:var(--danger-dim);border:1px solid rgba(255,77,109,.3);border-radius:8px;padding:10px 14px;font-size:.83rem;color:var(--danger);margin-bottom:14px;display:none}
 
 /* ── SIDEBAR LAYOUT ── */
-.app-layout{display:grid;grid-template-columns:240px 1fr;gap:0;height:100vh;overflow:hidden}
-.sidebar{background:var(--bg2);border-right:1px solid var(--border);padding:20px 16px;display:flex;flex-direction:column;gap:4px;position:sticky;top:0;height:100vh;overflow-y:auto;flex-shrink:0}
+.app-layout{display:grid;grid-template-columns:240px 1fr;gap:0;height:100vh}
+.sidebar{background:var(--bg2);border-right:1px solid var(--border);padding:20px 16px;display:flex;flex-direction:column;gap:4px;position:sticky;top:0;height:100vh;overflow-y:auto;flex-shrink:0;scrollbar-width:none}
+.sidebar::-webkit-scrollbar{display:none}
 .sidebar-logo{font-family:'Syne',sans-serif;font-size:1.4rem;font-weight:800;background:linear-gradient(135deg,var(--primary),var(--accent));-webkit-background-clip:text;-webkit-text-fill-color:transparent;padding:8px 12px;margin-bottom:8px}
 .sidebar-section{font-size:.65rem;font-family:'Syne',sans-serif;letter-spacing:.12em;color:var(--dim2);padding:12px 12px 6px;margin-top:8px}
 .nav-item{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:10px;cursor:pointer;transition:all .2s;font-size:.88rem;font-weight:500;color:var(--dim)}
@@ -180,7 +182,10 @@ textarea.input{resize:vertical;min-height:80px}
 .nav-item.active{background:var(--primary-dim);color:var(--primary);font-weight:600}
 .nav-item .nav-icon{font-size:1rem;width:20px;text-align:center}
 .nav-badge{margin-left:auto;background:var(--danger);color:#fff;font-size:.6rem;padding:2px 6px;border-radius:10px;font-weight:700}
-.main-content{padding:24px;overflow-y:auto;height:100vh}
+.main-content{padding:24px;overflow-y:auto;height:100vh;min-width:0;box-sizing:border-box;scrollbar-width:thin;scrollbar-color:var(--border) transparent}
+.main-content::-webkit-scrollbar{width:4px}
+.main-content::-webkit-scrollbar-track{background:transparent}
+.main-content::-webkit-scrollbar-thumb{background:var(--border2);border-radius:4px}
 
 /* ── SUBJECT COLORS ── */
 .subj-math{--sc:#6c63ff}.subj-physics{--sc:#00d4ff}.subj-chem{--sc:#00d68f}.subj-bio{--sc:#22d3a0}
@@ -2004,7 +2009,7 @@ async function renderDersler(){
         <span style="font-family:'Syne',sans-serif;font-size:.78rem;font-weight:700;letter-spacing:.1em;color:var(--dim)">${cat.toUpperCase()}</span>
         <div style="flex:1;height:1px;background:var(--border);margin-left:4px"></div>
       </div>
-      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px">
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px">
         ${subjects.map(s=>{
           const hwC=subjHwCount[s.id]||0;
           const noteC=subjNoteCount[s.id]||0;
