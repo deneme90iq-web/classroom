@@ -343,6 +343,44 @@ textarea.input{resize:vertical;min-height:80px}
 #mobile-sidebar-drawer.open{transform:translateX(0)}
 
 @media(max-width:768px){
+
+  /* Dersler & Analitik mobil */
+  #dersler-content .card-hover,
+  #ders-detay-content .hw-card{font-size:.85rem}
+  #analytics-content .grid-2{grid-template-columns:1fr!important}
+  #analytics-content canvas{max-height:220px}
+
+  /* Isı haritası mobilde 2 kolon */
+  #analytics-content [style*="grid-template-columns:repeat(auto-fill,minmax(130px"]{
+    grid-template-columns:repeat(2,1fr)!important;
+  }
+
+  /* Dersler grid mobilde 2 kolon */
+  #dersler-content [style*="grid-template-columns:repeat(auto-fill,minmax(160px"]{
+    grid-template-columns:repeat(2,1fr)!important;
+  }
+
+  /* Analitik özet kartlar */
+  #analytics-content [style*="grid-template-columns:repeat(auto-fit,minmax(130px"]{
+    grid-template-columns:repeat(2,1fr)!important;
+  }
+
+  /* Isı haritası legend scroll */
+  #analytics-content [style*="display:flex;gap:10px;font-size:.68rem"]{
+    flex-wrap:wrap!important;gap:6px!important;
+  }
+
+  /* Ders detay tab header */
+  #ders-detay-content{padding-top:4px}
+
+  /* Modal mobil iyileştirme */
+  .modal{max-width:100%!important;margin:0 10px}
+
+  /* Not filtre butonları scroll */
+  .flex.gap-2.mb-4{flex-wrap:nowrap!important;overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:4px;scrollbar-width:none}
+  .flex.gap-2.mb-4::-webkit-scrollbar{display:none}
+  .flex.gap-2.mb-4 .btn{white-space:nowrap;flex-shrink:0}
+
   #mobile-nav{display:none} /* JS enterApp'te gösterir */
   #mobile-menu-btn{display:none!important} /* JS enterApp'te gösterir */
   #global-theme-btn{top:14px;right:62px}
@@ -2035,7 +2073,7 @@ window.dersTab=async function(tab, subjectId){
       cont.innerHTML=`<div class="card text-center text-dim" style="padding:40px"><div style="font-size:2.5rem;margin-bottom:8px">📭</div><div>${subj.name} için not bulunmuyor.</div></div>`;
       return;
     }
-    cont.innerHTML=`<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">${list.map(n=>noteCardFull(n)).join('')}</div>`;
+    cont.innerHTML=`<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px">${list.map(n=>noteCardFull(n)).join('')}</div>`;
   }
 }
 
@@ -2049,7 +2087,7 @@ async function renderNotes(){
     <button class="btn btn-ghost" style="font-size:.8rem" id="note-filter-all" onclick="filterNotes('all')">Tümü</button>
     ${['Fen','Sözel','Dil','Spor','Din','Seçmeli','Teknoloji'].map(cat=>`<button class="btn btn-ghost" style="font-size:.8rem" id="note-filter-${cat}" onclick="filterNotes('${cat}')">${cat}</button>`).join('')}
   </div>
-  <div id="notes-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:14px"></div>`;
+  <div id="notes-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px"></div>`;
   await loadNotes('all');
 }
 
@@ -3973,7 +4011,7 @@ async function renderAnalytics(){
   </div>
 
   <!-- Grafikler -->
-  <div class="grid-2" style="gap:20px">
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:20px">
     <div class="card"><div style="font-family:'Syne',sans-serif;font-size:.75rem;letter-spacing:.1em;color:var(--dim);margin-bottom:14px">📋 ÖDEV TAMAMLANMA</div><canvas id="chart-completion" height="200"></canvas></div>
     <div class="card"><div style="font-family:'Syne',sans-serif;font-size:.75rem;letter-spacing:.1em;color:var(--dim);margin-bottom:14px">🏆 ÖĞRENCİ XP SIRASI</div><canvas id="chart-xp" height="200"></canvas></div>
   </div>`;
@@ -4825,6 +4863,7 @@ function buildDrawerNav(){
   const items=[
     {page:'dashboard',icon:'🏠',label:'Dashboard'},
     {page:'homework',icon:'📋',label:'Ödevler'},
+    {page:'dersler',icon:'📚',label:'Dersler'},
     {page:'notes',icon:'📝',label:'Ders Notları'},
     {page:'announcements',icon:'📢',label:'Duyurular'},
     {page:'chat',icon:'💬',label:'Sınıf Sohbeti'},
