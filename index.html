@@ -2931,58 +2931,47 @@ window.showTopicContentForm = function(type, topicId, topicTitle, subjectId, cla
 
 
 // ═══════════ AI OTOMATİK KONU DOLDURMA ═══════════
-// ═══════════ YouTube InnerTube API — API Key Gerektirmez ═══════════
+// ═══════════ YouTube Video Arama — CORS Proxy + RSS ═══════════
 async function searchYouTubeVideo(query){
+  // Yöntem 1: allorigins.win proxy üzerinden YouTube RSS feed
   try{
-    // YouTube InnerTube API — YouTube'un kendi iç API'si, key gerektirmez
-    const resp = await fetch('https://www.youtube.com/youtubei/v1/search', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-YouTube-Client-Name': '1',
-        'X-YouTube-Client-Version': '2.20231121.01.00',
-      },
-      body: JSON.stringify({
-        context: {
-          client: {
-            clientName: 'WEB',
-            clientVersion: '2.20231121.01.00',
-            hl: 'tr',
-            gl: 'TR',
-          }
-        },
-        query: query,
-        params: 'EgIQAQ%3D%3D' // video filtresi
-      }),
-      signal: AbortSignal.timeout(8000)
-    });
-
-    if(!resp.ok) throw new Error('InnerTube yanıt vermedi');
-    const data = await resp.json();
-
-    // Sonuçları parse et
-    const contents = data?.contents?.twoColumnSearchResultsRenderer
-      ?.primaryContents?.sectionListRenderer?.contents;
-
-    if(!contents) throw new Error('Sonuç yapısı bulunamadı');
-
-    for(const section of contents){
-      const items = section?.itemSectionRenderer?.contents;
-      if(!items) continue;
-      for(const item of items){
-        const vr = item?.videoRenderer;
-        if(vr?.videoId){
-          return {
-            id: vr.videoId,
-            title: vr.title?.runs?.[0]?.text || query,
-            url: `https://www.youtube.com/watch?v=${vr.videoId}`
-          };
-        }
+    const rssUrl = `https://www.youtube.com/feeds/videos.xml?search_query=${encodeURIComponent(query)}`;
+    const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(rssUrl)}`;
+    const resp = await fetch(proxyUrl, {signal: AbortSignal.timeout(8000)});
+    if(resp.ok){
+      const data = await resp.json();
+      const xml = data.contents;
+      // video ID ve başlığı parse et
+      const idMatch = xml.match(/yt:videoId>([^<]+)</);
+      const titleMatch = xml.match(/<title>([^<]+)<\/title>/g);
+      if(idMatch?.[1]){
+        const videoId = idMatch[1].trim();
+        // 2. title (1. title kanal adı olabilir)
+        const title = titleMatch?.[1]?.replace(/<\/?title>/g,'') || query;
+        return { id:videoId, title, url:`https://www.youtube.com/watch?v=${videoId}` };
       }
     }
-  }catch(e){
-    console.warn('InnerTube hata:', e.message);
-  }
+  }catch(e){ console.warn('RSS proxy hata:',e.message); }
+
+  // Yöntem 2: corsproxy.io üzerinden dene
+  try{
+    const ytSearch = `https://www.youtube.com/results?search_query=${encodeURIComponent(query)}&sp=EgIQAQ%253D%253D`;
+    const proxyUrl2 = `https://corsproxy.io/?${encodeURIComponent(ytSearch)}`;
+    const resp2 = await fetch(proxyUrl2, {signal: AbortSignal.timeout(8000)});
+    if(resp2.ok){
+      const html = await resp2.text();
+      const idMatch = html.match(/"videoId":"([a-zA-Z0-9_-]{11})"/);
+      const titleMatch = html.match(/"title":\{"runs":\[\{"text":"([^"]+)"/);
+      if(idMatch?.[1]){
+        return {
+          id: idMatch[1],
+          title: titleMatch?.[1] || query,
+          url: `https://www.youtube.com/watch?v=${idMatch[1]}`
+        };
+      }
+    }
+  }catch(e){ console.warn('corsproxy hata:',e.message); }
+
   return null;
 }
 
