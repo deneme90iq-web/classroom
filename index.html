@@ -2522,127 +2522,497 @@ async function showAITestResult(score, questions, wrong, subj, diff, secs, openA
 }
 
 
-window.dersDetay=async function(subjectId){
-  const subj=getSubject(subjectId);
-  const mc=document.getElementById('main-content');
-  mc.innerHTML=`
-  <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px">
+// ═══════════ KONU YÖNETİMİ ═══════════
+// Firebase: topics/{classCode}/{subjectId}/{topicId} = {id, title, desc, order, createdAt}
+// Video/not/flashcard artık topicId'ye de bağlı kaydedilebilir
+
+window.dersDetay = async function(subjectId){
+  const subj = getSubject(subjectId);
+  const mc = document.getElementById('main-content');
+  const isT = session.role === 'teacher';
+
+  mc.innerHTML = `
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
     <button class="btn btn-ghost btn-icon" onclick="navTo('dersler')" title="Geri">←</button>
     <span style="font-size:1.8rem">${subj.icon}</span>
-    <div>
+    <div style="flex:1">
       <div style="font-family:'Syne',sans-serif;font-size:1.2rem;font-weight:700">${subj.name}</div>
       <div style="font-size:.75rem;color:${subj.color}">${subj.cat}</div>
     </div>
+    <button class="btn btn-primary" style="flex-shrink:0;padding:8px 14px;font-size:.82rem" onclick="startAITest('${subjectId}')">🤖 Test Çöz</button>
   </div>
-  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px">
-    <div class="tabs" style="margin-bottom:0;flex:1">
-      <div class="tab active" id="dtab-hw" onclick="dersTab('hw','${subjectId}')">📋 Ödevler</div>
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px">
+    <div class="tabs" style="margin-bottom:0">
+      <div class="tab active" id="dtab-topics" onclick="dersTab('topics','${subjectId}')">📖 Konular</div>
+      <div class="tab" id="dtab-hw" onclick="dersTab('hw','${subjectId}')">📋 Ödevler</div>
       <div class="tab" id="dtab-notes" onclick="dersTab('notes','${subjectId}')">📝 Notlar</div>
       <div class="tab" id="dtab-videos" onclick="dersTab('videos','${subjectId}')">🎬 Videolar</div>
+      <div class="tab" id="dtab-flashcards" onclick="dersTab('flashcards','${subjectId}')">🃏 Flashcard</div>
     </div>
-    <button class="btn btn-primary" style="flex-shrink:0;padding:9px 18px;font-size:.88rem" onclick="startAITest('${subjectId}')">🤖 Test Çöz</button>
+    ${isT ? `<button class="btn btn-ghost" style="font-size:.78rem;padding:7px 12px" onclick="openTopicModal('${subjectId}')">+ Konu Ekle</button>` : ''}
   </div>
-  <div id="ders-detay-content"><div class="text-center text-dim" style="padding:30px">Yükleniyor...</div></div>`;
-  await dersTab('hw', subjectId);
+  <div id="ders-detay-content"></div>`;
+
+  await dersTab('topics', subjectId);
 }
 
-window.dersTab=async function(tab, subjectId){
+window.dersTab = async function(tab, subjectId){
   document.querySelectorAll('[id^="dtab-"]').forEach(t=>t.classList.remove('active'));
   document.getElementById('dtab-'+tab)?.classList.add('active');
+  const subj = getSubject(subjectId);
+  const cont = document.getElementById('ders-detay-content');
+  if(!cont) return;
 
-  const subj=getSubject(subjectId);
-  const cont=document.getElementById('ders-detay-content');
-  if(!cont)return;
+  if(tab === 'topics'){
+    await renderTopicsTab(subjectId, subj, cont);
+  } else if(tab === 'hw'){
+    await renderDersHW(subjectId, subj, cont);
+  } else if(tab === 'notes'){
+    await renderDersNotes(subjectId, subj, cont);
+  } else if(tab === 'videos'){
+    await renderDersVideos(subjectId, subj, cont);
+  } else if(tab === 'flashcards'){
+    await renderDersFlashcards(subjectId, subj, cont);
+  }
+}
 
-  if(tab==='hw'){
-    const hws=await dbGet('homeworks')||{};
-    const myCode=session.classCode||null;
-    let list=Object.values(hws).filter(h=>h.subjectId===subjectId&&(
-      session.role==='student'?(h.classCode===myCode&&Array.isArray(h.assignedTo)&&h.assignedTo.includes(session.uid))
-      :(h.teacherUid===session.uid)
-    ));
-    list.sort((a,b)=>b.createdAt-a.createdAt);
-    if(list.length===0){
-      cont.innerHTML=`<div class="card text-center text-dim" style="padding:40px"><div style="font-size:2.5rem;margin-bottom:8px">📭</div><div>${subj.name} için ödev bulunmuyor.</div></div>`;
+// ── KONULAR SEKMESİ ──
+async function renderTopicsTab(subjectId, subj, cont){
+  const isT = session.role === 'teacher';
+  const classCode = isT ? null : session.classCode;
+
+  // Öğretmen: kendi sınıflarını seç
+  let code = classCode;
+  let classSel = '';
+  if(isT){
+    const classes = await getMyClasses();
+    if(!classes.length){
+      cont.innerHTML = '<div class="card text-center text-dim" style="padding:40px">Önce sınıf oluştur.</div>';
       return;
     }
-    cont.innerHTML=list.map(h=>{
-      const done=(h.submittedBy||[]).includes(session.uid);
-      const dueDate=h.dueDate?new Date(h.dueDate).toLocaleDateString('tr-TR'):'—';
-      const isLate=h.dueDate&&Date.now()>new Date(h.dueDate).getTime();
-      return `<div class="hw-card ${done?'done':isLate?'late':'normal'}" style="margin-bottom:10px">
-        <div style="display:flex;align-items:center;justify-content:space-between">
-          <div style="font-weight:700;font-size:.92rem">${h.title}</div>
-          <span style="font-size:.75rem;padding:3px 10px;border-radius:6px;background:${done?'var(--success-dim)':isLate?'var(--danger-dim)':'var(--primary-dim)'};color:${done?'var(--success)':isLate?'var(--danger)':'var(--primary)'}">${done?'✅ Tamamlandı':isLate?'⏰ Geçti':'⏳ Bekliyor'}</span>
-        </div>
-        ${h.description?`<div class="text-dim" style="font-size:.82rem;margin-top:6px">${h.description}</div>`:''}
-        <div class="flex items-center gap-3 mt-2" style="font-size:.75rem;color:var(--dim)">
-          <span>📅 ${dueDate}</span><span>⚡ ${h.xp||0} XP</span>
-          ${session.role==='teacher'?`<span>👥 ${(h.submittedBy||[]).length}/${(h.assignedTo||[]).length} teslim</span>`:''}
-        </div>
+    code = code || classes[0].code;
+    if(classes.length > 1){
+      classSel = `<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px">
+        ${classes.map((c,i)=>`<button onclick="switchTopicClass('${subjectId}','${c.code}',this)" class="btn ${i===0?'btn-primary':'btn-ghost'}" style="font-size:.78rem">${c.name}</button>`).join('')}
       </div>`;
-    }).join('');
-  } else if(tab==='notes'){
-    const notes=await dbGet('notes')||{};
-    const myCode=session.classCode||null;
-    let list=Object.values(notes).filter(n=>n.subjectId===subjectId&&n.classCode&&(
-      session.role==='student'?n.classCode===myCode:true
-    ));
-    list.sort((a,b)=>b.createdAt-a.createdAt);
-    if(list.length===0){
-      cont.innerHTML=`<div class="card text-center text-dim" style="padding:40px"><div style="font-size:2.5rem;margin-bottom:8px">📭</div><div>${subj.name} için not bulunmuyor.</div></div>`;
-      return;
     }
-    cont.innerHTML=`<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px">${list.map(n=>noteCardFull(n)).join('')}</div>`;
-  } else if(tab==='qbank'){
-    const all=await dbGet('questionBank')||{};
-    const myCode=session.classCode||null;
-    let list=Object.values(all).filter(q=>q.subjectId===subjectId&&(
-      session.role==='student'?q.classCode===myCode:q.authorUid===session.uid
-    ));
-    list.sort((a,b)=>b.createdAt-a.createdAt);
-    if(!list.length){cont.innerHTML=`<div class="card text-center text-dim" style="padding:40px"><div style="font-size:2.5rem;margin-bottom:8px">🧩</div><div>${subj.name} için soru bulunmuyor.</div></div>`;return;}
-    cont.innerHTML=list.map(q=>{
-      const rc=RARITIES?.[q.rarity]||{};
-      return `<div class="card" style="margin-bottom:10px">
-        <div style="font-weight:600;font-size:.9rem;margin-bottom:8px">${q.question}</div>
-        <div style="display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap">
-          <span style="font-size:.68rem;padding:2px 8px;border-radius:6px;background:var(--card2);color:var(--dim)">${q.type==='multiple'?'Çoktan Seçmeli':'Açık Uçlu'}</span>
+    code = classes[0].code;
+  }
+
+  cont.innerHTML = classSel + `<div id="topics-list" data-subject="${subjectId}" data-code="${code}"></div>`;
+  await loadTopics(subjectId, code);
+}
+
+window.switchTopicClass = async function(subjectId, code, btn){
+  document.querySelectorAll('#ders-detay-content .btn').forEach(b=>{b.className='btn btn-ghost';b.style.fontSize='.78rem';});
+  btn.className='btn btn-primary'; btn.style.fontSize='.78rem';
+  document.getElementById('topics-list').dataset.code = code;
+  await loadTopics(subjectId, code);
+}
+
+async function loadTopics(subjectId, classCode){
+  const el = document.getElementById('topics-list');
+  if(!el) return;
+  el.innerHTML = '<div class="text-dim" style="padding:16px;font-size:.82rem">Yükleniyor...</div>';
+
+  const topics = await dbGet(`topics/${safeKey(classCode)}/${subjectId}`) || {};
+  const list = Object.values(topics).sort((a,b)=>(a.order||0)-(b.order||0));
+  const isT = session.role === 'teacher';
+  const subj = getSubject(subjectId);
+
+  if(!list.length){
+    el.innerHTML = `<div class="card text-center text-dim" style="padding:40px">
+      <div style="font-size:2.5rem;margin-bottom:10px">📖</div>
+      <div>${isT ? 'Henüz konu eklenmedi. Sağ üstten konu ekle.' : 'Öğretmen henüz konu eklemedi.'}</div>
+    </div>`;
+    return;
+  }
+
+  el.innerHTML = list.map(topic => {
+    const videoCount = topic.videoCount || 0;
+    const noteCount = topic.noteCount || 0;
+    const fcCount = topic.fcCount || 0;
+    return `<div class="card" style="margin-bottom:10px;border-left:3px solid ${subj.color};cursor:pointer;transition:all .15s" onclick="toggleTopicContent('${topic.id}','${subjectId}','${classCode}',this)">
+      <div style="display:flex;align-items:center;gap:10px">
+        <div style="flex:1">
+          <div style="font-weight:700;font-size:.92rem">${topic.title}</div>
+          ${topic.desc ? `<div style="font-size:.75rem;color:var(--dim);margin-top:2px">${topic.desc}</div>` : ''}
+          <div style="display:flex;gap:8px;margin-top:6px;flex-wrap:wrap">
+            ${videoCount > 0 ? `<span style="font-size:.65rem;padding:2px 7px;border-radius:5px;background:rgba(255,107,107,.12);color:#ff6b6b">🎬 ${videoCount} video</span>` : ''}
+            ${noteCount > 0 ? `<span style="font-size:.65rem;padding:2px 7px;border-radius:5px;background:rgba(108,99,255,.12);color:var(--primary)">📝 ${noteCount} not</span>` : ''}
+            ${fcCount > 0 ? `<span style="font-size:.65rem;padding:2px 7px;border-radius:5px;background:rgba(0,212,255,.12);color:var(--accent)">🃏 ${fcCount} kart</span>` : ''}
+            ${!videoCount && !noteCount && !fcCount ? `<span style="font-size:.65rem;color:var(--dim2)">İçerik yok</span>` : ''}
+          </div>
         </div>
-        ${q.type==='multiple'&&q.options?`<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
-          ${q.options.map((o,i)=>`<div style="padding:6px 10px;border-radius:8px;font-size:.78rem;${i===q.answer?'background:var(--success-dim);border:1px solid var(--success);color:var(--success);font-weight:600':'background:var(--card2);border:1px solid var(--border)'}">${String.fromCharCode(65+i)}. ${o}</div>`).join('')}
-        </div>`:`<div style="font-size:.8rem;color:var(--success);padding:7px 12px;background:var(--success-dim);border-radius:8px">✅ ${q.answer}</div>`}
-      </div>`;
-    }).join('');
-  } else if(tab==='videos'){
-    const all=await dbGet('classVideos')||{};
-    const myCode=session.classCode||null;
-    let list=Object.values(all).filter(v=>v.subjectId===subjectId&&(
-      session.role==='student'?v.classCode===myCode:v.authorUid===session.uid
-    ));
-    list.sort((a,b)=>b.createdAt-a.createdAt);
-    if(!list.length){cont.innerHTML=`<div class="card text-center text-dim" style="padding:40px"><div style="font-size:2.5rem;margin-bottom:8px">🎬</div><div>${subj.name} için video bulunmuyor.</div></div>`;return;}
-    cont.innerHTML=`<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px">
-    ${list.map(v=>{
-      const ytId=getYTId(v.url);
-      const thumb=ytId?`https://img.youtube.com/vi/${ytId}/mqdefault.jpg`:null;
-      return `<div class="card card-hover" style="padding:0;overflow:hidden;cursor:pointer" onclick="playVideo('${v.id}')">
+        <div style="display:flex;align-items:center;gap:6px">
+          ${isT ? `
+            <button onclick="event.stopPropagation();openTopicContentModal('${topic.id}','${topic.title}','${subjectId}','${classCode}')" style="padding:5px 10px;border-radius:8px;border:1px solid var(--border);background:var(--card2);color:var(--dim);cursor:pointer;font-size:.72rem" title="İçerik Ekle">+ İçerik</button>
+            <button onclick="event.stopPropagation();deleteTopic('${topic.id}','${subjectId}','${classCode}')" style="background:none;border:none;cursor:pointer;color:var(--danger);font-size:.85rem;padding:4px">🗑️</button>
+          ` : ''}
+          <span id="topic-arrow-${topic.id}" style="color:var(--dim);font-size:.8rem;transition:transform .2s">▼</span>
+        </div>
+      </div>
+      <div id="topic-content-${topic.id}" style="display:none;margin-top:12px;padding-top:12px;border-top:1px solid var(--border)"></div>
+    </div>`;
+  }).join('');
+}
+
+window.toggleTopicContent = async function(topicId, subjectId, classCode, card){
+  const contentEl = document.getElementById('topic-content-'+topicId);
+  const arrow = document.getElementById('topic-arrow-'+topicId);
+  if(!contentEl) return;
+
+  if(contentEl.style.display !== 'none'){
+    contentEl.style.display = 'none';
+    if(arrow) arrow.style.transform = '';
+    return;
+  }
+
+  contentEl.style.display = 'block';
+  if(arrow) arrow.style.transform = 'rotate(180deg)';
+  contentEl.innerHTML = '<div class="text-dim" style="font-size:.78rem;padding:4px">Yükleniyor...</div>';
+
+  // Video, not, flashcard yükle
+  const [videos, notes, fcSets] = await Promise.all([
+    dbGet('classVideos') || {},
+    dbGet('notes') || {},
+    dbGet('flashcardSets') || {}
+  ]);
+
+  const topicVideos = Object.values(await dbGet('classVideos')||{}).filter(v=>v.topicId===topicId);
+  const topicNotes = Object.values(await dbGet('notes')||{}).filter(n=>n.topicId===topicId);
+  const topicFC = Object.values(await dbGet('flashcardSets')||{}).filter(f=>f.topicId===topicId);
+
+  let html = '';
+
+  if(topicVideos.length){
+    html += `<div style="margin-bottom:10px">
+      <div style="font-size:.68rem;font-weight:700;color:var(--dim);letter-spacing:.06em;margin-bottom:6px">🎬 VİDEOLAR</div>
+      <div style="display:flex;flex-direction:column;gap:6px">
+        ${topicVideos.map(v=>{
+          const ytId = getYTId(v.url);
+          const thumb = ytId ? `https://img.youtube.com/vi/${ytId}/mqdefault.jpg` : null;
+          return `<div style="display:flex;align-items:center;gap:10px;padding:8px;border-radius:10px;background:var(--card2);cursor:pointer" onclick="playVideo('${v.id}')">
+            ${thumb ? `<img src="${thumb}" style="width:60px;height:34px;border-radius:6px;object-fit:cover;flex-shrink:0">` : '<div style="width:60px;height:34px;border-radius:6px;background:var(--border);flex-shrink:0;display:flex;align-items:center;justify-content:center">🎬</div>'}
+            <div style="flex:1;min-width:0">
+              <div style="font-size:.82rem;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${v.title}</div>
+              ${v.description ? `<div style="font-size:.7rem;color:var(--dim);margin-top:1px">${v.description.substring(0,50)}</div>` : ''}
+            </div>
+            <span style="color:var(--dim);font-size:.8rem">▶</span>
+          </div>`;
+        }).join('')}
+      </div>
+    </div>`;
+  }
+
+  if(topicNotes.length){
+    html += `<div style="margin-bottom:10px">
+      <div style="font-size:.68rem;font-weight:700;color:var(--dim);letter-spacing:.06em;margin-bottom:6px">📝 NOTLAR</div>
+      <div style="display:flex;flex-direction:column;gap:6px">
+        ${topicNotes.map(n=>`<div style="padding:8px 12px;border-radius:10px;background:var(--card2);border-left:2px solid var(--primary)">
+          <div style="font-size:.82rem;font-weight:600">${n.title||'Not'}</div>
+          ${n.content ? `<div style="font-size:.75rem;color:var(--dim);margin-top:2px">${n.content.substring(0,100)}${n.content.length>100?'...':''}</div>` : ''}
+        </div>`).join('')}
+      </div>
+    </div>`;
+  }
+
+  if(topicFC.length){
+    html += `<div style="margin-bottom:4px">
+      <div style="font-size:.68rem;font-weight:700;color:var(--dim);letter-spacing:.06em;margin-bottom:6px">🃏 FLASHCARD</div>
+      <div style="display:flex;flex-direction:column;gap:6px">
+        ${topicFC.map(fc=>`<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;border-radius:10px;background:var(--card2)">
+          <div>
+            <div style="font-size:.82rem;font-weight:600">${fc.title}</div>
+            <div style="font-size:.7rem;color:var(--dim)">${(fc.cards||[]).length} kart</div>
+          </div>
+          <button onclick="openFCStudy('${fc.id}')" style="padding:5px 12px;border-radius:8px;border:none;background:var(--primary);color:#fff;cursor:pointer;font-size:.75rem;font-weight:600">Çalış</button>
+        </div>`).join('')}
+      </div>
+    </div>`;
+  }
+
+  if(!html){
+    html = '<div style="font-size:.78rem;color:var(--dim2);padding:4px">Bu konuya henüz içerik eklenmemiş.</div>';
+  }
+
+  contentEl.innerHTML = html;
+}
+
+// ── KONU EKLEME MODALİ ──
+window.openTopicModal = async function(subjectId){
+  const classes = await getMyClasses();
+  if(!classes.length){toast('Önce sınıf oluştur!','w');return;}
+  const code = document.getElementById('topics-list')?.dataset.code || classes[0].code;
+  const topicsAll = await dbGet(`topics/${safeKey(code)}/${subjectId}`) || {};
+  const order = Object.keys(topicsAll).length;
+
+  const modal = document.createElement('div');
+  modal.className = 'modal-overlay';
+  modal.innerHTML = `<div class="modal" style="max-width:440px">
+    <div class="modal-title">📖 Konu Ekle</div>
+    ${classes.length > 1 ? `<div class="form-group"><label class="label">SINIF</label>
+      <select class="input" id="topic-class">${classes.map(c=>`<option value="${c.code}" ${c.code===code?'selected':''}>${c.name}</option>`).join('')}</select></div>` : `<input type="hidden" id="topic-class" value="${code}">`}
+    <div class="form-group"><label class="label">KONU BAŞLIĞI</label>
+      <input class="input" id="topic-title" placeholder="Örn: Kuvvet ve Hareket, Osmanlı Dönemi..."></div>
+    <div class="form-group"><label class="label">AÇIKLAMA (isteğe bağlı)</label>
+      <input class="input" id="topic-desc" placeholder="Kısa açıklama..."></div>
+    <div style="display:flex;gap:8px;margin-top:4px">
+      <button class="btn btn-primary" style="flex:1" onclick="saveTopic('${subjectId}',${order})">💾 Kaydet</button>
+      <button class="btn btn-ghost" onclick="this.closest('.modal-overlay').remove()">İptal</button>
+    </div>
+  </div>`;
+  modal.onclick = e=>{if(e.target===modal)modal.remove();};
+  document.body.appendChild(modal);
+}
+
+window.saveTopic = async function(subjectId, order){
+  const classCode = document.getElementById('topic-class')?.value;
+  const title = document.getElementById('topic-title')?.value.trim();
+  const desc = document.getElementById('topic-desc')?.value.trim();
+  if(!title){toast('Konu başlığı gir!','w');return;}
+  const id = 'topic_'+Date.now();
+  await dbSet(`topics/${safeKey(classCode)}/${subjectId}/${id}`,{
+    id, title, desc, order, subjectId, classCode,
+    authorUid:session.uid, createdAt:Date.now(),
+    videoCount:0, noteCount:0, fcCount:0
+  });
+  toast('📖 Konu eklendi!','s');
+  document.querySelector('.modal-overlay')?.remove();
+  await loadTopics(subjectId, classCode);
+}
+
+window.deleteTopic = async function(topicId, subjectId, classCode){
+  if(!confirm('Bu konuyu sil?'))return;
+  await dbSet(`topics/${safeKey(classCode)}/${subjectId}/${topicId}`, null);
+  toast('🗑️ Konu silindi','w');
+  loadTopics(subjectId, classCode);
+}
+
+// ── KONUYA İÇERİK EKLEME ──
+window.openTopicContentModal = async function(topicId, topicTitle, subjectId, classCode){
+  const subj = getSubject(subjectId);
+  const modal = document.createElement('div');
+  modal.className = 'modal-overlay';
+  modal.id = 'topic-content-modal';
+  modal.innerHTML = `<div class="modal" style="max-width:480px">
+    <div class="modal-title">➕ İçerik Ekle — ${topicTitle}</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:16px">
+      <div onclick="showTopicContentForm('video','${topicId}','${topicTitle}','${subjectId}','${classCode}')"
+        style="padding:16px;border-radius:14px;text-align:center;cursor:pointer;border:1px solid var(--border);background:var(--card2);transition:all .15s"
+        onmouseover="this.style.borderColor='var(--primary)'" onmouseout="this.style.borderColor='var(--border)'">
+        <div style="font-size:1.6rem;margin-bottom:6px">🎬</div>
+        <div style="font-size:.78rem;font-weight:700">Video</div>
+      </div>
+      <div onclick="showTopicContentForm('note','${topicId}','${topicTitle}','${subjectId}','${classCode}')"
+        style="padding:16px;border-radius:14px;text-align:center;cursor:pointer;border:1px solid var(--border);background:var(--card2);transition:all .15s"
+        onmouseover="this.style.borderColor='var(--primary)'" onmouseout="this.style.borderColor='var(--border)'">
+        <div style="font-size:1.6rem;margin-bottom:6px">📝</div>
+        <div style="font-size:.78rem;font-weight:700">Not</div>
+      </div>
+      <div onclick="showTopicContentForm('flashcard','${topicId}','${topicTitle}','${subjectId}','${classCode}')"
+        style="padding:16px;border-radius:14px;text-align:center;cursor:pointer;border:1px solid var(--border);background:var(--card2);transition:all .15s"
+        onmouseover="this.style.borderColor='var(--primary)'" onmouseout="this.style.borderColor='var(--border)'">
+        <div style="font-size:1.6rem;margin-bottom:6px">🃏</div>
+        <div style="font-size:.78rem;font-weight:700">Flashcard</div>
+      </div>
+    </div>
+    <div id="topic-form-area"></div>
+    <button class="btn btn-ghost btn-block" style="margin-top:4px" onclick="this.closest('.modal-overlay').remove()">Kapat</button>
+  </div>`;
+  modal.onclick = e=>{if(e.target===modal)modal.remove();};
+  document.body.appendChild(modal);
+}
+
+window.showTopicContentForm = function(type, topicId, topicTitle, subjectId, classCode){
+  const el = document.getElementById('topic-form-area');
+  if(!el) return;
+  const subj = getSubject(subjectId);
+
+  if(type === 'video'){
+    el.innerHTML = `<div style="border-top:1px solid var(--border);padding-top:14px">
+      <div style="font-family:'Syne',sans-serif;font-size:.72rem;letter-spacing:.08em;color:var(--dim);margin-bottom:10px">🎬 VİDEO EKLE</div>
+      <div class="form-group"><label class="label">BAŞLIK</label><input class="input" id="tc-vid-title" placeholder="Video başlığı..."></div>
+      <div class="form-group"><label class="label">YOUTUBE / VİDEO LİNKİ</label><input class="input" id="tc-vid-url" placeholder="https://youtube.com/watch?v=..."></div>
+      <div class="form-group"><label class="label">AÇIKLAMA</label><input class="input" id="tc-vid-desc" placeholder="İsteğe bağlı..."></div>
+      <button class="btn btn-primary btn-block" onclick="saveTopicVideo('${topicId}','${subjectId}','${classCode}')">💾 Kaydet</button>
+    </div>`;
+  } else if(type === 'note'){
+    el.innerHTML = `<div style="border-top:1px solid var(--border);padding-top:14px">
+      <div style="font-family:'Syne',sans-serif;font-size:.72rem;letter-spacing:.08em;color:var(--dim);margin-bottom:10px">📝 NOT EKLE</div>
+      <div class="form-group"><label class="label">BAŞLIK</label><input class="input" id="tc-note-title" placeholder="Not başlığı..."></div>
+      <div class="form-group"><label class="label">İÇERİK</label><textarea class="input" id="tc-note-content" rows="4" placeholder="Not içeriği..."></textarea></div>
+      <button class="btn btn-primary btn-block" onclick="saveTopicNote('${topicId}','${subjectId}','${classCode}')">💾 Kaydet</button>
+    </div>`;
+  } else if(type === 'flashcard'){
+    window.fcCardCount = 0;
+    el.innerHTML = `<div style="border-top:1px solid var(--border);padding-top:14px">
+      <div style="font-family:'Syne',sans-serif;font-size:.72rem;letter-spacing:.08em;color:var(--dim);margin-bottom:10px">🃏 FLASHCARD SET EKLE</div>
+      <div class="form-group"><label class="label">SET ADI</label><input class="input" id="tc-fc-title" placeholder="Set adı..."></div>
+      <div id="tc-fc-cards"></div>
+      <button class="btn btn-ghost btn-block" style="margin-bottom:10px" onclick="addFCCard()">+ Kart Ekle</button>
+      <button class="btn btn-primary btn-block" onclick="saveTopicFC('${topicId}','${subjectId}','${classCode}')">💾 Kaydet</button>
+    </div>`;
+    addFCCard(); addFCCard();
+    // fcCardCount sıfırlanmış, fc-cards-list yerine tc-fc-cards kullan
+    const list = document.getElementById('tc-fc-cards');
+    const orig = document.getElementById('fc-cards-list');
+    // addFCCard fonksiyonu fc-cards-list'e yazıyor, kopyala
+    if(orig && list){ list.innerHTML = orig.innerHTML; orig.innerHTML = ''; }
+  }
+}
+
+window.saveTopicVideo = async function(topicId, subjectId, classCode){
+  const title = document.getElementById('tc-vid-title')?.value.trim();
+  const url = document.getElementById('tc-vid-url')?.value.trim();
+  const desc = document.getElementById('tc-vid-desc')?.value.trim();
+  if(!title||!url){toast('Başlık ve link gerekli!','w');return;}
+  const id = 'vid_'+Date.now();
+  await dbSet(`classVideos/${id}`,{
+    id, title, url, description:desc||'',
+    subjectId, classCode, topicId,
+    authorUid:session.uid, authorName:session.name, createdAt:Date.now()
+  });
+  // Konu sayacını güncelle
+  const t = await dbGet(`topics/${safeKey(classCode)}/${subjectId}/${topicId}`)||{};
+  await dbSet(`topics/${safeKey(classCode)}/${subjectId}/${topicId}/videoCount`,(t.videoCount||0)+1);
+  toast('🎬 Video eklendi!','s');
+  document.getElementById('topic-form-area').innerHTML='';
+  document.querySelector('.modal-overlay#topic-content-modal')?.remove();
+  loadTopics(subjectId, classCode);
+}
+
+window.saveTopicNote = async function(topicId, subjectId, classCode){
+  const title = document.getElementById('tc-note-title')?.value.trim();
+  const content = document.getElementById('tc-note-content')?.value.trim();
+  if(!title||!content){toast('Başlık ve içerik gerekli!','w');return;}
+  const id = 'note_'+Date.now();
+  await dbSet(`notes/${id}`,{
+    id, title, content, subjectId, classCode, topicId,
+    authorUid:session.uid, authorName:session.name, createdAt:Date.now()
+  });
+  const t = await dbGet(`topics/${safeKey(classCode)}/${subjectId}/${topicId}`)||{};
+  await dbSet(`topics/${safeKey(classCode)}/${subjectId}/${topicId}/noteCount`,(t.noteCount||0)+1);
+  toast('📝 Not eklendi!','s');
+  document.getElementById('topic-form-area').innerHTML='';
+  document.querySelector('.modal-overlay#topic-content-modal')?.remove();
+  loadTopics(subjectId, classCode);
+}
+
+window.saveTopicFC = async function(topicId, subjectId, classCode){
+  const title = document.getElementById('tc-fc-title')?.value.trim();
+  if(!title){toast('Set adı gir!','w');return;}
+  const cards = [];
+  for(let i=0;i<fcCardCount;i++){
+    const f = document.getElementById('fc-front-'+i)?.value.trim();
+    const b = document.getElementById('fc-back-'+i)?.value.trim();
+    if(f&&b) cards.push({front:f,back:b});
+  }
+  if(!cards.length){toast('En az 1 kart ekle!','w');return;}
+  const id = 'fcset_'+Date.now();
+  await dbSet(`flashcardSets/${id}`,{
+    id, title, cards, subjectId, classCode, topicId,
+    authorUid:session.uid, authorName:session.name, createdAt:Date.now()
+  });
+  const t = await dbGet(`topics/${safeKey(classCode)}/${subjectId}/${topicId}`)||{};
+  await dbSet(`topics/${safeKey(classCode)}/${subjectId}/${topicId}/fcCount`,(t.fcCount||0)+1);
+  fcCardCount=0;
+  toast('🃏 Flashcard seti eklendi!','s');
+  document.getElementById('topic-form-area').innerHTML='';
+  document.querySelector('.modal-overlay#topic-content-modal')?.remove();
+  loadTopics(subjectId, classCode);
+}
+
+// ── MEVCUT SEKME FONKSİYONLARI (dersDetay için) ──
+async function renderDersHW(subjectId, subj, cont){
+  const hws = await dbGet('homeworks')||{};
+  const myCode = session.classCode||null;
+  let list = Object.values(hws).filter(h=>h.subjectId===subjectId&&(
+    session.role==='student'?(h.classCode===myCode&&Array.isArray(h.assignedTo)&&h.assignedTo.includes(session.uid))
+    :(h.teacherUid===session.uid)
+  ));
+  list.sort((a,b)=>b.createdAt-a.createdAt);
+  if(!list.length){cont.innerHTML=`<div class="card text-center text-dim" style="padding:40px"><div style="font-size:2.5rem;margin-bottom:8px">📭</div><div>${subj.name} için ödev bulunmuyor.</div></div>`;return;}
+  cont.innerHTML=list.map(h=>{
+    const done=(h.submittedBy||[]).includes(session.uid);
+    const dueDate=h.dueDate?new Date(h.dueDate).toLocaleDateString('tr-TR'):'—';
+    const isLate=h.dueDate&&Date.now()>new Date(h.dueDate).getTime();
+    return `<div class="hw-card ${done?'done':isLate?'late':'normal'}" style="margin-bottom:10px">
+      <div style="display:flex;align-items:center;justify-content:space-between">
+        <div style="font-weight:700;font-size:.92rem">${h.title}</div>
+        <span style="font-size:.75rem;padding:3px 10px;border-radius:6px;background:${done?'var(--success-dim)':isLate?'var(--danger-dim)':'var(--primary-dim)'};color:${done?'var(--success)':isLate?'var(--danger)':'var(--primary)'}">${done?'✅ Tamamlandı':isLate?'⏰ Geçti':'⏳ Bekliyor'}</span>
+      </div>
+      ${h.description?`<div class="text-dim" style="font-size:.82rem;margin-top:6px">${h.description}</div>`:''}
+      <div style="font-size:.75rem;color:var(--dim);margin-top:6px">📅 ${dueDate} · ⚡ ${h.xp||0} XP</div>
+    </div>`;
+  }).join('');
+}
+
+async function renderDersNotes(subjectId, subj, cont){
+  const notes = await dbGet('notes')||{};
+  const myCode = session.classCode||null;
+  let list = Object.values(notes).filter(n=>n.subjectId===subjectId&&n.classCode&&(
+    session.role==='student'?n.classCode===myCode:true
+  ));
+  list.sort((a,b)=>b.createdAt-a.createdAt);
+  if(!list.length){cont.innerHTML=`<div class="card text-center text-dim" style="padding:40px"><div style="font-size:2.5rem;margin-bottom:8px">📭</div><div>${subj.name} için not bulunmuyor.</div></div>`;return;}
+  cont.innerHTML=`<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px">${list.map(n=>noteCardFull(n)).join('')}</div>`;
+}
+
+async function renderDersVideos(subjectId, subj, cont){
+  const all = await dbGet('classVideos')||{};
+  const myCode = session.classCode||null;
+  let list = Object.values(all).filter(v=>v.subjectId===subjectId&&(
+    session.role==='student'?v.classCode===myCode:v.authorUid===session.uid
+  ));
+  list.sort((a,b)=>b.createdAt-a.createdAt);
+  if(!list.length){cont.innerHTML=`<div class="card text-center text-dim" style="padding:40px"><div style="font-size:2.5rem;margin-bottom:8px">🎬</div><div>${subj.name} için video bulunmuyor.</div></div>`;return;}
+  cont.innerHTML=`<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px">
+  ${list.map(v=>{
+    const ytId=getYTId(v.url);
+    const thumb=ytId?`https://img.youtube.com/vi/${ytId}/mqdefault.jpg`:null;
+    const isOwner=v.authorUid===session.uid||session.role==='teacher';
+    return `<div class="card card-hover" style="padding:0;overflow:hidden">
+      <div style="cursor:pointer" onclick="playVideo('${v.id}')">
         ${thumb?`<div style="position:relative"><img src="${thumb}" style="width:100%;aspect-ratio:16/9;object-fit:cover;display:block">
           <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.3)">
             <div style="width:44px;height:44px;border-radius:50%;background:rgba(255,255,255,.9);display:flex;align-items:center;justify-content:center;font-size:1.1rem">▶</div>
           </div></div>`
           :`<div style="aspect-ratio:16/9;background:var(--card2);display:flex;align-items:center;justify-content:center;font-size:2rem">🎬</div>`}
-        <div style="padding:10px">
-          <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:6px">
-            <div style="font-weight:700;font-size:.88rem;margin-bottom:3px;flex:1">${v.title}</div>
-            ${session.role==='teacher'?`<button onclick="event.stopPropagation();deleteVideo('${v.id}')" style="background:none;border:none;cursor:pointer;color:var(--danger);font-size:.85rem;padding:2px;flex-shrink:0" title="Sil">🗑️</button>`:''}
-          </div>
-          ${v.description?`<div style="font-size:.72rem;color:var(--dim)">${v.description.substring(0,60)}...</div>`:''}
+      </div>
+      <div style="padding:10px">
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:6px">
+          <div style="font-weight:700;font-size:.88rem;flex:1">${v.title}</div>
+          ${isOwner?`<button onclick="event.stopPropagation();deleteVideo('${v.id}')" style="background:none;border:none;cursor:pointer;color:var(--danger);font-size:.85rem;padding:2px" title="Sil">🗑️</button>`:''}
         </div>
-      </div>`;
-    }).join('')}</div>`;
-  }
+        ${v.topicId?`<div style="font-size:.68rem;color:var(--accent);margin-top:3px">📖 Konuya bağlı</div>`:''}
+      </div>
+    </div>`;
+  }).join('')}</div>`;
 }
+
+async function renderDersFlashcards(subjectId, subj, cont){
+  const all = await dbGet('flashcardSets')||{};
+  const myCode = session.classCode||null;
+  let list = Object.values(all).filter(s=>s.subjectId===subjectId&&(
+    session.role==='student'?s.classCode===myCode:s.authorUid===session.uid
+  ));
+  list.sort((a,b)=>b.createdAt-a.createdAt);
+  if(!list.length){cont.innerHTML=`<div class="card text-center text-dim" style="padding:40px"><div style="font-size:2.5rem;margin-bottom:8px">🃏</div><div>${subj.name} için flashcard seti yok.</div></div>`;return;}
+  cont.innerHTML=`<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px">
+  ${list.map(s=>{
+    const isOwner=s.authorUid===session.uid||session.role==='teacher';
+    return `<div class="card card-hover">
+      <div style="font-weight:700;font-size:.9rem;margin-bottom:4px">${s.title}</div>
+      <div style="font-size:.75rem;color:var(--dim);margin-bottom:10px">${(s.cards||[]).length} kart${s.topicId?' · 📖 Konuya bağlı':''}</div>
+      <div style="display:flex;gap:6px">
+        <button class="btn btn-primary" style="flex:1;font-size:.75rem;padding:7px" onclick="openFCStudy('${s.id}')">📖 Çalış</button>
+        ${isOwner?`<button class="btn btn-ghost" style="font-size:.75rem;padding:7px" onclick="deleteFCSet('${s.id}')">🗑️</button>`:''}
+      </div>
+    </div>`;
+  }).join('')}</div>`;
+}
+
 
 async function renderNotes(){
   const mc=document.getElementById('main-content');
