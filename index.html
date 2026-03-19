@@ -2009,11 +2009,11 @@ async function renderDersler(){
         <span style="font-family:'Syne',sans-serif;font-size:.78rem;font-weight:700;letter-spacing:.1em;color:var(--dim)">${cat.toUpperCase()}</span>
         <div style="flex:1;height:1px;background:var(--border);margin-left:4px"></div>
       </div>
-      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px">
+      <div style="display:flex;flex-wrap:wrap;gap:10px">
         ${subjects.map(s=>{
           const hwC=subjHwCount[s.id]||0;
           const noteC=subjNoteCount[s.id]||0;
-          return `<div class="card-hover" style="background:var(--card);border:1px solid var(--border);border-radius:14px;padding:16px;cursor:pointer;transition:all .2s;border-left:3px solid ${s.color}" onclick="dersDetay('${s.id}')">
+          return `<div class="card-hover" style="background:var(--card);border:1px solid var(--border);border-radius:14px;padding:16px;cursor:pointer;transition:all .2s;border-left:3px solid ${s.color};min-width:180px;max-width:220px;flex:1" onclick="dersDetay('${s.id}')">
             <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
               <span style="font-size:1.6rem">${s.icon}</span>
               <span style="font-size:.65rem;font-weight:700;letter-spacing:.05em;padding:2px 8px;border-radius:20px;background:${s.color}22;color:${s.color}">${cat}</span>
