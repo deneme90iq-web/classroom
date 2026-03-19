@@ -3151,7 +3151,7 @@ Türkçe, ${gradeText} seviyesine uygun:`;
         }
       }catch(e){ afLog(`  ⚠️ Flashcard hatası: ${e.message}`); }
 
-      // ADIM 3: Konu anlatımı (AI) + YouTube video (Invidious)
+      // ADIM 3: Konu anlatımı (AI) + YouTube video
       try{
         afLog(`  📝 Konu anlatımı yazılıyor...`);
         const anlatimPrompt = `${gradeText} ${subj.name} "${topic.title}" konusunu detaylı anlat.
@@ -3188,7 +3188,7 @@ Türkçe yaz, ${gradeText} öğrencisine uygun, anlaşılır bir dil kullan. Dü
         }
       }catch(e){ afLog(`  ⚠️ Anlatım hatası: ${e.message}`); }
 
-      // YouTube video — Invidious API ile gerçek arama
+      // YouTube video — InnerTube API ile gerçek arama
       try{
         afLog(`  🎬 YouTube'da video aranıyor...`);
         const query = `${gradeText} ${subj.name} ${topic.title} konu anlatımı`;
@@ -3202,12 +3202,12 @@ Türkçe yaz, ${gradeText} öğrencisine uygun, anlaşılır bir dil kullan. Dü
             description:`${gradeText} ${subj.name} — ${topic.title}`,
             subjectId, classCode, topicId,
             authorUid:session.uid, authorName:session.name,
-            source:'invidious', createdAt:Date.now()
+            source:'innertube', createdAt:Date.now()
           });
           await dbSet(`topics/${safeKey(classCode)}/${subjectId}/${topicId}/videoCount`, 1);
           afLog(`  ✅ Video bulundu: ${ytResult.title.substring(0,40)}...`);
         } else {
-          afLog(`  ⚠️ Video bulunamadı (Invidious erişilemedi)`);
+          afLog(`  ⚠️ Video bulunamadı`);
         }
       }catch(e){ afLog(`  ⚠️ Video arama hatası: ${e.message}`); }
 
