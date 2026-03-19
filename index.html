@@ -3052,25 +3052,72 @@ Türkçe, ${gradeText} seviyesine uygun:`;
         }
       }catch(e){ afLog(`  ⚠️ Flashcard hatası: ${e.message}`); }
 
-      // ADIM 3: YouTube arama linki ekle (video olarak)
-      const ytQuery = encodeURIComponent(`${gradeText} ${subj.name} ${topic.title} ders`);
-      const ytUrl = `https://www.youtube.com/results?search_query=${ytQuery}`;
-      const vidId = 'vid_'+Date.now()+'_'+i;
-      await dbSet(`classVideos/${vidId}`,{
-        id:vidId,
-        title:`${topic.title} — YouTube Arama`,
-        url:ytUrl,
-        description:`${gradeText} ${subj.name} ${topic.title} için YouTube araması`,
-        subjectId, classCode, topicId,
-        authorUid:session.uid, authorName:session.name,
-        source:'ai', createdAt:Date.now()
-      });
-      await dbSet(`topics/${safeKey(classCode)}/${subjectId}/${topicId}/videoCount`, 1);
-      afLog(`  🎬 Video linki eklendi`);
-      added++;
+      // ADIM 3: Konu anlatımı not olarak kaydet + YouTube video ID bul
+      try{
+        afLog(`  📝 Konu anlatımı + video üretiliyor...`);
+        const contentPrompt = `${gradeText} ${subj.name} "${topic.title}" konusu için aşağıdakileri üret.
+SADECE JSON döndür:
+{
+  "anlatim": "Konunun detaylı anlatımı (500-800 kelime). Giriş, ana kavramlar, örnekler, özet içersin. Türkçe yaz.",
+  "youtubeId": "Bu konu için Türkçe YouTube ders videosu ID'si. Örnek: dQw4w9WgXcQ formatında. Türkiye'de bilinen eğitim kanallarından (örn: Khan Academy Türkçe, TED-Ed Türkçe, Tonguç Akademi, Hocalara Geldik, vb.) gerçek bir video ID yaz. Bilmiyorsan null yaz.",
+  "videoTitle": "Videonun başlığı"
+}`;
 
-      // Rate limit için kısa bekleme
-      await new Promise(r=>setTimeout(r,200));
+        const r3 = await fetch('https://api.groq.com/openai/v1/chat/completions',{
+          method:'POST',
+          headers:{'Content-Type':'application/json','Authorization':'Bearer '+GROQ_KEY_AF},
+          body:JSON.stringify({model:'llama-3.3-70b-versatile',messages:[{role:'user',content:contentPrompt}],max_tokens:2000,temperature:0.3})
+        });
+        const d3 = await r3.json();
+        const raw3 = d3.choices?.[0]?.message?.content||'';
+        const clean3 = raw3.replace(/```json|```/g,'').trim();
+        const m3 = clean3.match(/\{[\s\S]*\}/);
+        let parsed3 = null;
+        if(m3){ try{ parsed3=JSON.parse(m3[0]); }catch(e){} }
+
+        // Konu anlatımını not olarak kaydet
+        if(parsed3?.anlatim){
+          const noteId = 'note_'+Date.now()+'_'+i;
+          await dbSet(`notes/${noteId}`,{
+            id:noteId,
+            title:topic.title+' — Konu Anlatımı',
+            content:parsed3.anlatim,
+            subjectId, classCode, topicId,
+            authorUid:session.uid, authorName:session.name,
+            source:'ai', createdAt:Date.now()
+          });
+          await dbSet(`topics/${safeKey(classCode)}/${subjectId}/${topicId}/noteCount`, 1);
+          afLog(`  📝 Konu anlatımı kaydedildi`);
+        }
+
+        // YouTube video kaydet
+        if(parsed3?.youtubeId && parsed3.youtubeId !== 'null'){
+          // ID doğrulama — sadece harf/rakam/- _ içermeli
+          const ytId = String(parsed3.youtubeId).replace(/[^a-zA-Z0-9_-]/g,'').slice(0,11);
+          if(ytId.length >= 10){
+            const vidId = 'vid_'+Date.now()+'_'+i;
+            await dbSet(`classVideos/${vidId}`,{
+              id:vidId,
+              title:parsed3.videoTitle||topic.title+' Ders Videosu',
+              url:`https://www.youtube.com/watch?v=${ytId}`,
+              description:`${gradeText} ${subj.name} — ${topic.title}`,
+              subjectId, classCode, topicId,
+              authorUid:session.uid, authorName:session.name,
+              source:'ai', createdAt:Date.now()
+            });
+            await dbSet(`topics/${safeKey(classCode)}/${subjectId}/${topicId}/videoCount`, 1);
+            afLog(`  🎬 Video eklendi (${ytId})`);
+          } else {
+            afLog(`  🎬 Video bulunamadı, atlandı`);
+          }
+        } else {
+          afLog(`  🎬 Bu konu için video ID bilinmiyor, atlandı`);
+        }
+      }catch(e){ afLog(`  ⚠️ Anlatım/video hatası: ${e.message}`); }
+
+      added++;
+      // Rate limit için bekleme
+      await new Promise(r=>setTimeout(r,300));
     }
 
     afStatus('Tamamlandı! 🎉', 100);
