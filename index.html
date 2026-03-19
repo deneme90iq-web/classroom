@@ -708,6 +708,7 @@ if(!window.toggleTheme){
       <div class="nav-item" id="nav-profile" onclick="navTo('profile')"><span class="nav-icon">👤</span> Profilim</div>
       <div class="nav-item" id="nav-dm" onclick="navTo('dm')"><span class="nav-icon">✉️</span> Mesajlar <span class="nav-badge" id="dm-badge" style="display:none">0</span></div>
       <div class="nav-item" id="nav-classprofiles" onclick="navTo('classprofiles')" style="display:none"><span class="nav-icon">👥</span> Sınıfım</div>
+      <div class="nav-item" id="nav-schedule" onclick="navTo('schedule')"><span class="nav-icon">🗓️</span> Ders Programı</div>
       <div class="nav-item" id="nav-calendar" onclick="navTo('calendar')"><span class="nav-icon">📅</span> Takvim</div>
       <div class="nav-item" id="nav-ai" onclick="navTo('ai')"><span class="nav-icon">🤖</span> AI Asistan</div>
       <div class="nav-item" id="nav-books" onclick="navTo('books')"><span class="nav-icon">📚</span> Kitaplarım</div>
@@ -1444,6 +1445,7 @@ window.navTo=function(page){
     case 'profile': renderProfile();break;
     case 'dm': renderDM();break;
     case 'classprofiles': renderClassProfiles();break;
+    case 'schedule': renderSchedule();break;
     case 'calendar': renderCalendar();break;
     case 'ai': renderAI();break;
     case 'dashboard': renderDashboard();break;
@@ -2897,6 +2899,184 @@ async function loadProfilePhoto(){
 }
 
 // ═══════════ TAKVİM ═══════════
+// ═══════════ DERS PROGRAMI ═══════════
+const DAYS = ['Pazartesi','Salı','Çarşamba','Perşembe','Cuma'];
+const HOURS = ['08:00','09:00','10:00','11:00','12:00','13:00','14:00','15:00','16:00'];
+
+async function renderSchedule(){
+  const mc = document.getElementById('main-content');
+  mc.innerHTML = `
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px">
+    <div style="font-family:'Syne',sans-serif;font-size:1.3rem;font-weight:700">🗓️ Ders Programı</div>
+    ${session.role==='teacher'?`<button class="btn btn-primary" onclick="openScheduleEdit()">+ Ders Ekle</button>`:''}
+  </div>
+  <div id="schedule-class-sel" style="margin-bottom:14px"></div>
+  <div id="schedule-grid"></div>`;
+
+  // Sınıf seçimi
+  let classCode = session.classCode;
+  if(session.role==='teacher'){
+    const classes = await getMyClasses();
+    if(classes.length > 0){
+      classCode = classCode || classes[0].code;
+      const selDiv = document.getElementById('schedule-class-sel');
+      selDiv.innerHTML = `<div style="display:flex;gap:8px;flex-wrap:wrap">
+        ${classes.map(c=>`<button onclick="loadSchedule('${c.code}',this)" class="btn ${c.code===classCode?'btn-primary':'btn-ghost'}" style="font-size:.78rem;padding:6px 14px">${c.name}</button>`).join('')}
+      </div>`;
+    }
+  }
+  if(classCode) loadSchedule(classCode);
+  else document.getElementById('schedule-grid').innerHTML = '<div class="card text-center text-dim" style="padding:40px">Sınıfa katılman gerekiyor.</div>';
+}
+
+window.loadSchedule = async function(classCode, btn){
+  if(btn){
+    document.querySelectorAll('#schedule-class-sel .btn').forEach(b=>b.className='btn btn-ghost');
+    btn.className='btn btn-primary';
+    btn.style.fontSize='.78rem'; btn.style.padding='6px 14px';
+  }
+  const grid = document.getElementById('schedule-grid');
+  if(!grid) return;
+  grid.innerHTML = '<div class="text-dim text-center" style="padding:30px">Yükleniyor...</div>';
+
+  const schedule = await dbGet(`schedules/${safeKey(classCode)}`) || {};
+
+  // Grid oluştur
+  const isMob = window.innerWidth <= 768;
+  const cellW = isMob ? 56 : 120;
+  const hourW = isMob ? 44 : 60;
+
+  let html = `<div style="overflow-x:auto;-webkit-overflow-scrolling:touch">
+  <div style="min-width:${hourW + DAYS.length*cellW + 8}px">
+    <!-- Başlık satırı -->
+    <div style="display:grid;grid-template-columns:${hourW}px ${DAYS.map(()=>cellW+'px').join(' ')};gap:3px;margin-bottom:3px">
+      <div></div>
+      ${DAYS.map(d=>`<div style="text-align:center;font-family:'Syne',sans-serif;font-size:.68rem;font-weight:700;color:var(--dim);padding:6px 2px">${isMob?d.slice(0,3):d}</div>`).join('')}
+    </div>`;
+
+  HOURS.forEach(hour => {
+    html += `<div style="display:grid;grid-template-columns:${hourW}px ${DAYS.map(()=>cellW+'px').join(' ')};gap:3px;margin-bottom:3px">
+      <div style="display:flex;align-items:center;justify-content:center;font-size:.65rem;color:var(--dim);font-weight:600">${hour}</div>`;
+    DAYS.forEach(day => {
+      const key = `${day}_${hour}`;
+      const lesson = schedule[key];
+      if(lesson){
+        const subj = getSubject(lesson.subjectId);
+        html += `<div onclick="${session.role==='teacher'?`openScheduleEdit('${classCode}','${day}','${hour}')`:''}"
+          style="border-radius:8px;padding:${isMob?'4px 3px':'7px 6px'};background:${subj.color}22;border:1px solid ${subj.color}55;cursor:${session.role==='teacher'?'pointer':'default'};min-height:${isMob?'44':'52'}px;display:flex;flex-direction:column;justify-content:center;text-align:center;transition:all .15s"
+          ${session.role==='teacher'?`onmouseover="this.style.transform='scale(1.02)'" onmouseout="this.style.transform=''"`:''}>
+          <div style="font-size:${isMob?'.65':'.7'}rem">${subj.icon}</div>
+          <div style="font-size:${isMob?'.55':'.65'}rem;font-weight:700;color:${subj.color};margin-top:1px;line-height:1.2;overflow:hidden">${isMob?subj.name.slice(0,6):subj.name}</div>
+          ${lesson.teacher&&!isMob?`<div style="font-size:.55rem;color:var(--dim);margin-top:1px">${lesson.teacher}</div>`:''}
+        </div>`;
+      } else {
+        html += `<div onclick="${session.role==='teacher'?`openScheduleEdit('${classCode}','${day}','${hour}')`:''}"
+          style="border-radius:8px;min-height:${isMob?'44':'52'}px;border:1px dashed var(--border2);cursor:${session.role==='teacher'?'pointer':'default'};transition:all .15s;display:flex;align-items:center;justify-content:center"
+          ${session.role==='teacher'?`onmouseover="this.style.background='rgba(255,255,255,.03)'" onmouseout="this.style.background=''"`:''}>
+          ${session.role==='teacher'?`<span style="font-size:.8rem;color:var(--dim2)">+</span>`:''}
+        </div>`;
+      }
+    });
+    html += '</div>';
+  });
+
+  html += '</div></div>';
+
+  // Legend
+  const usedSubjects = [...new Set(Object.values(schedule).map(l=>l.subjectId))];
+  if(usedSubjects.length > 0){
+    html += `<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:12px">
+      ${usedSubjects.map(sid=>{const s=getSubject(sid);return`<span style="display:flex;align-items:center;gap:4px;padding:3px 10px;border-radius:6px;background:${s.color}15;color:${s.color};font-size:.68rem;font-weight:600;border:1px solid ${s.color}33">${s.icon} ${s.name}</span>`;}).join('')}
+    </div>`;
+  }
+
+  grid.innerHTML = html;
+  // Aktif sınıf kodu kaydet
+  grid.dataset.classCode = classCode;
+}
+
+window.openScheduleEdit = async function(classCode, day='', hour=''){
+  // Eğer classCode verilmemişse grid'den al
+  const code = classCode || document.getElementById('schedule-grid')?.dataset.classCode;
+  if(!code){ toast('Önce sınıf seç!','w'); return; }
+
+  const schedule = await dbGet(`schedules/${safeKey(code)}`) || {};
+  const key = day && hour ? `${day}_${hour}` : null;
+  const existing = key ? schedule[key] : null;
+
+  // Sınıf seçimi için dropdown oluştur
+  let classSel = '';
+  if(!classCode){
+    const classes = await getMyClasses();
+    classSel = `<div class="form-group">
+      <label class="label">SINIF</label>
+      <select class="input" id="sch-class">
+        ${classes.map(c=>`<option value="${c.code}">${c.name}</option>`).join('')}
+      </select>
+    </div>`;
+  }
+
+  const modal = document.createElement('div');
+  modal.className = 'modal-overlay';
+  modal.innerHTML = `<div class="modal" style="max-width:420px">
+    <div class="modal-title">🗓️ ${key ? 'Dersi Düzenle' : 'Ders Ekle'}</div>
+    ${classSel}
+    <div class="form-group">
+      <label class="label">GÜN</label>
+      <select class="input" id="sch-day">
+        ${DAYS.map(d=>`<option value="${d}" ${d===day?'selected':''}>${d}</option>`).join('')}
+      </select>
+    </div>
+    <div class="form-group">
+      <label class="label">SAAT</label>
+      <select class="input" id="sch-hour">
+        ${HOURS.map(h=>`<option value="${h}" ${h===hour?'selected':''}>${h}</option>`).join('')}
+      </select>
+    </div>
+    <div class="form-group">
+      <label class="label">DERS</label>
+      <select class="input" id="sch-subject">
+        <option value="">— Ders Seç —</option>
+        ${SUBJECTS.map(s=>`<option value="${s.id}" ${existing?.subjectId===s.id?'selected':''}>${s.icon} ${s.name}</option>`).join('')}
+      </select>
+    </div>
+    <div class="form-group">
+      <label class="label">ÖĞRETMEN ADI (isteğe bağlı)</label>
+      <input class="input" id="sch-teacher" placeholder="Öğretmen adı..." value="${existing?.teacher||session.name||''}">
+    </div>
+    <div style="display:flex;gap:8px;margin-top:4px">
+      <button class="btn btn-primary" style="flex:1" onclick="saveScheduleSlot('${code}')">💾 Kaydet</button>
+      ${key?`<button class="btn btn-danger" onclick="deleteScheduleSlot('${code}','${key}',this.closest('.modal-overlay'))">🗑️ Sil</button>`:''}
+      <button class="btn btn-ghost" onclick="this.closest('.modal-overlay').remove()">İptal</button>
+    </div>
+  </div>`;
+  modal.onclick = e => { if(e.target===modal) modal.remove(); };
+  document.body.appendChild(modal);
+}
+
+window.saveScheduleSlot = async function(classCode){
+  const day = document.getElementById('sch-day')?.value;
+  const hour = document.getElementById('sch-hour')?.value;
+  const subjectId = document.getElementById('sch-subject')?.value;
+  const teacher = document.getElementById('sch-teacher')?.value.trim();
+  const code = classCode || document.getElementById('sch-class')?.value;
+  if(!subjectId){ toast('Ders seç!','w'); return; }
+  const key = `${day}_${hour}`;
+  await dbSet(`schedules/${safeKey(code)}/${key}`, {subjectId, teacher, day, hour});
+  toast('✅ Ders programına eklendi!','s');
+  document.querySelector('.modal-overlay')?.remove();
+  loadSchedule(code);
+}
+
+window.deleteScheduleSlot = async function(classCode, key, modalEl){
+  if(!confirm('Bu dersi programdan sil?')) return;
+  await dbSet(`schedules/${safeKey(classCode)}/${key}`, null);
+  toast('🗑️ Ders silindi','w');
+  if(modalEl) modalEl.remove();
+  loadSchedule(classCode);
+}
+
+
 async function renderCalendar(){
   const mc=document.getElementById('main-content');
   if(!mc)return;
@@ -5175,6 +5355,7 @@ function buildDrawerNav(){
     {page:'profile',icon:'👤',label:'Profilim'},
     {page:'dm',icon:'✉️',label:'Mesajlar'},
     {page:'classprofiles',icon:'👥',label:'Sınıfım',studentOnly:true},
+    {page:'schedule',icon:'🗓️',label:'Ders Programı'},
     {page:'calendar',icon:'📅',label:'Takvim'},
     {page:'ai',icon:'🤖',label:'AI Asistan'},
     {page:'books',icon:'📚',label:'Kitaplarım'},
