@@ -2931,38 +2931,6 @@ window.showTopicContentForm = function(type, topicId, topicTitle, subjectId, cla
 
 
 // ═══════════ AI OTOMATİK KONU DOLDURMA ═══════════
-// ═══════════ YouTube Video Arama — Anthropic API Web Search ═══════════
-async function searchYouTubeVideo(query){
-  try{
-    const resp = await fetch('https://api.anthropic.com/v1/messages',{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({
-        model:'claude-sonnet-4-20250514',
-        max_tokens:200,
-        tools:[{type:'web_search_20250305',name:'web_search'}],
-        messages:[{
-          role:'user',
-          content:`YouTube'da "${query}" için en uygun Türkçe ders videosunu bul. Sadece şu formatta yanıt ver: VIDEO_ID:başlık - Başka hiçbir şey yazma. Örnek: dQw4w9WgXcQ:Konu Anlatımı`
-        }]
-      })
-    });
-    const data = await resp.json();
-    // Tüm content bloklarını birleştir
-    const text = (data.content||[]).filter(b=>b.type==='text').map(b=>b.text).join('');
-    const m = text.match(/([a-zA-Z0-9_-]{11}):(.+)/);
-    if(m){
-      const videoId = m[1].trim();
-      const title = m[2].trim();
-      // Geçerli YouTube ID formatı kontrolü
-      if(/^[a-zA-Z0-9_-]{11}$/.test(videoId)){
-        return { id:videoId, title, url:`https://www.youtube.com/watch?v=${videoId}` };
-      }
-    }
-  }catch(e){ console.warn('Anthropic video arama hata:',e.message); }
-  return null;
-}
-
 const GROQ_KEY_AF = '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';
 
 window.aiAutoFillTopics = async function(subjectId){
@@ -3165,28 +3133,7 @@ Türkçe yaz, ${gradeText} öğrencisine uygun, anlaşılır bir dil kullan. Dü
         }
       }catch(e){ afLog(`  ⚠️ Anlatım hatası: ${e.message}`); }
 
-      // YouTube video — InnerTube API ile gerçek arama
-      try{
-        afLog(`  🎬 YouTube'da video aranıyor...`);
-        const query = `${gradeText} ${subj.name} ${topic.title} konu anlatımı`;
-        const ytResult = await searchYouTubeVideo(query);
-        if(ytResult){
-          const vidId2 = 'vid_'+Date.now()+'_'+i;
-          await dbSet(`classVideos/${vidId2}`,{
-            id:vidId2,
-            title:ytResult.title,
-            url:ytResult.url,
-            description:`${gradeText} ${subj.name} — ${topic.title}`,
-            subjectId, classCode, topicId,
-            authorUid:session.uid, authorName:session.name,
-            source:'innertube', createdAt:Date.now()
-          });
-          await dbSet(`topics/${safeKey(classCode)}/${subjectId}/${topicId}/videoCount`, 1);
-          afLog(`  ✅ Video bulundu: ${ytResult.title.substring(0,40)}...`);
-        } else {
-          afLog(`  ⚠️ Video bulunamadı`);
-        }
-      }catch(e){ afLog(`  ⚠️ Video arama hatası: ${e.message}`); }
+      afLog(`  🎬 Video manuel eklenebilir (+ İçerik butonu)`);
 
       added++;
       // Rate limit için bekleme
