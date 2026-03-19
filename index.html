@@ -696,22 +696,14 @@ if(!window.toggleTheme){
       <div class="nav-item active" id="nav-dashboard" onclick="navTo('dashboard')"><span class="nav-icon">🏠</span> Dashboard</div>
       <div class="nav-item" id="nav-homework" onclick="navTo('homework')"><span class="nav-icon">📋</span> Ödevler <span class="nav-badge" id="hw-badge" style="display:none">0</span></div>
       <div class="nav-item" id="nav-dersler" onclick="navTo('dersler')"><span class="nav-icon">📚</span> Dersler</div>
-      <div class="nav-item" id="nav-questionbank" onclick="navTo('questionbank')"><span class="nav-icon">🗃️</span> Soru Bankası</div>
-      <div class="nav-item" id="nav-videos" onclick="navTo('videos')"><span class="nav-icon">🎬</span> Video Dersler</div>
-      <div class="nav-item" id="nav-flashcard" onclick="navTo('flashcard')"><span class="nav-icon">🃏</span> Flashcard</div>
       <div class="nav-item" id="nav-questionbank" onclick="navTo('questionbank')"><span class="nav-icon">🧩</span> Soru Bankası</div>
       <div class="nav-item" id="nav-videos" onclick="navTo('videos')"><span class="nav-icon">🎬</span> Ders Videoları</div>
       <div class="nav-item" id="nav-flashcards" onclick="navTo('flashcards')"><span class="nav-icon">🃏</span> Flashcard</div>
       <div class="nav-item" id="nav-notes" onclick="navTo('notes')"><span class="nav-icon">📝</span> Ders Notları</div>
-      <div class="nav-item" id="nav-videos" onclick="navTo('videos')"><span class="nav-icon">🎥</span> Video Dersler</div>
-      <div class="nav-item" id="nav-flashcards" onclick="navTo('flashcards')"><span class="nav-icon">🃏</span> Flashcard</div>
       <div class="nav-item" id="nav-announcements" onclick="navTo('announcements')"><span class="nav-icon">📢</span> Duyurular <span class="nav-badge" id="ann-badge" style="display:none">!</span></div>
       <div class="nav-item" id="nav-chat" onclick="navTo('chat')"><span class="nav-icon">💬</span> Sınıf Sohbeti</div>
       <div class="nav-item" id="nav-voice" onclick="navTo('voice')"><span class="nav-icon">🎤</span> Sesli Sohbet</div>
       <div class="nav-item" id="nav-quiz" onclick="navTo('quiz')"><span class="nav-icon">📝</span> Quiz</div>
-      <div class="nav-item" id="nav-questionbank" onclick="navTo('questionbank')"><span class="nav-icon">🗃️</span> Soru Bankası</div>
-      <div class="nav-item" id="nav-videos" onclick="navTo('videos')"><span class="nav-icon">🎬</span> Video Dersler</div>
-      <div class="nav-item" id="nav-flashcards" onclick="navTo('flashcards')"><span class="nav-icon">🃏</span> Flashcard</div>
       <div class="nav-item" id="nav-classes" onclick="navTo('classes')"><span class="nav-icon">🏫</span> Sınıflarım</div>
       <div class="nav-item" id="nav-join-class" onclick="showModal('modal-join-class')" style="display:none"><span class="nav-icon">➕</span> Sınıfa Katıl</div>
 
@@ -722,9 +714,6 @@ if(!window.toggleTheme){
       <div class="nav-item" id="nav-schedule" onclick="navTo('schedule')"><span class="nav-icon">🗓️</span> Ders Programı</div>
       <div class="nav-item" id="nav-calendar" onclick="navTo('calendar')"><span class="nav-icon">📅</span> Takvim</div>
       <div class="nav-item" id="nav-ai" onclick="navTo('ai')"><span class="nav-icon">🤖</span> AI Asistan</div>
-      <div class="nav-item" id="nav-qbank" onclick="navTo('qbank')"><span class="nav-icon">🗂️</span> Soru Bankası</div>
-      <div class="nav-item" id="nav-videos" onclick="navTo('videos')"><span class="nav-icon">🎬</span> Ders Videoları</div>
-      <div class="nav-item" id="nav-flashcard" onclick="navTo('flashcard')"><span class="nav-icon">🃏</span> Flashcard</div>
       <div class="nav-item" id="nav-books" onclick="navTo('books')"><span class="nav-icon">📚</span> Kitaplarım</div>
       <div class="nav-item" id="nav-store" onclick="navTo('store')"><span class="nav-icon">🛒</span> Mağaza</div>
       <div class="nav-item" id="nav-leaderboard" onclick="navTo('leaderboard')"><span class="nav-icon">🏆</span> Liderboard</div>
@@ -732,9 +721,7 @@ if(!window.toggleTheme){
       <div id="teacher-nav" style="display:none">
         <div class="sidebar-section">ÖĞRETMEN</div>
         <div class="nav-item" id="nav-assign" onclick="navTo('assign')"><span class="nav-icon">✏️</span> Ödev Ver</div>
-        <div class="nav-item" id="nav-qbank-manage" onclick="navTo('questionbank')" style="color:var(--accent)"><span class="nav-icon">🗃️</span> Soru Bankası</div>
         <div class="nav-item" id="nav-quiz-create" onclick="navTo('quiz-create')"><span class="nav-icon">📝</span> Quiz Oluştur</div>
-        <div class="nav-item" id="nav-questionbank" onclick="navTo('questionbank')"><span class="nav-icon">🏦</span> Soru Bankası</div>
         <div class="nav-item" id="nav-students" onclick="navTo('students')"><span class="nav-icon">👥</span> Öğrencilerim <span class="nav-badge" id="pending-badge" style="display:none">0</span></div>
         <div class="nav-item" id="nav-analytics" onclick="navTo('analytics')"><span class="nav-icon">📊</span> Analitik</div>
         <div class="nav-item" id="nav-newclass" onclick="showModal('modal-create-class')"><span class="nav-icon">➕</span> Yeni Sınıf</div>
@@ -1460,6 +1447,8 @@ window.navTo=function(page){
   switch(page){
     case 'profile': renderProfile();break;
     case 'dm': renderDM();break;
+    case 'profile': renderProfile();break;
+    case 'dm': renderDM();break;
     case 'classprofiles': renderClassProfiles();break;
     case 'schedule': renderSchedule();break;
     case 'calendar': renderCalendar();break;
@@ -1469,25 +1458,13 @@ window.navTo=function(page){
     case 'dersler': renderDersler();break;
     case 'questionbank': renderQuestionBank();break;
     case 'videos': renderVideos();break;
-    case 'flashcard': renderFlashcard();break;
-    case 'videos': renderVideos();break;
-    case 'flashcards': renderFlashcards();break;
-    case 'questionbank': if(session.role==='teacher')renderQuestionBank();break;
-    case 'questionbank': renderQuestionBank();break;
-    case 'videos': renderVideos();break;
     case 'flashcards': renderFlashcards();break;
     case 'notes': renderNotes();break;
-    case 'qbank': renderQBank();break;
-    case 'videos': renderVideos();break;
-    case 'flashcard': renderFlashcard();break;
     case 'books': renderBooks();break;
     case 'announcements': renderAnnouncements();break;
     case 'chat': renderChat();break;
     case 'voice': renderVoiceChat();break;
     case 'quiz': renderQuiz();break;
-    case 'questionbank': renderQuestionBank();break;
-    case 'videos': renderVideos();break;
-    case 'flashcards': renderFlashcards();break;
     case 'quiz-create': if(session.role==='teacher'){showModal('modal-create-quiz');loadTeacherClassesForQuiz();}break;
     case 'classes': renderClasses();break;
     case 'store': renderStore();break;
@@ -5813,22 +5790,14 @@ function buildDrawerNav(){
     {page:'dashboard',icon:'🏠',label:'Dashboard'},
     {page:'homework',icon:'📋',label:'Ödevler'},
     {page:'dersler',icon:'📚',label:'Dersler'},
-    {page:'questionbank',icon:'🗃️',label:'Soru Bankası'},
-    {page:'videos',icon:'🎬',label:'Video Dersler'},
-    {page:'flashcard',icon:'🃏',label:'Flashcard'},
     {page:'questionbank',icon:'🧩',label:'Soru Bankası'},
     {page:'videos',icon:'🎬',label:'Ders Videoları'},
     {page:'flashcards',icon:'🃏',label:'Flashcard'},
     {page:'notes',icon:'📝',label:'Ders Notları'},
-    {page:'videos',icon:'🎥',label:'Video Dersler'},
-    {page:'flashcards',icon:'🃏',label:'Flashcard'},
     {page:'announcements',icon:'📢',label:'Duyurular'},
     {page:'chat',icon:'💬',label:'Sınıf Sohbeti'},
     {page:'voice',icon:'🎤',label:'Sesli Sohbet'},
     {page:'quiz',icon:'📝',label:'Quiz'},
-    {page:'questionbank',icon:'🗃️',label:'Soru Bankası'},
-    {page:'videos',icon:'🎬',label:'Video Dersler'},
-    {page:'flashcards',icon:'🃏',label:'Flashcard'},
     {page:'classes',icon:'🏫',label:'Sınıflarım'},
     {page:'profile',icon:'👤',label:'Profilim'},
     {page:'dm',icon:'✉️',label:'Mesajlar'},
@@ -5836,13 +5805,10 @@ function buildDrawerNav(){
     {page:'schedule',icon:'🗓️',label:'Ders Programı'},
     {page:'calendar',icon:'📅',label:'Takvim'},
     {page:'ai',icon:'🤖',label:'AI Asistan'},
-    {page:'qbank',icon:'🗂️',label:'Soru Bankası'},
-    {page:'videos',icon:'🎬',label:'Ders Videoları'},
-    {page:'flashcard',icon:'🃏',label:'Flashcard'},
     {page:'books',icon:'📚',label:'Kitaplarım'},
     {page:'store',icon:'🛒',label:'Mağaza'},
     {page:'leaderboard',icon:'🏆',label:'Liderboard'},
-  ];
+  ]
   if(session.role==='teacher'){
     items.push(
       {page:'assign',icon:'✏️',label:'Ödev Ver'},
