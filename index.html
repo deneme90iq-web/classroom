@@ -711,6 +711,9 @@ if(!window.toggleTheme){
       <div class="nav-item" id="nav-dm" onclick="navTo('dm')"><span class="nav-icon">✉️</span> Mesajlar <span class="nav-badge" id="dm-badge" style="display:none">0</span></div>
       <div class="nav-item" id="nav-classprofiles" onclick="navTo('classprofiles')" style="display:none"><span class="nav-icon">👥</span> Sınıfım</div>
       <div class="nav-item" id="nav-schedule" onclick="navTo('schedule')"><span class="nav-icon">🗓️</span> Ders Programı</div>
+      <div class="nav-item" id="nav-pomodoro" onclick="navTo('pomodoro')"><span class="nav-icon">⏱️</span> Pomodoro</div>
+      <div class="nav-item" id="nav-whiteboard" onclick="navTo('whiteboard')"><span class="nav-icon">🖊️</span> Beyaz Tahta</div>
+      <div class="nav-item" id="nav-qrjoin" onclick="navTo('qrjoin')"><span class="nav-icon">📷</span> QR Katılım</div>
       <div class="nav-item" id="nav-calendar" onclick="navTo('calendar')"><span class="nav-icon">📅</span> Takvim</div>
       <div class="nav-item" id="nav-ai" onclick="navTo('ai')"><span class="nav-icon">🤖</span> AI Asistan</div>
       <div class="nav-item" id="nav-books" onclick="navTo('books')"><span class="nav-icon">📚</span> Kitaplarım</div>
@@ -1472,6 +1475,9 @@ window.navTo=function(page){
     case 'classprofiles': renderClassProfiles();break;
     case 'gradebook': renderGradebook();break;
     case 'schedule': renderSchedule();break;
+    case 'pomodoro': renderPomodoro();break;
+    case 'whiteboard': renderWhiteboard();break;
+    case 'qrjoin': renderQRJoin();break;
     case 'calendar': renderCalendar();break;
     case 'ai': renderAI();break;
     case 'dashboard': renderDashboard();break;
@@ -4801,6 +4807,427 @@ window.saveParentMsg=async function(){
 }
 
 
+
+// ═══════════ POMODORO ═══════════
+function renderPomodoro(){
+  const mc=document.getElementById('main-content');
+  mc.innerHTML=`
+  <div style="font-family:'Syne',sans-serif;font-size:1.3rem;font-weight:700;margin-bottom:20px">⏱️ Pomodoro</div>
+  <div style="max-width:380px;margin:0 auto">
+    <!-- Mod seçici -->
+    <div style="display:flex;gap:6px;margin-bottom:24px;background:var(--card2);border-radius:12px;padding:4px">
+      <button id="pom-btn-work" onclick="pomSetMode('work')" style="flex:1;padding:8px;border:none;border-radius:9px;cursor:pointer;font-size:.8rem;font-weight:700;background:var(--primary);color:#fff;transition:all .2s">🎯 Çalışma</button>
+      <button id="pom-btn-short" onclick="pomSetMode('short')" style="flex:1;padding:8px;border:none;border-radius:9px;cursor:pointer;font-size:.8rem;font-weight:700;background:transparent;color:var(--dim);transition:all .2s">☕ Kısa Mola</button>
+      <button id="pom-btn-long" onclick="pomSetMode('long')" style="flex:1;padding:8px;border:none;border-radius:9px;cursor:pointer;font-size:.8rem;font-weight:700;background:transparent;color:var(--dim);transition:all .2s">🛌 Uzun Mola</button>
+    </div>
+    <!-- Timer dairesi -->
+    <div style="position:relative;width:220px;height:220px;margin:0 auto 24px">
+      <svg width="220" height="220" style="position:absolute;top:0;left:0;transform:rotate(-90deg)">
+        <circle cx="110" cy="110" r="100" fill="none" stroke="var(--border)" stroke-width="8"/>
+        <circle id="pom-ring" cx="110" cy="110" r="100" fill="none" stroke="var(--primary)" stroke-width="8"
+          stroke-dasharray="628" stroke-dashoffset="0" stroke-linecap="round" style="transition:stroke-dashoffset .9s linear"/>
+      </svg>
+      <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center">
+        <div id="pom-time" style="font-family:'Syne',sans-serif;font-size:3rem;font-weight:800;letter-spacing:-.02em">25:00</div>
+        <div id="pom-label" style="font-size:.75rem;color:var(--dim);margin-top:4px">Çalışma</div>
+      </div>
+    </div>
+    <!-- Kontroller -->
+    <div style="display:flex;gap:10px;justify-content:center;margin-bottom:20px">
+      <button onclick="pomToggle()" id="pom-toggle" style="width:64px;height:64px;border-radius:50%;border:none;cursor:pointer;font-size:1.6rem;background:var(--primary);color:#fff;box-shadow:0 4px 16px var(--primary-glow);transition:all .15s">▶</button>
+      <button onclick="pomReset()" style="width:48px;height:48px;border-radius:50%;border:none;cursor:pointer;font-size:1.1rem;background:var(--card2);color:var(--dim);transition:all .15s">↺</button>
+    </div>
+    <!-- İstatistik -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px">
+      <div class="card" style="text-align:center;padding:12px">
+        <div style="font-size:.6rem;color:var(--dim);margin-bottom:4px">TAMAMLANAN</div>
+        <div id="pom-done" style="font-size:1.4rem;font-weight:700;color:var(--primary)">0</div>
+      </div>
+      <div class="card" style="text-align:center;padding:12px">
+        <div style="font-size:.6rem;color:var(--dim);margin-bottom:4px">TOPLAM ÇALIŞMA</div>
+        <div id="pom-total" style="font-size:1.4rem;font-weight:700;color:var(--success)">0 dk</div>
+      </div>
+    </div>
+    <!-- Süre ayarları -->
+    <div class="card">
+      <div style="font-family:'Syne',sans-serif;font-size:.72rem;letter-spacing:.08em;color:var(--dim);margin-bottom:10px">SÜRE AYARLARI</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
+        <div><div style="font-size:.65rem;color:var(--dim);margin-bottom:4px">Çalışma</div>
+          <select class="input" id="pom-set-work" onchange="pomUpdateSettings()" style="padding:6px;font-size:.8rem">
+            ${[15,20,25,30,45,50,60].map(m=>`<option value="${m}" ${m===25?'selected':''}>${m} dk</option>`).join('')}
+          </select></div>
+        <div><div style="font-size:.65rem;color:var(--dim);margin-bottom:4px">Kısa Mola</div>
+          <select class="input" id="pom-set-short" onchange="pomUpdateSettings()" style="padding:6px;font-size:.8rem">
+            ${[3,5,7,10].map(m=>`<option value="${m}" ${m===5?'selected':''}>${m} dk</option>`).join('')}
+          </select></div>
+        <div><div style="font-size:.65rem;color:var(--dim);margin-bottom:4px">Uzun Mola</div>
+          <select class="input" id="pom-set-long" onchange="pomUpdateSettings()" style="padding:6px;font-size:.8rem">
+            ${[10,15,20,30].map(m=>`<option value="${m}" ${m===15?'selected':''}>${m} dk</option>`).join('')}
+          </select></div>
+      </div>
+    </div>
+  </div>`;
+  pomInit();
+}
+
+let pomState={mode:'work',running:false,remaining:25*60,total:25*60,done:0,totalWork:0,interval:null};
+
+function pomInit(){
+  pomState={mode:'work',running:false,remaining:25*60,total:25*60,done:0,totalWork:0,interval:null};
+  pomRender();
+}
+
+window.pomSetMode=function(mode){
+  if(pomState.running) pomStop();
+  pomState.mode=mode;
+  const mins={work:parseInt(document.getElementById('pom-set-work')?.value||25),short:parseInt(document.getElementById('pom-set-short')?.value||5),long:parseInt(document.getElementById('pom-set-long')?.value||15)};
+  pomState.remaining=mins[mode]*60;
+  pomState.total=mins[mode]*60;
+  pomRender();
+  // Buton stilleri
+  ['work','short','long'].forEach(m=>{
+    const btn=document.getElementById('pom-btn-'+m);
+    if(!btn)return;
+    if(m===mode){btn.style.background='var(--primary)';btn.style.color='#fff';}
+    else{btn.style.background='transparent';btn.style.color='var(--dim)';}
+  });
+}
+
+window.pomUpdateSettings=function(){
+  pomSetMode(pomState.mode);
+}
+
+window.pomToggle=function(){
+  if(pomState.running) pomStop();
+  else pomStart();
+}
+
+function pomStart(){
+  pomState.running=true;
+  document.getElementById('pom-toggle').textContent='⏸';
+  pomState.interval=setInterval(()=>{
+    pomState.remaining--;
+    if(pomState.mode==='work') pomState.totalWork++;
+    if(pomState.remaining<=0){
+      pomStop();
+      if(pomState.mode==='work'){
+        pomState.done++;
+        document.getElementById('pom-done').textContent=pomState.done;
+        // Bildirim sesi
+        try{const a=new AudioContext();const o=a.createOscillator();const g=a.createGain();o.connect(g);g.connect(a.destination);o.frequency.value=880;g.gain.setValueAtTime(0.3,a.currentTime);g.gain.exponentialRampToValueAtTime(0.001,a.currentTime+0.5);o.start();o.stop(a.currentTime+0.5);}catch(e){}
+        toast('🎉 Pomodoro tamamlandı! Mola hakkı kazandın.','s');
+        pomSetMode(pomState.done%4===0?'long':'short');
+      } else {
+        toast('☕ Mola bitti! Çalışmaya devam.','i');
+        pomSetMode('work');
+      }
+    }
+    pomRender();
+  },1000);
+}
+
+function pomStop(){
+  pomState.running=false;
+  clearInterval(pomState.interval);
+  const btn=document.getElementById('pom-toggle');
+  if(btn) btn.textContent='▶';
+}
+
+window.pomReset=function(){
+  pomStop();
+  pomSetMode(pomState.mode);
+}
+
+function pomRender(){
+  const m=String(Math.floor(pomState.remaining/60)).padStart(2,'0');
+  const s=String(pomState.remaining%60).padStart(2,'0');
+  const el=document.getElementById('pom-time');
+  if(el) el.textContent=`${m}:${s}`;
+  const ring=document.getElementById('pom-ring');
+  if(ring){
+    const pct=pomState.remaining/pomState.total;
+    ring.style.strokeDashoffset=628*(1-pct);
+    ring.style.stroke=pomState.mode==='work'?'var(--primary)':pomState.mode==='short'?'var(--success)':'var(--accent)';
+  }
+  const lbl=document.getElementById('pom-label');
+  if(lbl) lbl.textContent={work:'Çalışma Zamanı',short:'Kısa Mola',long:'Uzun Mola'}[pomState.mode];
+  const tot=document.getElementById('pom-total');
+  if(tot) tot.textContent=Math.floor(pomState.totalWork/60)+' dk';
+}
+
+// ═══════════ BEYAZ TAHTA ═══════════
+function renderWhiteboard(){
+  const mc=document.getElementById('main-content');
+  mc.style.padding='0';
+  mc.style.overflow='hidden';
+  mc.innerHTML=`
+  <div style="display:flex;flex-direction:column;height:100%;overflow:hidden">
+    <!-- Toolbar -->
+    <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--card);border-bottom:1px solid var(--border);flex-shrink:0;flex-wrap:wrap">
+      <div style="font-family:'Syne',sans-serif;font-size:.85rem;font-weight:700">🖊️ Beyaz Tahta</div>
+      <div style="display:flex;gap:4px;margin-left:8px">
+        ${[{id:'pen',icon:'✏️',label:'Kalem'},{id:'eraser',icon:'🧹',label:'Silgi'},{id:'line',icon:'╱',label:'Çizgi'},{id:'rect',icon:'▭',label:'Dikdörtgen'},{id:'circle',icon:'○',label:'Daire'},{id:'text',icon:'T',label:'Yazı'}].map(t=>`
+        <button id="wb-tool-${t.id}" onclick="wbSetTool('${t.id}')" title="${t.label}" style="width:32px;height:32px;border-radius:8px;border:1px solid var(--border);cursor:pointer;font-size:.85rem;background:${t.id==='pen'?'var(--primary-dim)':'var(--card2)'};color:${t.id==='pen'?'var(--primary)':'var(--text)'};transition:all .15s">${t.icon}</button>`).join('')}
+      </div>
+      <div style="display:flex;align-items:center;gap:6px;margin-left:4px">
+        <input type="color" id="wb-color" value="#6c63ff" style="width:28px;height:28px;border:none;border-radius:6px;cursor:pointer;padding:0;background:none">
+        <select id="wb-size" style="padding:4px 6px;border-radius:8px;border:1px solid var(--border);background:var(--card2);color:var(--text);font-size:.78rem">
+          ${[2,4,6,10,16].map(s=>`<option value="${s}" ${s===4?'selected':''}>${s}px</option>`).join('')}
+        </select>
+      </div>
+      <div style="margin-left:auto;display:flex;gap:6px">
+        <button onclick="wbClear()" style="padding:6px 12px;border-radius:8px;border:1px solid var(--border);cursor:pointer;font-size:.75rem;background:var(--card2);color:var(--dim)">🗑️ Temizle</button>
+        <button onclick="wbSave()" style="padding:6px 12px;border-radius:8px;border:none;cursor:pointer;font-size:.75rem;background:var(--primary);color:#fff">💾 Kaydet</button>
+        <button onclick="navTo('dashboard');mc.style.padding='';mc.style.overflow='';" style="padding:6px 12px;border-radius:8px;border:1px solid var(--border);cursor:pointer;font-size:.75rem;background:var(--card2);color:var(--dim)">← Geri</button>
+      </div>
+    </div>
+    <!-- Canvas -->
+    <canvas id="wb-canvas" style="flex:1;cursor:crosshair;touch-action:none;display:block;background:#fff"></canvas>
+  </div>`;
+  wbInit();
+}
+
+function wbInit(){
+  const canvas=document.getElementById('wb-canvas');
+  if(!canvas)return;
+  const wrap=canvas.parentElement;
+  canvas.width=wrap.clientWidth;
+  canvas.height=wrap.clientHeight-48;
+  const ctx=canvas.getContext('2d');
+  ctx.fillStyle='#ffffff';
+  ctx.fillRect(0,0,canvas.width,canvas.height);
+
+  let tool='pen',drawing=false,startX=0,startY=0,snapshot=null;
+
+  window.wbSetTool=function(t){
+    tool=t;
+    canvas.style.cursor=t==='eraser'?'cell':t==='text'?'text':'crosshair';
+    document.querySelectorAll('[id^="wb-tool-"]').forEach(b=>{
+      b.style.background='var(--card2)';b.style.color='var(--text)';b.style.borderColor='var(--border)';
+    });
+    const btn=document.getElementById('wb-tool-'+t);
+    if(btn){btn.style.background='var(--primary-dim)';btn.style.color='var(--primary)';btn.style.borderColor='var(--primary)';}
+  };
+
+  function getPos(e){
+    const r=canvas.getBoundingClientRect();
+    const src=e.touches?e.touches[0]:e;
+    return{x:src.clientX-r.left,y:src.clientY-r.top};
+  }
+
+  function startDraw(e){
+    e.preventDefault();
+    drawing=true;
+    const {x,y}=getPos(e);
+    startX=x;startY=y;
+    const col=document.getElementById('wb-color')?.value||'#000';
+    const sz=parseInt(document.getElementById('wb-size')?.value||4);
+    ctx.strokeStyle=tool==='eraser'?'#ffffff':col;
+    ctx.lineWidth=tool==='eraser'?sz*5:sz;
+    ctx.lineCap='round';ctx.lineJoin='round';
+    if(['line','rect','circle'].includes(tool)) snapshot=ctx.getImageData(0,0,canvas.width,canvas.height);
+    if(tool==='pen'||tool==='eraser'){ctx.beginPath();ctx.moveTo(x,y);}
+    if(tool==='text'){
+      const txt=prompt('Yazı gir:');
+      if(txt){ctx.fillStyle=col;ctx.font=`${sz*5}px sans-serif`;ctx.fillText(txt,x,y);}
+      drawing=false;
+    }
+  }
+
+  function moveDraw(e){
+    if(!drawing)return;e.preventDefault();
+    const {x,y}=getPos(e);
+    if(tool==='pen'||tool==='eraser'){ctx.lineTo(x,y);ctx.stroke();}
+    else if(snapshot){
+      ctx.putImageData(snapshot,0,0);
+      const col=document.getElementById('wb-color')?.value||'#000';
+      const sz=parseInt(document.getElementById('wb-size')?.value||4);
+      ctx.strokeStyle=col;ctx.lineWidth=sz;
+      if(tool==='line'){ctx.beginPath();ctx.moveTo(startX,startY);ctx.lineTo(x,y);ctx.stroke();}
+      else if(tool==='rect'){ctx.strokeRect(startX,startY,x-startX,y-startY);}
+      else if(tool==='circle'){
+        const rx=Math.abs(x-startX)/2,ry=Math.abs(y-startY)/2;
+        ctx.beginPath();ctx.ellipse(startX+(x-startX)/2,startY+(y-startY)/2,rx,ry,0,0,Math.PI*2);ctx.stroke();
+      }
+    }
+  }
+
+  function endDraw(e){drawing=false;snapshot=null;}
+
+  canvas.addEventListener('mousedown',startDraw);
+  canvas.addEventListener('mousemove',moveDraw);
+  canvas.addEventListener('mouseup',endDraw);
+  canvas.addEventListener('touchstart',startDraw,{passive:false});
+  canvas.addEventListener('touchmove',moveDraw,{passive:false});
+  canvas.addEventListener('touchend',endDraw);
+
+  window.wbClear=function(){ctx.fillStyle='#ffffff';ctx.fillRect(0,0,canvas.width,canvas.height);};
+  window.wbSave=function(){
+    const a=document.createElement('a');
+    a.download='beyaz-tahta-'+Date.now()+'.png';
+    a.href=canvas.toDataURL('image/png');
+    a.click();
+    toast('💾 Tahta kaydedildi!','s');
+  };
+}
+
+// ═══════════ QR KATILIM ═══════════
+async function renderQRJoin(){
+  const mc=document.getElementById('main-content');
+  mc.innerHTML=`
+  <div style="font-family:'Syne',sans-serif;font-size:1.3rem;font-weight:700;margin-bottom:20px">📷 QR Katılım</div>
+  <div id="qr-content"></div>`;
+
+  if(session.role==='teacher'){
+    const classes=await getMyClasses();
+    if(!classes.length){
+      document.getElementById('qr-content').innerHTML='<div class="card text-center text-dim" style="padding:40px">Sınıf bulunamadı. Önce sınıf oluştur.</div>';
+      return;
+    }
+    let html=`
+    <div style="font-size:.82rem;color:var(--dim);margin-bottom:16px">Öğrenciler bu QR kodu tarayarak sınıfa katılabilir.</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px">
+      ${classes.map((c,i)=>`<button onclick="showQR('${c.code}','${c.name}',this)" class="btn ${i===0?'btn-primary':'btn-ghost'}" style="font-size:.78rem">${c.name}</button>`).join('')}
+    </div>
+    <div id="qr-display" style="text-align:center"></div>`;
+    document.getElementById('qr-content').innerHTML=html;
+    showQR(classes[0].code, classes[0].name);
+  } else {
+    // Öğrenci — QR tarayıcı
+    document.getElementById('qr-content').innerHTML=`
+    <div style="max-width:400px;margin:0 auto">
+      <div class="card" style="text-align:center;margin-bottom:16px">
+        <div style="font-size:.82rem;color:var(--dim);margin-bottom:16px">Öğretmenin QR kodunu tarayarak sınıfa katıl.</div>
+        <div id="qr-reader-wrap" style="width:100%;max-width:320px;margin:0 auto;border-radius:12px;overflow:hidden;background:#000;aspect-ratio:1"></div>
+        <div style="margin-top:12px;display:flex;align-items:center;gap:8px">
+          <div style="flex:1;height:1px;background:var(--border)"></div>
+          <span style="font-size:.72rem;color:var(--dim)">veya</span>
+          <div style="flex:1;height:1px;background:var(--border)"></div>
+        </div>
+        <div style="margin-top:12px;display:flex;gap:8px">
+          <input class="input" id="qr-manual-code" placeholder="Sınıf kodunu manuel gir (CL-XXXX)" style="flex:1;text-transform:uppercase">
+          <button class="btn btn-primary" onclick="joinWithCode()">Katıl</button>
+        </div>
+      </div>
+    </div>`;
+    startQRScanner();
+  }
+}
+
+window.showQR=function(code, name, btn){
+  if(btn){document.querySelectorAll('#qr-content .btn').forEach(b=>{b.className='btn btn-ghost';b.style.fontSize='.78rem';});btn.className='btn btn-primary';btn.style.fontSize='.78rem';}
+  const el=document.getElementById('qr-display');
+  if(!el)return;
+
+  // QR kodu oluştur — qrcode.js CDN
+  el.innerHTML=`
+  <div style="display:inline-block;padding:20px;background:#fff;border-radius:16px;box-shadow:0 4px 24px rgba(0,0,0,.15);margin-bottom:16px">
+    <div id="qr-img"></div>
+  </div>
+  <div style="font-family:'Syne',sans-serif;font-size:1.1rem;font-weight:700;margin-bottom:4px">${name}</div>
+  <div style="font-size:1.4rem;font-weight:800;color:var(--primary);letter-spacing:.15em;margin-bottom:12px">${code}</div>
+  <div style="display:flex;gap:8px;justify-content:center">
+    <button onclick="navigator.clipboard.writeText('${code}').then(()=>toast('Kod kopyalandı!','i'))" class="btn btn-ghost" style="font-size:.78rem">📋 Kodu Kopyala</button>
+    <button onclick="printQR()" class="btn btn-ghost" style="font-size:.78rem">🖨️ Yazdır</button>
+  </div>`;
+
+  // QR kütüphanesini yükle ve oluştur
+  loadQRLib().then(()=>{
+    try{
+      new QRCode(document.getElementById('qr-img'),{
+        text:code, width:200, height:200,
+        colorDark:'#1a1a2e', colorLight:'#ffffff',
+        correctLevel:QRCode.CorrectLevel.H
+      });
+    }catch(e){
+      document.getElementById('qr-img').innerHTML=`<div style="color:#333;font-size:1.2rem;font-weight:700;padding:20px">${code}</div>`;
+    }
+  });
+}
+
+function loadQRLib(){
+  return new Promise((res,rej)=>{
+    if(window.QRCode){res();return;}
+    const s=document.createElement('script');
+    s.src='https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js';
+    s.onload=res;s.onerror=()=>{res();};
+    document.head.appendChild(s);
+  });
+}
+
+window.printQR=function(){
+  const win=window.open('','_blank');
+  const qrEl=document.getElementById('qr-display');
+  win.document.write(`<html><body style="text-align:center;padding:40px;font-family:sans-serif">${qrEl.innerHTML}<script>window.onload=()=>window.print()<\/script></body></html>`);
+  win.document.close();
+}
+
+async function startQRScanner(){
+  // jsQR kütüphanesiyle kamera QR tarayıcı
+  await new Promise((res,rej)=>{
+    if(window.jsQR){res();return;}
+    const s=document.createElement('script');
+    s.src='https://cdnjs.cloudflare.com/ajax/libs/jsQR/1.4.0/jsQR.js';
+    s.onload=res;s.onerror=res;
+    document.head.appendChild(s);
+  });
+
+  const wrap=document.getElementById('qr-reader-wrap');
+  if(!wrap)return;
+
+  try{
+    const stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}});
+    const video=document.createElement('video');
+    video.srcObject=stream;video.playsInline=true;video.play();
+    wrap.appendChild(video);
+    video.style.width='100%';video.style.height='100%';video.style.objectFit='cover';
+
+    const canvas=document.createElement('canvas');
+    const ctx=canvas.getContext('2d');
+    let scanning=true;
+
+    function scan(){
+      if(!scanning||!document.getElementById('qr-reader-wrap'))return;
+      if(video.readyState===video.HAVE_ENOUGH_DATA){
+        canvas.width=video.videoWidth;canvas.height=video.videoHeight;
+        ctx.drawImage(video,0,0,canvas.width,canvas.height);
+        const imgData=ctx.getImageData(0,0,canvas.width,canvas.height);
+        if(window.jsQR){
+          const code=jsQR(imgData.data,imgData.width,imgData.height);
+          if(code?.data){
+            scanning=false;
+            stream.getTracks().forEach(t=>t.stop());
+            joinWithCode(code.data.trim().toUpperCase());
+            return;
+          }
+        }
+      }
+      requestAnimationFrame(scan);
+    }
+    scan();
+  }catch(e){
+    wrap.innerHTML=`<div style="color:#aaa;font-size:.78rem;padding:20px">Kamera erişimi sağlanamadı. Manuel kod gir.</div>`;
+  }
+}
+
+window.joinWithCode=async function(code){
+  const val=(code||document.getElementById('qr-manual-code')?.value||'').trim().toUpperCase();
+  if(!val){toast('Sınıf kodu gir!','w');return;}
+  const cls=await dbGet(`classes/${val}`);
+  if(!cls){toast('Geçersiz kod: '+val,'d');return;}
+  // Zaten üye mi?
+  const member=await dbGet(`classMembers/${safeKey(val)}/${safeKey(session.uid)}`);
+  if(member){toast('Zaten bu sınıftasın!','i');return;}
+  // Katılma isteği gönder
+  await dbSet(`pendingStudents/${safeKey(val)}/${safeKey(session.uid)}`,{
+    uid:session.uid,name:session.name,email:session.email||'',
+    classCode:val,requestedAt:Date.now(),status:'pending'
+  });
+  toast(`📩 "${cls.name}" sınıfına katılma isteği gönderildi!`,'s');
+  navTo('dashboard');
+}
+
+
 // ═══════════ DERS PROGRAMI ═══════════
 const DAYS = ['Pazartesi','Salı','Çarşamba','Perşembe','Cuma'];
 const HOURS = ['08:00','09:00','10:00','11:00','12:00','13:00','14:00','15:00','16:00'];
@@ -7261,6 +7688,9 @@ function buildDrawerNav(){
     {page:'dm',icon:'✉️',label:'Mesajlar'},
     {page:'classprofiles',icon:'👥',label:'Sınıfım',studentOnly:true},
     {page:'schedule',icon:'🗓️',label:'Ders Programı'},
+    {page:'pomodoro',icon:'⏱️',label:'Pomodoro'},
+    {page:'whiteboard',icon:'🖊️',label:'Beyaz Tahta'},
+    {page:'qrjoin',icon:'📷',label:'QR Katılım'},
     {page:'calendar',icon:'📅',label:'Takvim'},
     {page:'ai',icon:'🤖',label:'AI Asistan'},
     {page:'books',icon:'📚',label:'Kitaplarım'},
