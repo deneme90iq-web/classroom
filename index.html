@@ -2714,7 +2714,7 @@ window.toggleTopicContent = async function(topicId, subjectId, classCode, card){
       html += '<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border-radius:10px;background:var(--card2)">';
       html += '<div><div style="font-size:.82rem;font-weight:600">'+fc.title+'</div>';
       html += '<div style="font-size:.7rem;color:var(--dim)">'+(fc.cards||[]).length+' kart</div></div>';
-      html += '<button onclick="openFCStudy(''+fc.id+'')" style="padding:6px 14px;border-radius:8px;border:none;background:var(--primary);color:#fff;cursor:pointer;font-size:.75rem;font-weight:600">Çalış ▶</button>';
+      html += '<button onclick="openFCStudy(\''+fc.id+'\')" style="padding:6px 14px;border-radius:8px;border:none;background:var(--primary);color:#fff;cursor:pointer;font-size:.75rem;font-weight:600">Çalış ▶</button>';
       html += '</div>';
     });
     html += '</div></div>';
@@ -2736,7 +2736,7 @@ window.openFullNote = async function(noteId){
   modal.innerHTML = '<div class="modal" style="max-width:600px;max-height:85vh;overflow-y:auto">'
     +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">'
     +'<div style="font-family:Syne,sans-serif;font-size:1rem;font-weight:700">📝 '+(n.title||'Konu Anlatımı')+'</div>'
-    +'<button class="btn btn-ghost btn-icon" onclick="this.closest('.modal-overlay').remove()">✕</button>'
+    +'<button class="btn btn-ghost btn-icon" onclick="this.closest(\'.modal-overlay\').remove()">✕</button>'
     +'</div>'
     +'<div style="font-size:.85rem;line-height:1.8;color:var(--text);white-space:pre-wrap">'+(n.content||'')+'</div>'
     +'</div>';
