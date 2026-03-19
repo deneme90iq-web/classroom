@@ -2549,7 +2549,10 @@ window.dersDetay = async function(subjectId){
       <div class="tab" id="dtab-videos" onclick="dersTab('videos','${subjectId}')">🎬 Videolar</div>
       <div class="tab" id="dtab-flashcards" onclick="dersTab('flashcards','${subjectId}')">🃏 Flashcard</div>
     </div>
-    ${isT ? `<button class="btn btn-ghost" style="font-size:.78rem;padding:7px 12px" onclick="openTopicModal('${subjectId}')">+ Konu Ekle</button>` : ''}
+    ${isT ? `<div style="display:flex;gap:6px">
+      <button class="btn btn-ghost" style="font-size:.78rem;padding:7px 12px" onclick="openTopicModal('${subjectId}')">+ Konu Ekle</button>
+      <button class="btn btn-primary" style="font-size:.78rem;padding:7px 12px" onclick="aiAutoFillTopics('${subjectId}')">🤖 AI ile Doldur</button>
+    </div>` : ''}
   </div>
   <div id="ders-detay-content"></div>`;
 
@@ -2879,6 +2882,209 @@ window.showTopicContentForm = function(type, topicId, topicTitle, subjectId, cla
     const orig = document.getElementById('fc-cards-list');
     // addFCCard fonksiyonu fc-cards-list'e yazıyor, kopyala
     if(orig && list){ list.innerHTML = orig.innerHTML; orig.innerHTML = ''; }
+  }
+}
+
+
+// ═══════════ AI OTOMATİK KONU DOLDURMA ═══════════
+const GROQ_KEY_AF = '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';
+
+window.aiAutoFillTopics = async function(subjectId){
+  const subj = getSubject(subjectId);
+  const classes = await getMyClasses();
+  if(!classes.length){toast('Önce sınıf oluştur!','w');return;}
+
+  // Sınıf seçim modalı
+  const modal = document.createElement('div');
+  modal.className = 'modal-overlay';
+  modal.id = 'ai-autofill-modal';
+  modal.innerHTML = `<div class="modal" style="max-width:460px">
+    <div style="text-align:center;margin-bottom:16px">
+      <div style="font-size:2rem;margin-bottom:6px">🤖</div>
+      <div style="font-family:'Syne',sans-serif;font-size:1.05rem;font-weight:700">${subj.icon} ${subj.name}</div>
+      <div style="font-size:.78rem;color:var(--dim);margin-top:4px">AI o yılın kazanımlarına göre konuları oluştursun,<br>her konuya flashcard yapsın ve video linki eklesin.</div>
+    </div>
+    ${classes.length > 1 ? `<div class="form-group"><label class="label">SINIF</label>
+      <select class="input" id="af-class">${classes.map(c=>`<option value="${c.code}" data-grade="${c.grade||''}">${c.name}</option>`).join('')}</select></div>` :
+      `<input type="hidden" id="af-class" value="${classes[0].code}" data-grade="${classes[0].grade||''}">`}
+    <div class="form-group"><label class="label">FLASHCARD SAYISI (konu başına)</label>
+      <select class="input" id="af-fc-count">
+        <option value="5">5 kart</option>
+        <option value="8" selected>8 kart</option>
+        <option value="10">10 kart</option>
+      </select>
+    </div>
+    <div style="background:rgba(0,212,255,.06);border:1px solid rgba(0,212,255,.2);border-radius:12px;padding:12px;margin-bottom:16px;font-size:.78rem;color:var(--dim)">
+      ℹ️ AI mevcut konuları silmez, yeni konular ekler. Aynı konu zaten varsa atlar.
+    </div>
+    <div id="af-progress" style="display:none;margin-bottom:14px">
+      <div id="af-status" style="font-size:.8rem;color:var(--dim);margin-bottom:6px;text-align:center">Hazırlanıyor...</div>
+      <div style="background:var(--bg2);border-radius:6px;height:8px;overflow:hidden">
+        <div id="af-bar" style="height:8px;background:linear-gradient(90deg,var(--primary),var(--accent));width:0%;border-radius:6px;transition:width .5s"></div>
+      </div>
+      <div id="af-log" style="margin-top:10px;max-height:120px;overflow-y:auto;font-size:.72rem;color:var(--dim2)"></div>
+    </div>
+    <div id="af-actions" style="display:flex;gap:8px">
+      <button class="btn btn-primary" style="flex:1;padding:12px" onclick="runAIAutoFill('${subjectId}')">🚀 Başlat</button>
+      <button class="btn btn-ghost" onclick="this.closest('.modal-overlay').remove()">İptal</button>
+    </div>
+  </div>`;
+  modal.onclick = e=>{if(e.target===modal)modal.remove();};
+  document.body.appendChild(modal);
+}
+
+function afLog(msg){ 
+  const el=document.getElementById('af-log');
+  if(el){ el.innerHTML+=`<div>• ${msg}</div>`; el.scrollTop=el.scrollHeight; }
+}
+function afStatus(msg,pct){ 
+  const s=document.getElementById('af-status'); if(s) s.textContent=msg;
+  const b=document.getElementById('af-bar'); if(b) b.style.width=pct+'%';
+}
+
+window.runAIAutoFill = async function(subjectId){
+  const subj = getSubject(subjectId);
+  const selEl = document.getElementById('af-class');
+  const classCode = selEl?.value;
+  const fcCount = parseInt(document.getElementById('af-fc-count')?.value||'8');
+
+  if(!classCode){toast('Sınıf seç!','w');return;}
+
+  // Sınıf grade bilgisi
+  const allClasses = await dbGet('classes')||{};
+  const cls = Object.values(allClasses).find(c=>c.code===classCode);
+  const grade = cls?.grade || null;
+  const gradeText = grade ? `${grade}. sınıf` : 'ortaokul/lise';
+
+  // UI kilitle
+  document.getElementById('af-actions').innerHTML = '';
+  document.getElementById('af-progress').style.display = 'block';
+
+  afStatus('Kazanımlar hazırlanıyor...', 5);
+
+  try{
+    // ADIM 1: AI'dan konu listesi al
+    afLog(`${gradeText} ${subj.name} kazanımları isteniyor...`);
+
+    const topicsPrompt = `Türkiye Milli Eğitim Bakanlığı ${gradeText} ${subj.name} dersi yıllık kazanımlarına göre konuları listele.
+
+SADECE JSON array döndür, başka hiçbir şey yazma:
+[
+  {"title":"Konu Başlığı","desc":"1-2 cümle açıklama","keywords":["anahtar","kelime"]}
+]
+
+${gradeText} ${subj.name} için TÜM ana konuları listele (10-20 konu arası):`;
+
+    const r1 = await fetch('https://api.groq.com/openai/v1/chat/completions',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+GROQ_KEY_AF},
+      body:JSON.stringify({model:'llama-3.3-70b-versatile',messages:[{role:'user',content:topicsPrompt}],max_tokens:3000,temperature:0.3})
+    });
+    const d1 = await r1.json();
+    const raw1 = d1.choices?.[0]?.message?.content||'';
+    const clean1 = raw1.replace(/```json|```/g,'').trim();
+    const m1 = clean1.match(/\[[\s\S]*\]/);
+    let topicList = null;
+    if(m1){ try{ topicList=JSON.parse(m1[0]); }catch(e){} }
+    if(!topicList?.length) throw new Error('Konu listesi alınamadı.');
+
+    afLog(`${topicList.length} konu bulundu ✓`);
+    afStatus(`${topicList.length} konu oluşturuluyor...`, 15);
+
+    // Mevcut konuları al (üst üste eklememek için)
+    const existing = await dbGet(`topics/${safeKey(classCode)}/${subjectId}`)||{};
+    const existingTitles = Object.values(existing).map(t=>t.title.toLowerCase());
+
+    let added = 0;
+    let skipped = 0;
+
+    for(let i=0; i<topicList.length; i++){
+      const topic = topicList[i];
+      const pct = 15 + Math.round((i/topicList.length)*75);
+      afStatus(`${topic.title} işleniyor... (${i+1}/${topicList.length})`, pct);
+
+      // Zaten var mı?
+      if(existingTitles.includes(topic.title.toLowerCase())){
+        afLog(`"${topic.title}" zaten var, atlandı`);
+        skipped++;
+        continue;
+      }
+
+      // Konu kaydet
+      const topicId = 'topic_'+Date.now()+'_'+i;
+      await dbSet(`topics/${safeKey(classCode)}/${subjectId}/${topicId}`,{
+        id:topicId, title:topic.title, desc:topic.desc||'',
+        order:Object.keys(existing).length+added,
+        subjectId, classCode, authorUid:session.uid,
+        createdAt:Date.now(), videoCount:0, noteCount:0, fcCount:0
+      });
+      afLog(`📖 "${topic.title}" eklendi`);
+
+      // ADIM 2: Bu konu için flashcard üret
+      try{
+        afLog(`  🃏 Flashcard üretiliyor...`);
+        const fcPrompt = `${gradeText} ${subj.name} "${topic.title}" konusu için ${fcCount} flashcard.
+SADECE JSON: [{"front":"Soru/Kavram","back":"Kısa cevap"}]
+Türkçe, ${gradeText} seviyesine uygun:`;
+
+        const r2 = await fetch('https://api.groq.com/openai/v1/chat/completions',{
+          method:'POST',
+          headers:{'Content-Type':'application/json','Authorization':'Bearer '+GROQ_KEY_AF},
+          body:JSON.stringify({model:'llama-3.3-70b-versatile',messages:[{role:'user',content:fcPrompt}],max_tokens:1200,temperature:0.4})
+        });
+        const d2 = await r2.json();
+        const raw2 = d2.choices?.[0]?.message?.content||'';
+        const clean2 = raw2.replace(/```json|```/g,'').trim();
+        const m2 = clean2.match(/\[[\s\S]*\]/);
+        let cards = null;
+        if(m2){ try{ cards=JSON.parse(m2[0]); }catch(e){} }
+
+        if(cards?.length){
+          const fcId = 'fcset_'+Date.now()+'_'+i;
+          await dbSet(`flashcardSets/${fcId}`,{
+            id:fcId, title:topic.title+' — Flashcard',
+            cards, subjectId, classCode, topicId,
+            authorUid:session.uid, authorName:session.name,
+            source:'ai', createdAt:Date.now()
+          });
+          await dbSet(`topics/${safeKey(classCode)}/${subjectId}/${topicId}/fcCount`, cards.length);
+          afLog(`  ✅ ${cards.length} kart kaydedildi`);
+        }
+      }catch(e){ afLog(`  ⚠️ Flashcard hatası: ${e.message}`); }
+
+      // ADIM 3: YouTube arama linki ekle (video olarak)
+      const ytQuery = encodeURIComponent(`${gradeText} ${subj.name} ${topic.title} ders`);
+      const ytUrl = `https://www.youtube.com/results?search_query=${ytQuery}`;
+      const vidId = 'vid_'+Date.now()+'_'+i;
+      await dbSet(`classVideos/${vidId}`,{
+        id:vidId,
+        title:`${topic.title} — YouTube Arama`,
+        url:ytUrl,
+        description:`${gradeText} ${subj.name} ${topic.title} için YouTube araması`,
+        subjectId, classCode, topicId,
+        authorUid:session.uid, authorName:session.name,
+        source:'ai', createdAt:Date.now()
+      });
+      await dbSet(`topics/${safeKey(classCode)}/${subjectId}/${topicId}/videoCount`, 1);
+      afLog(`  🎬 Video linki eklendi`);
+      added++;
+
+      // Rate limit için kısa bekleme
+      await new Promise(r=>setTimeout(r,200));
+    }
+
+    afStatus('Tamamlandı! 🎉', 100);
+    afLog(`────────────────`);
+    afLog(`✅ ${added} konu eklendi, ${skipped} konu atlandı`);
+
+    document.getElementById('af-actions').innerHTML = `
+      <button class="btn btn-primary" style="flex:1" onclick="this.closest('.modal-overlay').remove();loadTopics('${subjectId}','${classCode}')">✅ Kapat ve Görüntüle</button>`;
+
+  } catch(err){
+    afStatus('Hata: '+err.message, 0);
+    afLog('❌ '+err.message);
+    document.getElementById('af-actions').innerHTML = `
+      <button class="btn btn-ghost" style="flex:1" onclick="this.closest('.modal-overlay').remove()">Kapat</button>`;
   }
 }
 
