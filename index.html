@@ -696,7 +696,6 @@ if(!window.toggleTheme){
       <div class="nav-item active" id="nav-dashboard" onclick="navTo('dashboard')"><span class="nav-icon">🏠</span> Dashboard</div>
       <div class="nav-item" id="nav-homework" onclick="navTo('homework')"><span class="nav-icon">📋</span> Ödevler <span class="nav-badge" id="hw-badge" style="display:none">0</span></div>
       <div class="nav-item" id="nav-dersler" onclick="navTo('dersler')"><span class="nav-icon">📚</span> Dersler</div>
-      <div class="nav-item" id="nav-questionbank" onclick="navTo('questionbank')"><span class="nav-icon">🧩</span> Soru Bankası</div>
       <div class="nav-item" id="nav-videos" onclick="navTo('videos')"><span class="nav-icon">🎬</span> Ders Videoları</div>
       <div class="nav-item" id="nav-flashcards" onclick="navTo('flashcards')"><span class="nav-icon">🃏</span> Flashcard</div>
       <div class="nav-item" id="nav-notes" onclick="navTo('notes')"><span class="nav-icon">📝</span> Ders Notları</div>
@@ -1458,7 +1457,6 @@ window.navTo=function(page){
     case 'dashboard': renderDashboard();break;
     case 'homework': renderHomework();break;
     case 'dersler': renderDersler();break;
-    case 'questionbank': renderQuestionBank();break;
     case 'videos': renderVideos();break;
     case 'flashcards': renderFlashcards();break;
     case 'notes': renderNotes();break;
@@ -2054,6 +2052,262 @@ async function renderDersler(){
   document.getElementById('dersler-content').innerHTML=html;
 }
 
+
+// ═══════════ AI ANLIK TEST SİSTEMİ ═══════════
+const GROQ_KEY_TEST = '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';
+
+window.startAITest = async function(subjectId){
+  const subj = getSubject(subjectId);
+
+  // Ayar modalı
+  const modal = document.createElement('div');
+  modal.className = 'modal-overlay';
+  modal.innerHTML = `<div class="modal" style="max-width:380px;text-align:center">
+    <div style="font-size:2.5rem;margin-bottom:8px">${subj.icon}</div>
+    <div style="font-family:'Syne',sans-serif;font-size:1.1rem;font-weight:700;margin-bottom:4px">${subj.name} Testi</div>
+    <div style="font-size:.8rem;color:var(--dim);margin-bottom:20px">Yapay zeka ${subj.name} dersinden sorular hazırlayacak.</div>
+    <div class="form-group" style="text-align:left">
+      <label class="label">SORU SAYISI</label>
+      <select class="input" id="aitest-count">
+        <option value="5">5 soru (Hızlı)</option>
+        <option value="10" selected>10 soru (Normal)</option>
+        <option value="15">15 soru (Detaylı)</option>
+        <option value="20">20 soru (Kapsamlı)</option>
+      </select>
+    </div>
+    <div class="form-group" style="text-align:left">
+      <label class="label">ZORLUK</label>
+      <select class="input" id="aitest-diff">
+        <option value="kolay">😊 Kolay</option>
+        <option value="orta" selected>🎯 Orta</option>
+        <option value="zor">🔥 Zor</option>
+      </select>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:4px">
+      <button class="btn btn-primary" style="flex:1;padding:12px" onclick="runAITest('${subjectId}',this.closest('.modal-overlay'))">🚀 Testi Başlat</button>
+      <button class="btn btn-ghost" onclick="this.closest('.modal-overlay').remove()">İptal</button>
+    </div>
+  </div>`;
+  modal.onclick = e => { if(e.target===modal) modal.remove(); };
+  document.body.appendChild(modal);
+};
+
+window.runAITest = async function(subjectId, settingModal){
+  const count = document.getElementById('aitest-count')?.value || '10';
+  const diff  = document.getElementById('aitest-diff')?.value || 'orta';
+  if(settingModal) settingModal.remove();
+
+  const subj = getSubject(subjectId);
+
+  // Yükleme ekranı
+  const loadModal = document.createElement('div');
+  loadModal.className = 'modal-overlay';
+  loadModal.id = 'aitest-loading';
+  loadModal.innerHTML = `<div class="modal" style="max-width:340px;text-align:center">
+    <div style="font-size:2rem;margin-bottom:12px">🤖</div>
+    <div style="font-family:'Syne',sans-serif;font-size:1rem;font-weight:700;margin-bottom:8px">Sorular hazırlanıyor...</div>
+    <div style="font-size:.82rem;color:var(--dim);margin-bottom:16px">${subj.icon} ${subj.name} • ${count} soru • ${diff}</div>
+    <div style="background:var(--bg2);border-radius:6px;height:6px;overflow:hidden">
+      <div id="aitest-load-bar" style="height:6px;background:linear-gradient(90deg,var(--primary),var(--accent));width:0%;border-radius:6px;transition:width .4s"></div>
+    </div>
+  </div>`;
+  document.body.appendChild(loadModal);
+
+  // Progress animasyonu
+  let prog = 0;
+  const progInterval = setInterval(()=>{
+    prog = Math.min(prog+8, 85);
+    const bar = document.getElementById('aitest-load-bar');
+    if(bar) bar.style.width = prog+'%';
+  }, 300);
+
+  try{
+    const prompt = `Sen bir ${subj.name} öğretmenisin. Öğrencilere ${diff} seviyede ${count} adet çoktan seçmeli soru sor.
+
+KURALLAR:
+- Sorular ${subj.name} müfredatına uygun olsun
+- Her soru 4 şık içersin (A,B,C,D)
+- Sadece 1 doğru cevap
+- SADECE JSON array döndür, başka hiçbir şey yazma
+
+JSON FORMAT:
+[{"question":"Soru?","options":["A","B","C","D"],"answer":0}]
+(answer = doğru şıkkın index'i: 0=A,1=B,2=C,3=D)
+
+${count} soru üret:`;
+
+    const resp = await fetch('https://api.groq.com/openai/v1/chat/completions',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+GROQ_KEY_TEST},
+      body: JSON.stringify({
+        model:'llama-3.3-70b-versatile',
+        messages:[{role:'user',content:prompt}],
+        max_tokens:4000,
+        temperature:0.5
+      })
+    });
+
+    const data = await resp.json();
+    const raw = data.choices?.[0]?.message?.content || '';
+
+    // JSON parse — çoklu format desteği
+    let questions = null;
+    const cleanRaw = raw.replace(/```json|```/g,'').trim();
+    const m = cleanRaw.match(/\[[\s\S]*\]/);
+    if(m){ try{ questions=JSON.parse(m[0]); }catch(e){} }
+    if(!questions){ try{ questions=JSON.parse(cleanRaw); }catch(e){} }
+    if(!Array.isArray(questions)||!questions.length) throw new Error('Sorular alınamadı.');
+
+    clearInterval(progInterval);
+    const bar = document.getElementById('aitest-load-bar');
+    if(bar) bar.style.width = '100%';
+    setTimeout(()=>{
+      loadModal.remove();
+      playAITest(questions, subj, diff);
+    }, 400);
+
+  } catch(err){
+    clearInterval(progInterval);
+    loadModal.remove();
+    toast('❌ '+err.message, 'd');
+  }
+};
+
+function playAITest(questions, subj, diff){
+  let idx=0, score=0, wrong=[], startTime=Date.now();
+
+  function renderQ(){
+    document.querySelector('.modal-overlay.ai-quiz')?.remove();
+    if(idx >= questions.length){
+      showAITestResult(score, questions, wrong, subj, diff, Math.round((Date.now()-startTime)/1000));
+      return;
+    }
+    const q = questions[idx];
+    const modal = document.createElement('div');
+    modal.className = 'modal-overlay ai-quiz';
+
+    // Şıkları karıştır ama doğru cevabı takip et
+    const shuffleMap = q.options.map((o,i)=>({text:o,origIdx:i})).sort(()=>Math.random()-0.5);
+    const newCorrect = shuffleMap.findIndex(s=>s.origIdx===q.answer);
+
+    modal.innerHTML = `<div class="modal" style="max-width:520px">
+      <!-- Header -->
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+        <div style="display:flex;align-items:center;gap:8px">
+          <span style="font-size:1rem">${subj.icon}</span>
+          <span style="font-size:.75rem;color:var(--dim);font-weight:600">${subj.name}</span>
+        </div>
+        <div style="display:flex;gap:12px;font-size:.75rem">
+          <span style="color:var(--success)">✅ ${score}</span>
+          <span style="color:var(--danger)">❌ ${idx-score}</span>
+          <span style="color:var(--dim)">${idx+1}/${questions.length}</span>
+        </div>
+      </div>
+      <!-- Progress -->
+      <div style="height:5px;background:var(--bg2);border-radius:3px;margin-bottom:16px;overflow:hidden">
+        <div style="height:5px;background:${subj.color};width:${(idx/questions.length)*100}%;border-radius:3px;transition:width .3s"></div>
+      </div>
+      <!-- Soru -->
+      <div style="font-size:.98rem;font-weight:700;line-height:1.55;margin-bottom:18px;min-height:60px">${q.question}</div>
+      <!-- Şıklar -->
+      <div style="display:flex;flex-direction:column;gap:9px" id="ai-opts">
+        ${shuffleMap.map((o,i)=>`
+          <button data-idx="${i}" onclick="aiAnswer(${i},${newCorrect},this)"
+            style="width:100%;padding:13px 16px;border-radius:12px;text-align:left;cursor:pointer;font-size:.88rem;font-weight:500;background:var(--card2);border:1.5px solid var(--border);color:var(--text);transition:all .15s;display:flex;align-items:center;gap:10px"
+            onmouseover="if(!this.disabled){this.style.borderColor='${subj.color}';this.style.background='${subj.color}15'}"
+            onmouseout="if(!this.disabled){this.style.borderColor='var(--border)';this.style.background='var(--card2)'}">
+            <span style="width:24px;height:24px;border-radius:50%;background:${subj.color}22;color:${subj.color};font-weight:700;font-size:.78rem;display:flex;align-items:center;justify-content:center;flex-shrink:0">${String.fromCharCode(65+i)}</span>
+            ${o.text}
+          </button>`).join('')}
+      </div>
+    </div>`;
+    document.body.appendChild(modal);
+
+    window.aiAnswer = function(chosen, correct, btn){
+      document.querySelectorAll('#ai-opts button').forEach(b=>{ b.disabled=true; b.onmouseover=null; b.onmouseout=null; });
+      const btns = document.querySelectorAll('#ai-opts button');
+      // Doğru butonu yeşil
+      btns[correct].style.cssText += ';background:var(--success-dim)!important;border-color:var(--success)!important;color:var(--success)!important;font-weight:700';
+      btns[correct].querySelector('span').style.cssText = 'background:var(--success);color:#000;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:.78rem;font-weight:700';
+      if(chosen === correct){
+        score++;
+      } else {
+        btn.style.cssText += ';background:var(--danger-dim)!important;border-color:var(--danger)!important;color:var(--danger)!important';
+        btn.querySelector('span').style.cssText = 'background:var(--danger);color:#fff;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:.78rem;font-weight:700';
+        wrong.push({q:q.question, chosen:shuffleMap[chosen].text, correct:shuffleMap[correct].text});
+      }
+      setTimeout(()=>{ modal.remove(); idx++; renderQ(); }, 900);
+    };
+  }
+  renderQ();
+}
+
+async function showAITestResult(score, questions, wrong, subj, diff, secs){
+  const total = questions.length;
+  const pct = Math.round(score/total*100);
+  const mins = Math.floor(secs/60), s2 = secs%60;
+  const timeStr = mins>0?`${mins}dk ${s2}sn`:`${s2}sn`;
+
+  const modal = document.createElement('div');
+  modal.className = 'modal-overlay';
+  modal.innerHTML = `<div class="modal" style="max-width:460px;max-height:90vh;overflow-y:auto">
+    <div style="text-align:center;margin-bottom:20px">
+      <div style="font-size:2.5rem;margin-bottom:8px">${pct===100?'🏆':pct>=80?'🎯':pct>=60?'👍':pct>=40?'💪':'📚'}</div>
+      <div style="font-family:'Syne',sans-serif;font-size:1.2rem;font-weight:700;margin-bottom:4px">${subj.icon} ${subj.name} Testi Bitti!</div>
+      <div style="font-size:.8rem;color:var(--dim)">⏱️ ${timeStr} • ${diff} seviye</div>
+    </div>
+    <!-- Sonuç dairesi -->
+    <div style="display:flex;justify-content:center;margin-bottom:18px">
+      <div style="width:110px;height:110px;border-radius:50%;background:${pct>=60?'var(--success-dim)':pct>=40?'var(--warning-dim)':'var(--danger-dim)'};border:4px solid ${pct>=60?'var(--success)':pct>=40?'var(--warning)':'var(--danger)'};display:flex;align-items:center;justify-content:center;flex-direction:column">
+        <div style="font-size:1.8rem;font-weight:700;color:${pct>=60?'var(--success)':pct>=40?'var(--warning)':'var(--danger)'}">${pct}%</div>
+        <div style="font-size:.7rem;color:var(--dim)">${score}/${total}</div>
+      </div>
+    </div>
+    <!-- İstatistikler -->
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:16px;text-align:center">
+      <div class="card" style="padding:10px"><div style="font-size:.6rem;color:var(--dim)">DOĞRU</div><div style="font-size:1.2rem;font-weight:700;color:var(--success)">${score}</div></div>
+      <div class="card" style="padding:10px"><div style="font-size:.6rem;color:var(--dim)">YANLIŞ</div><div style="font-size:1.2rem;font-weight:700;color:var(--danger)">${wrong.length}</div></div>
+      <div class="card" style="padding:10px"><div style="font-size:.6rem;color:var(--dim)">SÜRE</div><div style="font-size:1.2rem;font-weight:700;color:var(--accent)">${timeStr}</div></div>
+    </div>
+    ${wrong.length ? `
+    <div style="margin-bottom:16px">
+      <div style="font-family:'Syne',sans-serif;font-size:.72rem;letter-spacing:.08em;color:var(--dim);margin-bottom:8px">❌ YANLIŞ CEVAPLAR</div>
+      ${wrong.map(w=>`<div style="background:var(--danger-dim);border-radius:10px;padding:10px 12px;margin-bottom:6px;border:1px solid rgba(255,77,109,.2)">
+        <div style="font-size:.82rem;font-weight:600;margin-bottom:5px">${w.q}</div>
+        <div style="font-size:.75rem;color:var(--danger)">✗ Senin cevabın: ${w.chosen}</div>
+        <div style="font-size:.75rem;color:var(--success);margin-top:2px">✓ Doğru cevap: ${w.correct}</div>
+      </div>`).join('')}
+    </div>` : `<div style="text-align:center;color:var(--success);font-size:.9rem;margin-bottom:16px;padding:12px;background:var(--success-dim);border-radius:10px">🎉 Tüm sorular doğru! Mükemmel!</div>`}
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-primary" style="flex:1" onclick="this.closest('.modal-overlay').remove();startAITest('${subj.id}')">🔄 Tekrar</button>
+      <button class="btn btn-ghost" style="flex:1" onclick="this.closest('.modal-overlay').remove()">Kapat</button>
+    </div>
+  </div>`;
+  modal.onclick = e => { if(e.target===modal) modal.remove(); };
+  document.body.appendChild(modal);
+
+  // Firebase'e kaydet
+  if(session.uid && session.classCode){
+    const resultId = 'aitest_'+Date.now();
+    await dbSet(`aitestResults/${session.uid}/${resultId}`,{
+      subjectId:subj.id, subjectName:subj.name,
+      score, total, pct, wrongCount:wrong.length,
+      diff, secs, createdAt:Date.now(),
+      classCode:session.classCode
+    });
+    // XP ver
+    const xpGain = Math.round(pct/10) * 5;
+    if(xpGain > 0){
+      const path=`users/${session.uid}/gameState`;
+      const st=await dbGet(path)||defaultState();
+      addXP(st, xpGain);
+      await dbSet(path, st);
+      toast(`🧩 Test tamamlandı! +${xpGain} XP kazandın`, 's');
+    }
+  }
+}
+
+
 window.dersDetay=async function(subjectId){
   const subj=getSubject(subjectId);
   const mc=document.getElementById('main-content');
@@ -2066,11 +2320,13 @@ window.dersDetay=async function(subjectId){
       <div style="font-size:.75rem;color:${subj.color}">${subj.cat}</div>
     </div>
   </div>
-  <div class="tabs" style="margin-bottom:20px">
-    <div class="tab active" id="dtab-hw" onclick="dersTab('hw','${subjectId}')">📋 Ödevler</div>
-    <div class="tab" id="dtab-notes" onclick="dersTab('notes','${subjectId}')">📝 Notlar</div>
-    <div class="tab" id="dtab-qbank" onclick="dersTab('qbank','${subjectId}')">🧩 Sorular</div>
-    <div class="tab" id="dtab-videos" onclick="dersTab('videos','${subjectId}')">🎬 Videolar</div>
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px">
+    <div class="tabs" style="margin-bottom:0;flex:1">
+      <div class="tab active" id="dtab-hw" onclick="dersTab('hw','${subjectId}')">📋 Ödevler</div>
+      <div class="tab" id="dtab-notes" onclick="dersTab('notes','${subjectId}')">📝 Notlar</div>
+      <div class="tab" id="dtab-videos" onclick="dersTab('videos','${subjectId}')">🎬 Videolar</div>
+    </div>
+    <button class="btn btn-primary" style="flex-shrink:0;padding:9px 18px;font-size:.88rem" onclick="startAITest('${subjectId}')">🤖 Test Çöz</button>
   </div>
   <div id="ders-detay-content"><div class="text-center text-dim" style="padding:30px">Yükleniyor...</div></div>`;
   await dersTab('hw', subjectId);
@@ -6746,7 +7002,6 @@ function buildDrawerNav(){
     {page:'dashboard',icon:'🏠',label:'Dashboard'},
     {page:'homework',icon:'📋',label:'Ödevler'},
     {page:'dersler',icon:'📚',label:'Dersler'},
-    {page:'questionbank',icon:'🧩',label:'Soru Bankası'},
     {page:'videos',icon:'🎬',label:'Ders Videoları'},
     {page:'flashcards',icon:'🃏',label:'Flashcard'},
     {page:'notes',icon:'📝',label:'Ders Notları'},
