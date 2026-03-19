@@ -2993,38 +2993,159 @@ window.qbFilter=async function(filter){
 async function loadQB(cat){
   const grid=document.getElementById('qb-grid');if(!grid)return;
   const all=await dbGet('questionBank')||{};
-  let qs=Object.values(all).filter(q=>q.authorUid===session.uid||session.role==='student'&&q.classCode===session.classCode);
+  let qs=Object.values(all).filter(q=>
+    session.role==='teacher'?q.authorUid===session.uid:q.classCode===session.classCode
+  );
   if(cat!=='all'){
     const isSubjectId=SUBJECTS.some(s=>s.id===cat);
     if(isSubjectId){qs=qs.filter(q=>q.subjectId===cat);}
     else{const ids=SUBJECTS.filter(s=>s.cat===cat).map(s=>s.id);qs=qs.filter(q=>ids.includes(q.subjectId));}
   }
-  qs.sort((a,b)=>b.createdAt-a.createdAt);
-  if(!qs.length){grid.innerHTML=`<div class="card text-center text-dim" style="padding:40px"><div style="font-size:3rem;margin-bottom:10px">🧩</div><div>Henüz soru yok.</div></div>`;return;}
-  grid.innerHTML=qs.map(q=>{
-    const subj=getSubject(q.subjectId);
-    const isOwner=q.authorUid===session.uid||session.role==='teacher';
-    return `<div class="card" style="margin-bottom:12px">
-      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:10px">
-        <div style="flex:1">
-          <div style="font-weight:600;font-size:.92rem;margin-bottom:6px">${q.question}</div>
-          <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px">
-            <span style="font-size:.68rem;padding:2px 8px;border-radius:6px;background:${subj.color}22;color:${subj.color}">${subj.icon} ${subj.name}</span>
-            <span style="font-size:.68rem;padding:2px 8px;border-radius:6px;background:var(--card2);color:var(--dim)">${q.type==='multiple'?'Çoktan Seçmeli':'Açık Uçlu'}</span>
-          </div>
+  if(!qs.length){
+    grid.innerHTML=`<div class="card text-center text-dim" style="padding:40px"><div style="font-size:3rem;margin-bottom:10px">🧩</div><div>Henüz soru yok.</div></div>`;
+    return;
+  }
+
+  // Derse göre grupla
+  const groups={};
+  qs.forEach(q=>{
+    const sid=q.subjectId||'other';
+    if(!groups[sid]) groups[sid]=[];
+    groups[sid].push(q);
+  });
+
+  let html='';
+  Object.entries(groups).forEach(([sid,list])=>{
+    const subj=getSubject(sid);
+    html+=`<div style="margin-bottom:24px">
+      <!-- Ders başlığı + Quiz başlat butonu -->
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+        <div style="display:flex;align-items:center;gap:8px">
+          <span style="font-size:1.2rem">${subj.icon}</span>
+          <span style="font-family:'Syne',sans-serif;font-size:.82rem;font-weight:700;letter-spacing:.06em;color:${subj.color}">${subj.name.toUpperCase()}</span>
+          <span style="font-size:.7rem;padding:2px 8px;border-radius:10px;background:${subj.color}18;color:${subj.color}">${list.length} soru</span>
         </div>
-        ${isOwner?`<div style="display:flex;gap:4px">
-          <button onclick="deleteQB('${q.id}')" style="background:none;border:none;cursor:pointer;color:var(--danger);font-size:.85rem;padding:4px">🗑️</button>
-        </div>`:''}
+        <button onclick="startQBQuiz('${sid}')" style="background:${subj.color}22;color:${subj.color};border:1px solid ${subj.color}44;border-radius:10px;padding:6px 14px;cursor:pointer;font-size:.75rem;font-weight:700;transition:all .2s" onmouseover="this.style.background='${subj.color}33'" onmouseout="this.style.background='${subj.color}22'">▶ Quiz Başlat</button>
       </div>
-      ${q.type==='multiple'&&q.options?`
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
-        ${q.options.map((o,i)=>`<div style="padding:7px 10px;border-radius:8px;font-size:.8rem;${i===q.answer?'background:var(--success-dim);border:1px solid var(--success);color:var(--success);font-weight:600':'background:var(--card2);border:1px solid var(--border)'}">
-          ${String.fromCharCode(65+i)}. ${o}
-        </div>`).join('')}
-      </div>`:`<div style="font-size:.8rem;color:var(--success);padding:8px 12px;background:var(--success-dim);border-radius:8px;border:1px solid rgba(0,214,143,.3)">✅ ${q.answer}</div>`}
+      <!-- Soru listesi — sadece öğretmene tam, öğrenciye sadece soru -->
+      <div style="display:flex;flex-direction:column;gap:8px">
+      ${list.map((q,qi)=>{
+        const isOwner=q.authorUid===session.uid||session.role==='teacher';
+        return `<div style="background:var(--card2);border-radius:12px;padding:12px 14px;border:1px solid var(--border);display:flex;align-items:flex-start;justify-content:space-between;gap:10px">
+          <div style="flex:1">
+            <div style="font-size:.7rem;color:var(--dim);margin-bottom:4px;font-weight:600">${qi+1}. ${q.type==='multiple'?'Çoktan Seçmeli':'Açık Uçlu'}</div>
+            <div style="font-size:.88rem;font-weight:600;line-height:1.4">${q.question}</div>
+            ${isOwner&&q.type==='multiple'&&q.options?`<div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:6px">
+              ${q.options.map((o,i)=>`<span style="font-size:.7rem;padding:3px 8px;border-radius:6px;${i===q.answer?'background:var(--success-dim);color:var(--success);font-weight:700;border:1px solid var(--success)':'background:var(--card);color:var(--dim);border:1px solid var(--border)'}">${String.fromCharCode(65+i)}. ${o}</span>`).join('')}
+            </div>`:''}
+          </div>
+          ${isOwner?`<button onclick="deleteQB('${q.id}')" style="background:none;border:none;cursor:pointer;color:var(--danger);font-size:.85rem;padding:2px;flex-shrink:0">🗑️</button>`:''}
+        </div>`;
+      }).join('')}
+      </div>
     </div>`;
-  }).join('');
+  });
+  grid.innerHTML=html;
+}
+
+// Quiz modu — öğrenci soru çözsün
+window.startQBQuiz=async function(subjectId){
+  const all=await dbGet('questionBank')||{};
+  const qs=Object.values(all).filter(q=>{
+    const sameSubject=q.subjectId===subjectId;
+    const accessible=session.role==='teacher'?q.authorUid===session.uid:q.classCode===session.classCode;
+    return sameSubject&&accessible&&q.type==='multiple'&&q.options?.length;
+  });
+  if(!qs.length){toast('Bu derste çözülecek soru yok!','w');return;}
+
+  // Soruları karıştır
+  const shuffled=[...qs].sort(()=>Math.random()-0.5);
+  const subj=getSubject(subjectId);
+  let idx=0,score=0,wrong=[];
+
+  function renderQ(){
+    const existing=document.querySelector('.modal-overlay.qb-quiz');
+    if(existing)existing.remove();
+
+    if(idx>=shuffled.length){
+      showQuizResult(score,shuffled.length,wrong,subj);
+      return;
+    }
+
+    const q=shuffled[idx];
+    const modal=document.createElement('div');
+    modal.className='modal-overlay qb-quiz';
+    modal.innerHTML=`<div class="modal" style="max-width:500px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+        <span style="font-size:.72rem;color:var(--dim);font-weight:600">Soru ${idx+1} / ${shuffled.length}</span>
+        <span style="font-size:.72rem;color:var(--success);font-weight:600">✅ ${score} doğru</span>
+        <button class="btn btn-ghost btn-icon" onclick="this.closest('.modal-overlay').remove()" style="font-size:.75rem;padding:4px 8px">✕</button>
+      </div>
+      <!-- Progress bar -->
+      <div style="height:4px;background:var(--bg2);border-radius:2px;margin-bottom:16px;overflow:hidden">
+        <div style="height:4px;background:linear-gradient(90deg,${subj.color},var(--accent));width:${(idx/shuffled.length)*100}%;transition:width .3s;border-radius:2px"></div>
+      </div>
+      <div style="font-size:.7rem;color:${subj.color};font-weight:700;margin-bottom:8px">${subj.icon} ${subj.name}</div>
+      <div style="font-size:.95rem;font-weight:700;margin-bottom:18px;line-height:1.5">${q.question}</div>
+      <div style="display:flex;flex-direction:column;gap:8px" id="quiz-opts">
+        ${q.options.map((o,i)=>`
+          <button onclick="quizAnswer(${i},${q.answer},this)" style="width:100%;padding:12px 16px;border-radius:12px;text-align:left;cursor:pointer;font-size:.88rem;font-weight:500;transition:all .2s;background:var(--card2);border:1.5px solid var(--border);color:var(--text)" onmouseover="if(!this.disabled)this.style.borderColor='${subj.color}'" onmouseout="if(!this.disabled)this.style.borderColor='var(--border)'">
+            <span style="font-weight:700;margin-right:8px;color:${subj.color}">${String.fromCharCode(65+i)}</span>${o}
+          </button>`).join('')}
+      </div>
+    </div>`;
+    document.body.appendChild(modal);
+
+    window.quizAnswer=function(chosen,correct,btn){
+      // Tüm butonları kilitle
+      document.querySelectorAll('#quiz-opts button').forEach(b=>b.disabled=true);
+      const opts=document.querySelectorAll('#quiz-opts button');
+      // Doğru yeşil, yanlış kırmızı
+      opts[correct].style.cssText+=';background:var(--success-dim);border-color:var(--success);color:var(--success);font-weight:700';
+      if(chosen!==correct){
+        btn.style.cssText+=';background:var(--danger-dim);border-color:var(--danger);color:var(--danger)';
+        wrong.push({question:q.question,chosen:q.options[chosen],correct:q.options[correct]});
+      } else {
+        score++;
+      }
+      // Sonraki soru
+      setTimeout(()=>{
+        modal.remove();
+        idx++;
+        renderQ();
+      },1000);
+    };
+  }
+  renderQ();
+}
+
+function showQuizResult(score,total,wrong,subj){
+  const pct=Math.round(score/total*100);
+  const modal=document.createElement('div');
+  modal.className='modal-overlay';
+  modal.innerHTML=`<div class="modal" style="max-width:440px;text-align:center">
+    <div style="font-size:3rem;margin-bottom:8px">${pct===100?'🏆':pct>=70?'🎯':pct>=50?'👍':'💪'}</div>
+    <div style="font-family:'Syne',sans-serif;font-size:1.2rem;font-weight:700;margin-bottom:4px">${subj.icon} ${subj.name} Quiz Bitti!</div>
+    <div style="font-size:.85rem;color:var(--dim);margin-bottom:16px">${score} / ${total} doğru</div>
+    <!-- Puan dairesi -->
+    <div style="width:100px;height:100px;border-radius:50%;background:${pct>=70?'var(--success-dim)':pct>=50?'var(--warning-dim)':'var(--danger-dim)'};border:4px solid ${pct>=70?'var(--success)':pct>=50?'var(--warning)':'var(--danger)'};display:flex;align-items:center;justify-content:center;margin:0 auto 16px;flex-direction:column">
+      <div style="font-size:1.6rem;font-weight:700;color:${pct>=70?'var(--success)':pct>=50?'var(--warning)':'var(--danger)'}">${pct}%</div>
+    </div>
+    ${wrong.length?`<div style="text-align:left;margin-bottom:14px">
+      <div style="font-family:'Syne',sans-serif;font-size:.72rem;letter-spacing:.08em;color:var(--dim);margin-bottom:8px">YANLIŞ CEVAPLAR</div>
+      ${wrong.map(w=>`<div style="background:var(--danger-dim);border-radius:10px;padding:10px;margin-bottom:6px;border:1px solid rgba(255,77,109,.2)">
+        <div style="font-size:.8rem;font-weight:600;margin-bottom:4px">${w.question}</div>
+        <div style="font-size:.75rem;color:var(--danger)">Senin cevabın: ${w.chosen}</div>
+        <div style="font-size:.75rem;color:var(--success)">Doğru cevap: ${w.correct}</div>
+      </div>`).join('')}
+    </div>`:'<div style="color:var(--success);font-size:.9rem;margin-bottom:14px">🎉 Tüm sorular doğru!</div>'}
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-primary" style="flex:1" onclick="this.closest('.modal-overlay').remove();startQBQuiz('${subj.id}')">🔄 Tekrar</button>
+      <button class="btn btn-ghost" style="flex:1" onclick="this.closest('.modal-overlay').remove()">Kapat</button>
+    </div>
+  </div>`;
+  modal.onclick=e=>{if(e.target===modal)modal.remove();};
+  document.body.appendChild(modal);
 }
 
 // ═══════════ PDF → SORU BANKASI (AI) ═══════════
