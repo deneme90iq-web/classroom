@@ -2696,7 +2696,7 @@ window.toggleTopicContent = async function(topicId, subjectId, classCode, card){
       html += '<div style="font-size:.82rem;font-weight:700;margin-bottom:6px">'+(n.title||'Not')+'</div>';
       html += '<div style="font-size:.8rem;color:var(--dim);line-height:1.6;white-space:pre-wrap">'+preview+(isTrimmed?'...':'')+'</div>';
       if(isTrimmed){
-        html += '<button onclick="openFullNote(''+n.id+'')" style="margin-top:8px;padding:5px 12px;border-radius:8px;border:1px solid var(--primary);background:var(--primary-dim);color:var(--primary);cursor:pointer;font-size:.75rem;font-weight:600">📖 Tam Anlatımı Oku</button>';
+        html += '<button onclick="openFullNote(\''+n.id+'\')" style="margin-top:8px;padding:5px 12px;border-radius:8px;border:1px solid var(--primary);background:var(--primary-dim);color:var(--primary);cursor:pointer;font-size:.75rem;font-weight:600">📖 Tam Anlatımı Oku</button>';
       }
       html += '</div>';
     });
