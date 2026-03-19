@@ -2126,7 +2126,7 @@ window.startAITest = async function(subjectId){
   // Ayar modalı
   const modal = document.createElement('div');
   modal.className = 'modal-overlay';
-  modal.innerHTML = `<div class="modal" style="max-width:380px;text-align:center">
+  modal.innerHTML = `<div class="modal" style="max-width:400px;text-align:center">
     <div style="font-size:2.5rem;margin-bottom:8px">${subj.icon}</div>
     <div style="font-family:'Syne',sans-serif;font-size:1.1rem;font-weight:700;margin-bottom:4px">${subj.name} Testi</div>
     <div style="font-size:.8rem;color:var(--dim);margin-bottom:20px">Yapay zeka ${subj.name} dersinden sorular hazırlayacak.</div>
@@ -2147,7 +2147,39 @@ window.startAITest = async function(subjectId){
         <option value="zor">🔥 Zor</option>
       </select>
     </div>
-    <div style="display:flex;gap:8px;margin-top:4px">
+    <div class="form-group" style="text-align:left">
+      <label class="label">SORU TİPİ</label>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <label style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-radius:10px;border:1.5px solid var(--border);cursor:pointer;transition:all .15s" id="qtype-mc-wrap">
+          <div style="display:flex;align-items:center;gap:8px">
+            <input type="radio" name="aitest-qtype" id="qtype-mc" value="mc" checked style="accent-color:var(--primary)">
+            <div>
+              <div style="font-size:.85rem;font-weight:600">🔘 Sadece Çoktan Seçmeli</div>
+              <div style="font-size:.7rem;color:var(--dim)">Tüm sorular şıklı</div>
+            </div>
+          </div>
+        </label>
+        <label style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-radius:10px;border:1.5px solid var(--border);cursor:pointer;transition:all .15s" id="qtype-mixed-wrap">
+          <div style="display:flex;align-items:center;gap:8px">
+            <input type="radio" name="aitest-qtype" id="qtype-mixed" value="mixed" style="accent-color:var(--primary)">
+            <div>
+              <div style="font-size:.85rem;font-weight:600">🔀 Karma</div>
+              <div style="font-size:.7rem;color:var(--dim)">%70 çoktan seçmeli + %30 açık uçlu</div>
+            </div>
+          </div>
+        </label>
+        <label style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-radius:10px;border:1.5px solid var(--border);cursor:pointer;transition:all .15s" id="qtype-open-wrap">
+          <div style="display:flex;align-items:center;gap:8px">
+            <input type="radio" name="aitest-qtype" id="qtype-open" value="open" style="accent-color:var(--primary)">
+            <div>
+              <div style="font-size:.85rem;font-weight:600">✏️ Sadece Açık Uçlu</div>
+              <div style="font-size:.7rem;color:var(--dim)">Tüm sorular yazılı cevap</div>
+            </div>
+          </div>
+        </label>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:16px">
       <button class="btn btn-primary" style="flex:1;padding:12px" onclick="runAITest('${subjectId}',this.closest('.modal-overlay'))">🚀 Testi Başlat</button>
       <button class="btn btn-ghost" onclick="this.closest('.modal-overlay').remove()">İptal</button>
     </div>
@@ -2159,6 +2191,7 @@ window.startAITest = async function(subjectId){
 window.runAITest = async function(subjectId, settingModal){
   const count = document.getElementById('aitest-count')?.value || '10';
   const diff  = document.getElementById('aitest-diff')?.value || 'orta';
+  const qtype = document.querySelector('input[name="aitest-qtype"]:checked')?.value || 'mc';
   if(settingModal) settingModal.remove();
 
   const subj = getSubject(subjectId);
@@ -2195,22 +2228,35 @@ window.runAITest = async function(subjectId, settingModal){
   }, 300);
 
   try{
-    const openCount = Math.round(parseInt(count) * 0.3);
-    const mcCount = parseInt(count) - openCount;
+    let openCount = 0, mcCount = parseInt(count);
+    if(qtype === 'mixed'){ openCount = Math.round(parseInt(count)*0.3); mcCount = parseInt(count)-openCount; }
+    else if(qtype === 'open'){ openCount = parseInt(count); mcCount = 0; }
 
-    const prompt = `Sen bir ${subj.name} öğretmenisin. ${gradeText} öğrencilerine ${diff} seviyede karma test hazırla.
+    let formatDesc = '';
+    let exampleFormat = '';
+    if(qtype === 'mc'){
+      formatDesc = `Tüm sorular çoktan seçmeli olsun.`;
+      exampleFormat = `[{"type":"mc","question":"Soru?","options":["A","B","C","D"],"answer":0}]`;
+    } else if(qtype === 'open'){
+      formatDesc = `Tüm sorular açık uçlu olsun, kısa cevap gerektirsin.`;
+      exampleFormat = `[{"type":"open","question":"Soru?","answer":"Beklenen kısa cevap"}]`;
+    } else {
+      formatDesc = `${mcCount} çoktan seçmeli + ${openCount} açık uçlu karma test hazırla.`;
+      exampleFormat = `[{"type":"mc","question":"Soru?","options":["A","B","C","D"],"answer":0}, {"type":"open","question":"Soru?","answer":"Beklenen cevap"}]`;
+    }
+
+    const prompt = `Sen bir ${subj.name} öğretmenisin. ${gradeText} öğrencilerine ${diff} seviyede test hazırla.
 
 KURALLAR:
 - Sorular Türkiye ${gradeText} ${subj.name} müfredatına uygun olsun
-- Toplam ${count} soru: ${mcCount} çoktan seçmeli + ${openCount} açık uçlu
+- Toplam ${count} soru. ${formatDesc}
 - SADECE JSON array döndür, başka hiçbir şey yazma
+- mc answer = doğru şıkkın index: 0=A 1=B 2=C 3=D
 
-JSON FORMAT — iki tip soru:
-Çoktan seçmeli: {"type":"mc","question":"Soru?","options":["A","B","C","D"],"answer":0}
-Açık uçlu: {"type":"open","question":"Soru?","answer":"Beklenen cevap metni"}
-(mc answer = doğru şıkkın index: 0=A 1=B 2=C 3=D)
+ÖRNEK FORMAT:
+${exampleFormat}
 
-Önce ${mcCount} çoktan seçmeli, sonra ${openCount} açık uçlu soru üret:`;
+${count} soru üret:`;
 
     const resp = await fetch('https://api.groq.com/openai/v1/chat/completions',{
       method:'POST',
