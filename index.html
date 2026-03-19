@@ -2195,20 +2195,22 @@ window.runAITest = async function(subjectId, settingModal){
   }, 300);
 
   try{
-    const prompt = `Sen bir ${subj.name} öğretmenisin. ${gradeText} öğrencilerine ${diff} seviyede ${count} adet çoktan seçmeli soru sor.
+    const openCount = Math.round(parseInt(count) * 0.3);
+    const mcCount = parseInt(count) - openCount;
+
+    const prompt = `Sen bir ${subj.name} öğretmenisin. ${gradeText} öğrencilerine ${diff} seviyede karma test hazırla.
 
 KURALLAR:
 - Sorular Türkiye ${gradeText} ${subj.name} müfredatına uygun olsun
-- Sorular ${gradeText} seviyesine uygun zorlukta olsun
-- Her soru 4 şık içersin (A,B,C,D)
-- Sadece 1 doğru cevap
+- Toplam ${count} soru: ${mcCount} çoktan seçmeli + ${openCount} açık uçlu
 - SADECE JSON array döndür, başka hiçbir şey yazma
 
-JSON FORMAT:
-[{"question":"Soru?","options":["A","B","C","D"],"answer":0}]
-(answer = doğru şıkkın index'i: 0=A,1=B,2=C,3=D)
+JSON FORMAT — iki tip soru:
+Çoktan seçmeli: {"type":"mc","question":"Soru?","options":["A","B","C","D"],"answer":0}
+Açık uçlu: {"type":"open","question":"Soru?","answer":"Beklenen cevap metni"}
+(mc answer = doğru şıkkın index: 0=A 1=B 2=C 3=D)
 
-${count} soru üret:`;
+Önce ${mcCount} çoktan seçmeli, sonra ${openCount} açık uçlu soru üret:`;
 
     const resp = await fetch('https://api.groq.com/openai/v1/chat/completions',{
       method:'POST',
@@ -2248,75 +2250,158 @@ ${count} soru üret:`;
 };
 
 function playAITest(questions, subj, diff){
-  let idx=0, score=0, wrong=[], startTime=Date.now();
+  // Eski format desteği — type yoksa mc kabul et
+  questions = questions.map(q=>({...q, type:q.type||(q.options?'mc':'open')}));
+  let idx=0, score=0, openScore=0, wrong=[], openAnswers=[], startTime=Date.now();
+  const mcTotal = questions.filter(q=>q.type==='mc').length;
+  const openTotal = questions.filter(q=>q.type==='open').length;
 
   function renderQ(){
     document.querySelector('.modal-overlay.ai-quiz')?.remove();
     if(idx >= questions.length){
-      showAITestResult(score, questions, wrong, subj, diff, Math.round((Date.now()-startTime)/1000));
+      showAITestResult(score, questions, wrong, subj, diff, Math.round((Date.now()-startTime)/1000), openAnswers, openScore);
       return;
     }
     const q = questions[idx];
     const modal = document.createElement('div');
     modal.className = 'modal-overlay ai-quiz';
 
-    // Şıkları karıştır ama doğru cevabı takip et
-    const shuffleMap = q.options.map((o,i)=>({text:o,origIdx:i})).sort(()=>Math.random()-0.5);
-    const newCorrect = shuffleMap.findIndex(s=>s.origIdx===q.answer);
+    // Header ortak
+    const header = `<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+      <div style="display:flex;align-items:center;gap:8px">
+        <span style="font-size:1rem">${subj.icon}</span>
+        <span style="font-size:.75rem;color:var(--dim);font-weight:600">${subj.name}</span>
+        <span style="font-size:.65rem;padding:2px 7px;border-radius:5px;background:${q.type==='open'?'var(--accent-dim)':'var(--primary-dim)'};color:${q.type==='open'?'var(--accent)':'var(--primary)'}">${q.type==='open'?'✏️ Açık Uçlu':'🔘 Çoktan Seçmeli'}</span>
+      </div>
+      <div style="display:flex;gap:10px;font-size:.75rem">
+        <span style="color:var(--success)">✅ ${score}</span>
+        <span style="color:var(--dim)">${idx+1}/${questions.length}</span>
+      </div>
+    </div>
+    <div style="height:5px;background:var(--bg2);border-radius:3px;margin-bottom:16px;overflow:hidden">
+      <div style="height:5px;background:${subj.color};width:${(idx/questions.length)*100}%;border-radius:3px;transition:width .3s"></div>
+    </div>
+    <div style="font-size:.98rem;font-weight:700;line-height:1.55;margin-bottom:18px;min-height:60px">${q.question}</div>`;
 
-    modal.innerHTML = `<div class="modal" style="max-width:520px">
-      <!-- Header -->
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
-        <div style="display:flex;align-items:center;gap:8px">
-          <span style="font-size:1rem">${subj.icon}</span>
-          <span style="font-size:.75rem;color:var(--dim);font-weight:600">${subj.name}</span>
+    if(q.type === 'open'){
+      // Açık uçlu soru
+      modal.innerHTML = `<div class="modal" style="max-width:520px">
+        ${header}
+        <textarea id="ai-open-ans" placeholder="Cevabını buraya yaz..." rows="4"
+          style="width:100%;padding:12px;border-radius:12px;border:1.5px solid var(--border);background:var(--card2);color:var(--text);font-size:.9rem;resize:vertical;font-family:inherit;outline:none;transition:border-color .2s"
+          onfocus="this.style.borderColor='${subj.color}'"
+          onblur="this.style.borderColor='var(--border)'"></textarea>
+        <div style="display:flex;gap:8px;margin-top:12px">
+          <button onclick="submitOpenAnswer('${q.answer.replace(/'/g,"\'")}',this)" class="btn btn-primary" style="flex:1;padding:12px">
+            Cevapla →
+          </button>
+          <button onclick="skipOpenAnswer()" class="btn btn-ghost" style="padding:12px 16px">
+            Geç
+          </button>
         </div>
-        <div style="display:flex;gap:12px;font-size:.75rem">
-          <span style="color:var(--success)">✅ ${score}</span>
-          <span style="color:var(--danger)">❌ ${idx-score}</span>
-          <span style="color:var(--dim)">${idx+1}/${questions.length}</span>
-        </div>
-      </div>
-      <!-- Progress -->
-      <div style="height:5px;background:var(--bg2);border-radius:3px;margin-bottom:16px;overflow:hidden">
-        <div style="height:5px;background:${subj.color};width:${(idx/questions.length)*100}%;border-radius:3px;transition:width .3s"></div>
-      </div>
-      <!-- Soru -->
-      <div style="font-size:.98rem;font-weight:700;line-height:1.55;margin-bottom:18px;min-height:60px">${q.question}</div>
-      <!-- Şıklar -->
-      <div style="display:flex;flex-direction:column;gap:9px" id="ai-opts">
-        ${shuffleMap.map((o,i)=>`
-          <button data-idx="${i}" onclick="aiAnswer(${i},${newCorrect},this)"
-            style="width:100%;padding:13px 16px;border-radius:12px;text-align:left;cursor:pointer;font-size:.88rem;font-weight:500;background:var(--card2);border:1.5px solid var(--border);color:var(--text);transition:all .15s;display:flex;align-items:center;gap:10px"
-            onmouseover="if(!this.disabled){this.style.borderColor='${subj.color}';this.style.background='${subj.color}15'}"
-            onmouseout="if(!this.disabled){this.style.borderColor='var(--border)';this.style.background='var(--card2)'}">
-            <span style="width:24px;height:24px;border-radius:50%;background:${subj.color}22;color:${subj.color};font-weight:700;font-size:.78rem;display:flex;align-items:center;justify-content:center;flex-shrink:0">${String.fromCharCode(65+i)}</span>
-            ${o.text}
-          </button>`).join('')}
-      </div>
-    </div>`;
-    document.body.appendChild(modal);
+      </div>`;
+      document.body.appendChild(modal);
 
-    window.aiAnswer = function(chosen, correct, btn){
-      document.querySelectorAll('#ai-opts button').forEach(b=>{ b.disabled=true; b.onmouseover=null; b.onmouseout=null; });
-      const btns = document.querySelectorAll('#ai-opts button');
-      // Doğru butonu yeşil
-      btns[correct].style.cssText += ';background:var(--success-dim)!important;border-color:var(--success)!important;color:var(--success)!important;font-weight:700';
-      btns[correct].querySelector('span').style.cssText = 'background:var(--success);color:#000;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:.78rem;font-weight:700';
-      if(chosen === correct){
-        score++;
-      } else {
-        btn.style.cssText += ';background:var(--danger-dim)!important;border-color:var(--danger)!important;color:var(--danger)!important';
-        btn.querySelector('span').style.cssText = 'background:var(--danger);color:#fff;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:.78rem;font-weight:700';
-        wrong.push({q:q.question, chosen:shuffleMap[chosen].text, correct:shuffleMap[correct].text});
-      }
-      setTimeout(()=>{ modal.remove(); idx++; renderQ(); }, 900);
-    };
+      window.submitOpenAnswer = function(correctAnswer, btn){
+        const userAns = document.getElementById('ai-open-ans')?.value.trim();
+        if(!userAns){ toast('Cevap yaz!','w'); return; }
+        btn.disabled = true;
+        // AI ile cevabı değerlendir
+        evaluateOpenAnswer(q.question, userAns, correctAnswer, subj).then(result=>{
+          const opts = document.getElementById('ai-open-ans');
+          if(opts) opts.disabled = true;
+          // Sonucu göster
+          const resultDiv = document.createElement('div');
+          resultDiv.style.cssText = `margin-top:12px;padding:12px;border-radius:10px;background:${result.correct?'var(--success-dim)':'var(--warning-dim)'};border:1px solid ${result.correct?'var(--success)':'var(--warning)'}`;
+          resultDiv.innerHTML = `<div style="font-weight:700;color:${result.correct?'var(--success)':'var(--warning)'};margin-bottom:4px">${result.correct?'✅ Doğru!':'💡 Kısmi/Yanlış'}</div>
+            <div style="font-size:.82rem;color:var(--dim);margin-bottom:6px">${result.feedback}</div>
+            <div style="font-size:.78rem"><span style="color:var(--dim)">Model cevap: </span><span style="color:var(--text)">${correctAnswer}</span></div>`;
+          btn.parentElement.insertAdjacentElement('beforebegin', resultDiv);
+          btn.parentElement.innerHTML = `<button onclick="openNext()" class="btn btn-primary" style="width:100%;padding:12px">Sonraki Soru →</button>`;
+          if(result.correct) openScore++;
+          openAnswers.push({q:q.question, userAns, correct:correctAnswer, isCorrect:result.correct, feedback:result.feedback});
+        });
+      };
+
+      window.skipOpenAnswer = function(){
+        openAnswers.push({q:q.question, userAns:'(geçildi)', correct:q.answer, isCorrect:false, feedback:'Geçildi'});
+        modal.remove(); idx++; renderQ();
+      };
+
+      window.openNext = function(){
+        modal.remove(); idx++; renderQ();
+      };
+
+    } else {
+      // Çoktan seçmeli
+      const shuffleMap = q.options.map((o,i)=>({text:o,origIdx:i})).sort(()=>Math.random()-0.5);
+      const newCorrect = shuffleMap.findIndex(s=>s.origIdx===q.answer);
+
+      modal.innerHTML = `<div class="modal" style="max-width:520px">
+        ${header}
+        <div style="display:flex;flex-direction:column;gap:9px" id="ai-opts">
+          ${shuffleMap.map((o,i)=>`
+            <button data-idx="${i}" onclick="aiAnswer(${i},${newCorrect},this)"
+              style="width:100%;padding:13px 16px;border-radius:12px;text-align:left;cursor:pointer;font-size:.88rem;font-weight:500;background:var(--card2);border:1.5px solid var(--border);color:var(--text);transition:all .15s;display:flex;align-items:center;gap:10px"
+              onmouseover="if(!this.disabled){this.style.borderColor='${subj.color}';this.style.background='${subj.color}15'}"
+              onmouseout="if(!this.disabled){this.style.borderColor='var(--border)';this.style.background='var(--card2)'}">
+              <span style="width:24px;height:24px;border-radius:50%;background:${subj.color}22;color:${subj.color};font-weight:700;font-size:.78rem;display:flex;align-items:center;justify-content:center;flex-shrink:0">${String.fromCharCode(65+i)}</span>
+              ${o.text}
+            </button>`).join('')}
+        </div>
+      </div>`;
+      document.body.appendChild(modal);
+
+      window.aiAnswer = function(chosen, correct, btn){
+        document.querySelectorAll('#ai-opts button').forEach(b=>{ b.disabled=true; b.onmouseover=null; b.onmouseout=null; });
+        const btns = document.querySelectorAll('#ai-opts button');
+        btns[correct].style.cssText += ';background:var(--success-dim)!important;border-color:var(--success)!important;color:var(--success)!important;font-weight:700';
+        btns[correct].querySelector('span').style.cssText = 'background:var(--success);color:#000;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:.78rem;font-weight:700';
+        if(chosen === correct){
+          score++;
+        } else {
+          btn.style.cssText += ';background:var(--danger-dim)!important;border-color:var(--danger)!important;color:var(--danger)!important';
+          btn.querySelector('span').style.cssText = 'background:var(--danger);color:#fff;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:.78rem;font-weight:700';
+          wrong.push({q:q.question, chosen:shuffleMap[chosen].text, correct:shuffleMap[correct].text});
+        }
+        setTimeout(()=>{ modal.remove(); idx++; renderQ(); }, 900);
+      };
+    }
   }
   renderQ();
 }
 
-async function showAITestResult(score, questions, wrong, subj, diff, secs){
+// Açık uçlu cevabı AI ile değerlendir
+async function evaluateOpenAnswer(question, userAnswer, correctAnswer, subj){
+  try{
+    const prompt = `Bir öğrencinin ${subj.name} sorusuna verdiği cevabı değerlendir.
+
+Soru: ${question}
+Model Cevap: ${correctAnswer}
+Öğrencinin Cevabı: ${userAnswer}
+
+Sadece JSON döndür:
+{"correct":true/false,"feedback":"Kısa geri bildirim (1-2 cümle)"}
+
+"correct" true ise cevap büyük ölçüde doğru, false ise yanlış veya eksik.`;
+
+    const resp = await fetch('https://api.groq.com/openai/v1/chat/completions',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+GROQ_KEY_TEST},
+      body:JSON.stringify({model:'llama-3.3-70b-versatile',messages:[{role:'user',content:prompt}],max_tokens:200,temperature:0.2})
+    });
+    const data = await resp.json();
+    const raw = data.choices?.[0]?.message?.content||'';
+    const m = raw.match(/\{[\s\S]*\}/);
+    if(m) return JSON.parse(m[0]);
+  }catch(e){}
+  // Fallback — basit kelime karşılaştırma
+  const sim = correctAnswer.toLowerCase().split(' ').filter(w=>w.length>3).filter(w=>userAnswer.toLowerCase().includes(w)).length;
+  const correct = sim >= 2;
+  return {correct, feedback: correct?'Cevabın genel olarak doğru.':'Cevabın model cevapla örtüşmüyor.'};
+}
+
+async function showAITestResult(score, questions, wrong, subj, diff, secs, openAnswers=[], openScore=0){
   const total = questions.length;
   const pct = Math.round(score/total*100);
   const mins = Math.floor(secs/60), s2 = secs%60;
@@ -2345,13 +2430,22 @@ async function showAITestResult(score, questions, wrong, subj, diff, secs){
     </div>
     ${wrong.length ? `
     <div style="margin-bottom:16px">
-      <div style="font-family:'Syne',sans-serif;font-size:.72rem;letter-spacing:.08em;color:var(--dim);margin-bottom:8px">❌ YANLIŞ CEVAPLAR</div>
+      <div style="font-family:'Syne',sans-serif;font-size:.72rem;letter-spacing:.08em;color:var(--dim);margin-bottom:8px">❌ YANLIŞ ÇOKTAN SEÇMELİ</div>
       ${wrong.map(w=>`<div style="background:var(--danger-dim);border-radius:10px;padding:10px 12px;margin-bottom:6px;border:1px solid rgba(255,77,109,.2)">
         <div style="font-size:.82rem;font-weight:600;margin-bottom:5px">${w.q}</div>
         <div style="font-size:.75rem;color:var(--danger)">✗ Senin cevabın: ${w.chosen}</div>
         <div style="font-size:.75rem;color:var(--success);margin-top:2px">✓ Doğru cevap: ${w.correct}</div>
       </div>`).join('')}
-    </div>` : `<div style="text-align:center;color:var(--success);font-size:.9rem;margin-bottom:16px;padding:12px;background:var(--success-dim);border-radius:10px">🎉 Tüm sorular doğru! Mükemmel!</div>`}
+    </div>` : `<div style="text-align:center;color:var(--success);font-size:.9rem;margin-bottom:14px;padding:10px;background:var(--success-dim);border-radius:10px">🎉 Çoktan seçmeli sorular doğru!</div>`}
+    ${openAnswers.length ? `
+    <div style="margin-bottom:16px">
+      <div style="font-family:'Syne',sans-serif;font-size:.72rem;letter-spacing:.08em;color:var(--dim);margin-bottom:8px">✏️ AÇIK UÇLU CEVAPLAR</div>
+      ${openAnswers.map(o=>`<div style="border-radius:10px;padding:10px 12px;margin-bottom:6px;border:1px solid ${o.isCorrect?'rgba(0,214,143,.3)':'rgba(255,170,0,.3)'};background:${o.isCorrect?'var(--success-dim)':'var(--warning-dim)'}">
+        <div style="font-size:.82rem;font-weight:600;margin-bottom:5px">${o.q}</div>
+        <div style="font-size:.75rem;color:var(--dim)">Cevabın: <span style="color:var(--text)">${o.userAns}</span></div>
+        <div style="font-size:.72rem;color:var(--dim);margin-top:3px">${o.feedback}</div>
+      </div>`).join('')}
+    </div>` : ''}
     <div style="display:flex;gap:8px">
       <button class="btn btn-primary" style="flex:1" onclick="this.closest('.modal-overlay').remove();startAITest('${subj.id}')">🔄 Tekrar</button>
       <button class="btn btn-ghost" style="flex:1" onclick="this.closest('.modal-overlay').remove()">Kapat</button>
