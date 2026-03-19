@@ -2552,6 +2552,7 @@ window.dersDetay = async function(subjectId){
     ${isT ? `<div style="display:flex;gap:6px">
       <button class="btn btn-ghost" style="font-size:.78rem;padding:7px 12px" onclick="openTopicModal('${subjectId}')">+ Konu Ekle</button>
       <button class="btn btn-primary" style="font-size:.78rem;padding:7px 12px" onclick="aiAutoFillTopics('${subjectId}')">🤖 AI ile Doldur</button>
+      <button class="btn btn-ghost" style="font-size:.78rem;padding:7px 12px;color:var(--danger);border-color:var(--danger)" onclick="deleteAllTopics('${subjectId}')">🗑️ Tümünü Sil</button>
     </div>` : ''}
   </div>
   <div id="ders-detay-content"></div>`;
@@ -2783,6 +2784,49 @@ window.saveTopic = async function(subjectId, order){
   toast('📖 Konu eklendi!','s');
   document.querySelector('.modal-overlay')?.remove();
   await loadTopics(subjectId, classCode);
+}
+
+window.deleteAllTopics = async function(subjectId){
+  const el = document.getElementById('topics-list');
+  const classCode = el?.dataset.code;
+  if(!classCode){toast('Sınıf bulunamadı!','w');return;}
+  if(!confirm('Tüm konuları, anlatımları, flashcard setlerini ve videoları silmek istediğinize emin misiniz?\n\nBu işlem geri alınamaz!'))return;
+
+  const topics = await dbGet(`topics/${safeKey(classCode)}/${subjectId}`)||{};
+  const topicIds = Object.keys(topics);
+  if(!topicIds.length){toast('Silinecek konu yok.','i');return;}
+
+  toast('Siliniyor...','i');
+
+  // Konuları sil
+  await dbSet(`topics/${safeKey(classCode)}/${subjectId}`, null);
+
+  // Bu konulara bağlı flashcard setlerini sil
+  const allFC = await dbGet('flashcardSets')||{};
+  for(const [id,fc] of Object.entries(allFC)){
+    if(fc.topicId && topicIds.includes(fc.topicId)){
+      await dbSet(`flashcardSets/${id}`, null);
+    }
+  }
+
+  // Bu konulara bağlı videoları sil
+  const allVids = await dbGet('classVideos')||{};
+  for(const [id,v] of Object.entries(allVids)){
+    if(v.topicId && topicIds.includes(v.topicId)){
+      await dbSet(`classVideos/${id}`, null);
+    }
+  }
+
+  // Bu konulara bağlı notları sil
+  const allNotes = await dbGet('notes')||{};
+  for(const [id,n] of Object.entries(allNotes)){
+    if(n.topicId && topicIds.includes(n.topicId)){
+      await dbSet(`notes/${id}`, null);
+    }
+  }
+
+  toast(`🗑️ ${topicIds.length} konu ve tüm içerikleri silindi.`,'w');
+  loadTopics(subjectId, classCode);
 }
 
 window.deleteTopic = async function(topicId, subjectId, classCode){
