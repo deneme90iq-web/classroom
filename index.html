@@ -5093,24 +5093,26 @@ async function renderQRJoin(){
     document.getElementById('qr-content').innerHTML=html;
     showQR(classes[0].code, classes[0].name);
   } else {
-    // Öğrenci — QR tarayıcı
+    // Öğrenci — manuel kod + kamera seçeneği
     document.getElementById('qr-content').innerHTML=`
     <div style="max-width:400px;margin:0 auto">
-      <div class="card" style="text-align:center;margin-bottom:16px">
-        <div style="font-size:.82rem;color:var(--dim);margin-bottom:16px">Öğretmenin QR kodunu tarayarak sınıfa katıl.</div>
-        <div id="qr-reader-wrap" style="width:100%;max-width:320px;margin:0 auto;border-radius:12px;overflow:hidden;background:#000;aspect-ratio:1"></div>
-        <div style="margin-top:12px;display:flex;align-items:center;gap:8px">
-          <div style="flex:1;height:1px;background:var(--border)"></div>
-          <span style="font-size:.72rem;color:var(--dim)">veya</span>
-          <div style="flex:1;height:1px;background:var(--border)"></div>
+      <div class="card" style="margin-bottom:16px">
+        <div style="font-family:'Syne',sans-serif;font-size:.75rem;font-weight:700;letter-spacing:.08em;color:var(--dim);margin-bottom:12px">SINIF KODUNU GİR</div>
+        <div style="display:flex;gap:8px">
+          <input class="input" id="qr-manual-code" placeholder="CL-XXXX" style="flex:1;text-transform:uppercase;font-size:1rem;font-weight:700;letter-spacing:.1em;text-align:center">
+          <button class="btn btn-primary" style="padding:10px 20px" onclick="joinWithCode()">Katıl →</button>
         </div>
-        <div style="margin-top:12px;display:flex;gap:8px">
-          <input class="input" id="qr-manual-code" placeholder="Sınıf kodunu manuel gir (CL-XXXX)" style="flex:1;text-transform:uppercase">
-          <button class="btn btn-primary" onclick="joinWithCode()">Katıl</button>
+        <div style="font-size:.72rem;color:var(--dim);margin-top:8px">Öğretmenin verdiği 7 haneli kodu gir (örn: CL-AB23)</div>
+      </div>
+      <div class="card" style="text-align:center">
+        <div style="font-family:'Syne',sans-serif;font-size:.75rem;font-weight:700;letter-spacing:.08em;color:var(--dim);margin-bottom:12px">KAMERAYLA TARA</div>
+        <div id="qr-reader-wrap" style="width:100%;max-width:300px;margin:0 auto 12px;border-radius:12px;overflow:hidden;background:#111;aspect-ratio:1;position:relative">
+          <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#555;font-size:.8rem" id="qr-cam-placeholder">📷 Kamera başlatılıyor...</div>
         </div>
+        <button class="btn btn-ghost" style="font-size:.78rem" onclick="startQRScanner()">📷 Kamerayı Başlat</button>
+        <div id="qr-scan-status" style="font-size:.75rem;color:var(--dim);margin-top:8px"></div>
       </div>
     </div>`;
-    startQRScanner();
   }
 }
 
@@ -5162,51 +5164,106 @@ window.printQR=function(){
   win.document.close();
 }
 
-async function startQRScanner(){
-  // jsQR kütüphanesiyle kamera QR tarayıcı
-  await new Promise((res,rej)=>{
-    if(window.jsQR){res();return;}
-    const s=document.createElement('script');
-    s.src='https://cdnjs.cloudflare.com/ajax/libs/jsQR/1.4.0/jsQR.js';
-    s.onload=res;s.onerror=res;
-    document.head.appendChild(s);
-  });
-
+window.startQRScanner=async function(){
   const wrap=document.getElementById('qr-reader-wrap');
+  const status=document.getElementById('qr-scan-status');
   if(!wrap)return;
 
+  if(status) status.textContent='Kamera izni isteniyor...';
+
+  // Önce kamera izni kontrol
+  if(!navigator.mediaDevices?.getUserMedia){
+    wrap.innerHTML='<div style="color:#aaa;font-size:.78rem;padding:20px;text-align:center">Bu tarayıcı kamera erişimini desteklemiyor.<br>Manuel kod gir.</div>';
+    if(status) status.textContent='';
+    return;
+  }
+
+  // jsQR yükle
+  if(!window.jsQR){
+    if(status) status.textContent='Kütüphane yükleniyor...';
+    await new Promise(res=>{
+      const s=document.createElement('script');
+      s.src='https://cdnjs.cloudflare.com/ajax/libs/jsQR/1.4.0/jsQR.js';
+      s.onload=res; s.onerror=res;
+      document.head.appendChild(s);
+    });
+  }
+
   try{
-    const stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}});
+    const stream=await navigator.mediaDevices.getUserMedia({
+      video:{facingMode:{ideal:'environment'},width:{ideal:640},height:{ideal:640}}
+    });
+
+    // Video elementi
+    const placeholder=document.getElementById('qr-cam-placeholder');
+    if(placeholder) placeholder.remove();
+
+    // Eski video varsa kaldır
+    wrap.querySelectorAll('video').forEach(v=>v.remove());
+
     const video=document.createElement('video');
-    video.srcObject=stream;video.playsInline=true;video.play();
+    video.setAttribute('playsinline','');
+    video.setAttribute('muted','');
+    video.autoplay=true;
+    video.style.cssText='width:100%;height:100%;object-fit:cover;display:block';
+    video.srcObject=stream;
     wrap.appendChild(video);
-    video.style.width='100%';video.style.height='100%';video.style.objectFit='cover';
+
+    // Tarama çerçevesi
+    const frame=document.createElement('div');
+    frame.style.cssText='position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:60%;height:60%;border:3px solid var(--primary);border-radius:12px;box-shadow:0 0 0 1000px rgba(0,0,0,.4);pointer-events:none';
+    wrap.style.position='relative';
+    wrap.appendChild(frame);
+
+    if(status) status.textContent='QR kodu kameraya göster...';
+
+    await new Promise(r=>video.addEventListener('loadedmetadata',r,{once:true}));
+    video.play();
 
     const canvas=document.createElement('canvas');
-    const ctx=canvas.getContext('2d');
+    const ctx=canvas.getContext('2d',{willReadFrequently:true});
     let scanning=true;
+    let frameCount=0;
 
     function scan(){
-      if(!scanning||!document.getElementById('qr-reader-wrap'))return;
-      if(video.readyState===video.HAVE_ENOUGH_DATA){
-        canvas.width=video.videoWidth;canvas.height=video.videoHeight;
-        ctx.drawImage(video,0,0,canvas.width,canvas.height);
-        const imgData=ctx.getImageData(0,0,canvas.width,canvas.height);
-        if(window.jsQR){
-          const code=jsQR(imgData.data,imgData.width,imgData.height);
-          if(code?.data){
-            scanning=false;
-            stream.getTracks().forEach(t=>t.stop());
-            joinWithCode(code.data.trim().toUpperCase());
-            return;
+      if(!scanning||!document.getElementById('qr-reader-wrap')){
+        stream.getTracks().forEach(t=>t.stop());
+        return;
+      }
+      frameCount++;
+      // Her 3 frame'de bir tara (performans)
+      if(frameCount%3===0 && video.readyState>=2 && video.videoWidth>0){
+        canvas.width=video.videoWidth;
+        canvas.height=video.videoHeight;
+        ctx.drawImage(video,0,0);
+        try{
+          const imgData=ctx.getImageData(0,0,canvas.width,canvas.height);
+          if(window.jsQR){
+            const result=jsQR(imgData.data,imgData.width,imgData.height,{inversionAttempts:'dontInvert'});
+            if(result?.data){
+              scanning=false;
+              stream.getTracks().forEach(t=>t.stop());
+              const code=result.data.trim().toUpperCase();
+              if(status) status.textContent='✅ QR okundu: '+code;
+              frame.style.borderColor='var(--success)';
+              setTimeout(()=>joinWithCode(code),500);
+              return;
+            }
           }
-        }
+        }catch(e){}
       }
       requestAnimationFrame(scan);
     }
-    scan();
-  }catch(e){
-    wrap.innerHTML=`<div style="color:#aaa;font-size:.78rem;padding:20px">Kamera erişimi sağlanamadı. Manuel kod gir.</div>`;
+    requestAnimationFrame(scan);
+
+  }catch(err){
+    console.error('QR kamera hatası:',err);
+    wrap.innerHTML=`<div style="color:#aaa;font-size:.8rem;padding:20px;text-align:center">
+      ❌ Kamera açılamadı.<br><br>
+      <span style="font-size:.72rem;color:#666">${err.message||'İzin reddedildi'}</span><br><br>
+      <span style="font-size:.72rem">Manuel kod girişini kullan.</span>
+    </div>`;
+    if(status) status.textContent='';
   }
 }
 
