@@ -3252,7 +3252,7 @@ SADECE JSON döndür:
       // Her konu için PDF içeriği varsa prompt'a ekle, yoksa AI bilgisiyle yaz
       // Konuları gruplar halinde işle — çok fazla konu varsa böl
       var anlatimSonuclari = [];
-      var grupBoyutu = 5; // her istekte 5 konu
+      var grupBoyutu = 3; // her istekte 3 konu (uzun anlatım için)
       for(var gi=0; gi<titles.length; gi+=grupBoyutu){
         var grup = titles.slice(gi, gi+grupBoyutu);
         afLog('  📝 Anlatım: '+grup[0].substring(0,25)+'... ('+grup.length+' konu)');
@@ -3260,18 +3260,18 @@ SADECE JSON döndür:
         var anlatimPrompt = gradeText+' '+subj.name+' dersi. '+
           'Aşağıdaki her konu için öğrenciye yönelik DETAYLI konu anlatımı yaz.\n'+
           'Her anlatım: giriş, temel kavramlar, örnekler, önemli noktalar, özet içersin.\n'+
-          'Minimum 300-500 kelime olsun. Türkçe yaz.\n\n';
+          'Her anlatım 1000-1500 kelime olsun. Türkçe yaz.\n\n';
 
         grup.forEach(function(t, idx){
           var icerik = getKonuIcerik(t);
           anlatimPrompt += (gi+idx+1)+'. KONU: '+t+'\n';
-          if(icerik) anlatimPrompt += 'KİTAP İÇERİĞİ (referans al):\n'+icerik.substring(0,600)+'\n';
+          if(icerik) anlatimPrompt += 'KİTAP İÇERİĞİ (referans al):\n'+icerik.substring(0,1000)+'\n';
           anlatimPrompt += '---\n';
         });
 
         anlatimPrompt += '\nSADECE JSON döndür:\n[{"title":"Konu başlığı","anlatim":"Detaylı anlatım metni"}]';
 
-        var rawG = await groqFetch(anlatimPrompt, 4000, 0.4);
+        var rawG = await groqFetch(anlatimPrompt, 6000, 0.4);
         var cG = rawG.replace(/```json|```/g,'').trim();
         var listG = null;
         try{ if(cG.startsWith('[')) listG=JSON.parse(cG); }catch(e){}
