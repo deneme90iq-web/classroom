@@ -2573,7 +2573,8 @@ window.dersDetay = async function(subjectId){
     </div>
     ${isT ? `<div style="display:flex;gap:6px">
       <button class="btn btn-ghost" style="font-size:.78rem;padding:7px 12px" onclick="openTopicModal('${subjectId}')">+ Konu Ekle</button>
-      <button class="btn btn-primary" style="font-size:.78rem;padding:7px 12px" onclick="aiAutoFillTopics('${subjectId}')">🤖 AI ile Doldur</button>
+      <button class="btn btn-primary" style="font-size:.78rem;padding:7px 12px" onclick="modalKonuDoldur('${subjectId}')">📚 Konuları Doldur</button>
+      <button class="btn btn-secondary" style="font-size:.78rem;padding:7px 12px;margin-left:6px" onclick="modalCardUret('${subjectId}')">🃏 Card Üret</button>
       <button class="btn btn-ghost" style="font-size:.78rem;padding:7px 12px;color:var(--danger);border-color:var(--danger)" onclick="deleteAllTopics('${subjectId}')">🗑️ Tümünü Sil</button>
     </div>` : ''}
   </div>
@@ -3066,6 +3067,273 @@ async function groqFetch(prompt, maxTokens=1500, temp=0.4){
 }
 
 // (eski Groq key kaldırıldı)
+
+// ═══════════ KONU DOLDUR MODALİ ═══════════
+window.modalKonuDoldur = async function(subjectId){
+  const subj = getSubject(subjectId);
+  const classes = await getMyClasses();
+  if(!classes.length){toast('Önce sınıf oluştur!','w');return;}
+
+  const kitap = getKitapKonulari(subjectId, 9);
+  const kitapBilgi = kitap 
+    ? `<div style="background:rgba(108,99,255,.08);border:1px solid rgba(108,99,255,.2);border-radius:10px;padding:10px;font-size:.75rem;color:var(--dim);margin-bottom:14px">
+        📚 <b>${kitap.ders} ${kitap.sinif}. Sınıf</b> kitabından <b>${kitap.uniteler.reduce((a,u)=>a+u.konular.length,0)} konu</b> + anlatım hazır
+       </div>`
+    : `<div style="background:rgba(255,193,7,.08);border:1px solid rgba(255,193,7,.2);border-radius:10px;padding:10px;font-size:.75rem;color:var(--dim);margin-bottom:14px">
+        ⚠️ Bu ders için kitap verisi yok, konular boş eklenir
+       </div>`;
+
+  const modal = document.createElement('div');
+  modal.className = 'modal-overlay';
+  modal.id = 'ai-autofill-modal';
+  modal.innerHTML = `<div class="modal" style="max-width:460px">
+    <div style="text-align:center;margin-bottom:16px">
+      <div style="font-size:2rem;margin-bottom:6px">📚</div>
+      <div style="font-family:'Syne',sans-serif;font-size:1.05rem;font-weight:700">${subj.icon} ${subj.name} — Konuları Doldur</div>
+      <div style="font-size:.78rem;color:var(--dim);margin-top:4px">Kitaptaki tüm konular + anlatımlar eklenir.<br>Mevcut konular tekrar eklenmez.</div>
+    </div>
+    ${kitapBilgi}
+    ${classes.length > 1 ? `<div class="form-group"><label class="label">SINIF</label>
+      <select class="input" id="af-class">${classes.map(c=>`<option value="${c.code}" data-grade="${c.grade||''}">${c.name}</option>`).join('')}</select></div>` :
+      `<input type="hidden" id="af-class" value="${classes[0].code}" data-grade="${classes[0].grade||''}">`}
+    <div id="af-progress" style="display:none;margin-bottom:14px">
+      <div id="af-status" style="font-size:.8rem;color:var(--dim);margin-bottom:6px;text-align:center">Hazırlanıyor...</div>
+      <div style="background:var(--bg2);border-radius:6px;height:8px;overflow:hidden">
+        <div id="af-bar" style="height:8px;background:linear-gradient(90deg,var(--primary),var(--accent));width:0%;border-radius:6px;transition:width .5s"></div>
+      </div>
+      <div id="af-log" style="margin-top:10px;max-height:140px;overflow-y:auto;font-size:.72rem;color:var(--dim2)"></div>
+    </div>
+    <div id="af-actions" style="display:flex;gap:8px">
+      <button class="btn btn-primary" style="flex:1;padding:12px" onclick="runKonuDoldur('${subjectId}')">📚 Konuları Ekle</button>
+      <button class="btn btn-ghost" onclick="this.closest('.modal-overlay').remove()">İptal</button>
+    </div>
+  </div>`;
+  modal.onclick = e=>{if(e.target===modal)modal.remove();};
+  document.body.appendChild(modal);
+};
+
+window.runKonuDoldur = async function(subjectId){
+  const selEl = document.getElementById('af-class');
+  const classCode = selEl?.value;
+  if(!classCode){toast('Sınıf seç!','w');return;}
+
+  document.getElementById('af-progress').style.display='block';
+  document.getElementById('af-actions').innerHTML = '<div style="color:var(--dim);font-size:.8rem">İşlem sürüyor...</div>';
+
+  const subj = getSubject(subjectId);
+  const grade = selEl?.dataset?.grade || selEl?.options?.[selEl.selectedIndex]?.dataset?.grade || '9';
+  const kitap = getKitapKonulari(subjectId, parseInt(grade)||9);
+
+  try {
+    let topicList = [];
+    if(kitap && kitap.uniteler){
+      kitap.uniteler.forEach(u => {
+        u.konular.forEach(k => {
+          topicList.push({title: k, desc: u.baslik + ' — ' + kitap.ders, cards: []});
+        });
+      });
+      afLog('📚 ' + kitap.ders + ' — ' + topicList.length + ' konu yüklendi');
+    } else {
+      afLog('⚠️ Kitap verisi yok, işlem sonlandırılıyor');
+      throw new Error('Bu ders için kitap verisi bulunamadı.');
+    }
+
+    afStatus('Konular kaydediliyor...', 30);
+    const existing = await dbGet('topics/'+safeKey(classCode)+'/'+subjectId)||{};
+    const existingTitles = Object.values(existing).map(t=>t.title.toLowerCase());
+    let added=0, skipped=0;
+
+    for(let i=0; i<topicList.length; i++){
+      const topic = topicList[i];
+      if(existingTitles.includes(topic.title.toLowerCase())){ skipped++; continue; }
+
+      const uid = Date.now()+'_'+i+'_'+Math.random().toString(36).slice(2,5);
+      const topicId = 'topic_'+uid;
+      const anlatim = getKonuAnlatim(topic.title);
+
+      await dbSet('topics/'+safeKey(classCode)+'/'+subjectId+'/'+topicId, {
+        id:topicId, title:topic.title, desc:topic.desc||'',
+        order:Object.keys(existing).length+added,
+        subjectId, classCode, authorUid:session.uid,
+        createdAt:Date.now(), videoCount:0,
+        noteCount: anlatim ? 1 : 0, fcCount:0
+      });
+
+      if(anlatim){
+        const noteId = 'note_'+uid;
+        await dbSet('notes/'+noteId, {
+          id:noteId, title:topic.title+' — Konu Anlatımı',
+          content:anlatim, subjectId, classCode, topicId,
+          authorUid:session.uid, authorName:session.name,
+          source:'static', createdAt:Date.now()
+        });
+        afLog('✅ '+topic.title.substring(0,35)+' (anlatım ile)');
+      } else {
+        afLog('➕ '+topic.title.substring(0,35));
+      }
+      added++;
+
+      const pct = 30 + Math.round((i/topicList.length)*65);
+      afStatus(added+' konu eklendi...', pct);
+    }
+
+    afStatus('Tamamlandı! 🎉', 100);
+    afLog('────────────────');
+    afLog('✅ '+added+' konu eklendi, '+skipped+' atlandı');
+    window._lastSubjectId=subjectId; window._lastClassCode=classCode;
+    document.getElementById('af-actions').innerHTML =
+      '<button class="btn btn-primary" style="flex:1" onclick="closeAndLoad()">✅ Kapat ve Görüntüle</button>';
+
+  } catch(err){
+    afStatus('Hata: '+err.message, 0);
+    afLog('❌ '+err.message);
+    document.getElementById('af-actions').innerHTML =
+      '<button class="btn btn-ghost" style="flex:1" onclick="this.closest(\'.modal-overlay\').remove()">Kapat</button>';
+  }
+};
+
+// ═══════════ CARD ÜRET MODALİ ═══════════
+window.modalCardUret = async function(subjectId){
+  const subj = getSubject(subjectId);
+  const classes = await getMyClasses();
+  if(!classes.length){toast('Önce sınıf oluştur!','w');return;}
+
+  const modal = document.createElement('div');
+  modal.className = 'modal-overlay';
+  modal.id = 'ai-autofill-modal';
+  modal.innerHTML = `<div class="modal" style="max-width:460px">
+    <div style="text-align:center;margin-bottom:16px">
+      <div style="font-size:2rem;margin-bottom:6px">🃏</div>
+      <div style="font-family:'Syne',sans-serif;font-size:1.05rem;font-weight:700">${subj.icon} ${subj.name} — Card Üret</div>
+      <div style="font-size:.78rem;color:var(--dim);margin-top:4px">Mevcut konular için AI flashcard üretir.<br>Önce <b>Konuları Doldur</b> ile konuları ekle.</div>
+    </div>
+    ${classes.length > 1 ? `<div class="form-group"><label class="label">SINIF</label>
+      <select class="input" id="af-class">${classes.map(c=>`<option value="${c.code}" data-grade="${c.grade||''}">${c.name}</option>`).join('')}</select></div>` :
+      `<input type="hidden" id="af-class" value="${classes[0].code}" data-grade="${classes[0].grade||''}">`}
+    <div class="form-group"><label class="label">KONU BAŞINA KART SAYISI</label>
+      <select class="input" id="af-fc-count">
+        <option value="5">5 kart</option>
+        <option value="8" selected>8 kart</option>
+        <option value="10">10 kart</option>
+        <option value="15">15 kart</option>
+      </select>
+    </div>
+    <div style="background:rgba(0,212,255,.06);border:1px solid rgba(0,212,255,.2);border-radius:10px;padding:10px;font-size:.75rem;color:var(--dim);margin-bottom:14px">
+      ℹ️ Sadece henüz kartı olmayan konulara card eklenir.
+    </div>
+    <div id="af-progress" style="display:none;margin-bottom:14px">
+      <div id="af-status" style="font-size:.8rem;color:var(--dim);margin-bottom:6px;text-align:center">Hazırlanıyor...</div>
+      <div style="background:var(--bg2);border-radius:6px;height:8px;overflow:hidden">
+        <div id="af-bar" style="height:8px;background:linear-gradient(90deg,var(--primary),var(--accent));width:0%;border-radius:6px;transition:width .5s"></div>
+      </div>
+      <div id="af-log" style="margin-top:10px;max-height:140px;overflow-y:auto;font-size:.72rem;color:var(--dim2)"></div>
+    </div>
+    <div id="af-actions" style="display:flex;gap:8px">
+      <button class="btn btn-primary" style="flex:1;padding:12px" onclick="runCardUret('${subjectId}')">🃏 Cardları Üret</button>
+      <button class="btn btn-ghost" onclick="this.closest('.modal-overlay').remove()">İptal</button>
+    </div>
+  </div>`;
+  modal.onclick = e=>{if(e.target===modal)modal.remove();};
+  document.body.appendChild(modal);
+};
+
+window.runCardUret = async function(subjectId){
+  const selEl = document.getElementById('af-class');
+  const classCode = selEl?.value;
+  const fcCount = parseInt(document.getElementById('af-fc-count')?.value||'8');
+  if(!classCode){toast('Sınıf seç!','w');return;}
+
+  document.getElementById('af-progress').style.display='block';
+  document.getElementById('af-actions').innerHTML = '<div style="color:var(--dim);font-size:.8rem">Cardlar üretiliyor...</div>';
+
+  const subj = getSubject(subjectId);
+  const grade = selEl?.dataset?.grade || selEl?.options?.[selEl.selectedIndex]?.dataset?.grade || '9';
+
+  try {
+    // Mevcut konuları al
+    const allTopics = await dbGet('topics/'+safeKey(classCode)+'/'+subjectId)||{};
+    const allFC = await dbGet('flashcardSets')||{};
+    const topicsArr = Object.values(allTopics);
+
+    if(!topicsArr.length){
+      throw new Error('Önce "Konuları Doldur" ile konuları ekle!');
+    }
+
+    // Kartı olmayan konuları bul
+    const topicsWithoutCards = topicsArr.filter(t => {
+      const hasCards = Object.values(allFC).some(f => f.topicId === t.id && f.cards && f.cards.length > 0);
+      return !hasCards;
+    });
+
+    afLog('📋 '+topicsArr.length+' konu bulundu, '+topicsWithoutCards.length+' konunun kartı yok');
+
+    if(!topicsWithoutCards.length){
+      afStatus('Tüm konuların zaten kartı var! 🎉', 100);
+      afLog('Yeni kart eklenmedi');
+      window._lastSubjectId=subjectId; window._lastClassCode=classCode;
+      document.getElementById('af-actions').innerHTML =
+        '<button class="btn btn-primary" style="flex:1" onclick="closeAndLoad()">✅ Kapat</button>';
+      return;
+    }
+
+    // 4'lü gruplar halinde card üret
+    const grupBoyutu = 4;
+    let totalCards = 0;
+    for(let gi=0; gi<topicsWithoutCards.length; gi+=grupBoyutu){
+      const grup = topicsWithoutCards.slice(gi, gi+grupBoyutu);
+      const pct = 10 + Math.round((gi/topicsWithoutCards.length)*85);
+      afStatus(grup[0].title.substring(0,25)+'... için card üretiliyor', pct);
+
+      const prompt = grade+'. Sınıf '+subj.name+' dersi. Her konu için '+fcCount+' adet flashcard üret.\n'+
+        'Her kart: ön yüz kısa soru, arka yüz kısa ve net cevap.\n'+
+        'SADECE JSON: [{"title":"Konu adı","cards":[{"front":"Soru","back":"Cevap"}]}]\n\nKonular:\n'+
+        grup.map(t=>'- '+t.title).join('\n');
+
+      try {
+        const raw = await groqFetch(prompt, 2000, 0.4);
+        const clean = raw.replace(/```json|```/g,'').trim();
+        let list = null;
+        try{ if(clean.startsWith('[')) list=JSON.parse(clean); }catch(e){}
+        if(!list){ try{ const m=clean.match(/\[[\s\S]*\]/); if(m) list=JSON.parse(m[0]); }catch(e){} }
+
+        if(list){
+          for(const item of list){
+            const match = topicsWithoutCards.find(t => t.title===item.title || t.title.toLowerCase().includes((item.title||'').substring(0,12).toLowerCase()));
+            if(match && item.cards && item.cards.length){
+              const fcId = 'fcset_'+Date.now()+'_'+Math.random().toString(36).slice(2,5);
+              await dbSet('flashcardSets/'+fcId, {
+                id:fcId, title:match.title+' — Flashcard',
+                cards:item.cards, subjectId, classCode, topicId:match.id,
+                authorUid:session.uid, authorName:session.name,
+                source:'ai', createdAt:Date.now()
+              });
+              await dbSet('topics/'+safeKey(classCode)+'/'+subjectId+'/'+match.id+'/fcCount', item.cards.length);
+              totalCards += item.cards.length;
+              afLog('🃏 '+match.title.substring(0,30)+' → '+item.cards.length+' kart');
+            }
+          }
+        }
+      } catch(e){ afLog('⚠️ '+grup[0].title.substring(0,25)+' atlandı: '+e.message); }
+
+      if(gi+grupBoyutu < topicsWithoutCards.length)
+        await new Promise(r=>setTimeout(r,1500));
+    }
+
+    afStatus('Tamamlandı! 🎉', 100);
+    afLog('────────────────');
+    afLog('✅ Toplam '+totalCards+' kart üretildi');
+    window._lastSubjectId=subjectId; window._lastClassCode=classCode;
+    document.getElementById('af-actions').innerHTML =
+      '<button class="btn btn-primary" style="flex:1" onclick="closeAndLoad()">✅ Kapat ve Görüntüle</button>';
+
+  } catch(err){
+    afStatus('Hata: '+err.message, 0);
+    afLog('❌ '+err.message);
+    document.getElementById('af-actions').innerHTML =
+      '<button class="btn btn-ghost" style="flex:1" onclick="this.closest(\'.modal-overlay\').remove()">Kapat</button>';
+  }
+};
+
 
 window.aiAutoFillTopics = async function(subjectId){
   const subj = getSubject(subjectId);
