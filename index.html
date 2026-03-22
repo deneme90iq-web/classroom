@@ -3159,55 +3159,67 @@ window.runAIAutoFill = async function(subjectId){
 
   try{
     // ── İSTEK 1: Tüm konular + flashcard'lar tek seferde ──
-    afStatus('AI konulari ve flashcardlari hazirlıyor...', 10);
+    afStatus('Konular hazırlanıyor...', 10);
     afLog(`${gradeText} ${subj.name} için istek gönderiliyor...`);
 
     // Kitap veritabanından konuları kontrol et
     const kitap = getKitapKonulari(subjectId, parseInt(grade)||9);
-    let konuListStr = '';
-    if(kitap && kitap.uniteler){
-      konuListStr = '\n\nBU DERSİN KİTAP KONULARI (MEB ' + kitap.kaynak + '):\n';
-      kitap.uniteler.forEach(u => {
-        konuListStr += u.no + '. Ünite: ' + u.baslik + '\n';
-        u.konular.forEach(k => { konuListStr += '  - ' + k + '\n'; });
-      });
-      konuListStr += '\nBU KONULARI KULLAN, FAZLASINI EKLEME.';
-    }
 
-    // PDF içeriklerini konulara ekle
-    let konuIcerikStr = '';
+    let topicList = null;
+
     if(kitap && kitap.uniteler){
-      kitap.uniteler.forEach(u => {
-        u.konular.forEach(k => {
-          const ic = getKonuIcerik(k);
-          if(ic) konuIcerikStr += '\n--- ' + k + ' ---\n' + ic.substring(0,600) + '\n';
+      // Kitap var — konuları direkt kullan, AI'ya sadece flashcard ürettir
+      afLog('📚 Kitap veritabanı bulundu: ' + kitap.ders);
+      topicList = [];
+      kitap.uniteler.forEach(function(u){
+        u.konular.forEach(function(k){
+          topicList.push({title: k, desc: u.baslik + ' ünitesinden', cards: []});
         });
       });
-    }
+      afLog(topicList.length + ' konu yüklendi ✓');
 
-    const bigPrompt = `Türkiye MEB ${gradeText} ${subj.name} dersi için ders kitabı içeriğini kullanarak:
-1. Her konu için anlamlı ve kitabı baz alan 1 cümle açıklama yaz
-2. Her konu için ${fcCount} flashcard üret — sorular KİTAP İÇERİĞİNDEKİ kavram ve bilgileri sorsun
-${konuListStr}
-${konuIcerikStr ? 'KİTAP İÇERİKLERİ:' + konuIcerikStr : ''}
+      // Flashcard'ları gruplar halinde üret
+      afStatus('Flashcardlar uretiliyor...', 20);
+      var grupBoyutuFC = 4;
+      for(var gi2=0; gi2<topicList.length; gi2+=grupBoyutuFC){
+        var grup2 = topicList.slice(gi2, gi2+grupBoyutuFC);
+        var pct2 = 20 + Math.round((gi2/topicList.length)*30);
+        afStatus('Flashcard: '+grup2[0].title.substring(0,25)+'...', pct2);
+
+        var fcPrompt2 = gradeText+' '+subj.name+' dersi. Her konu için '+fcCount+' flashcard üret.\n'+
+          'SADECE JSON: [{"title":"Konu","cards":[{"front":"Soru","back":"Cevap"}]}]\n\nKonular:\n'+
+          grup2.map(function(t){ return '- '+t.title; }).join('\n');
+
+        var rawFC = await groqFetch(fcPrompt2, 2000, 0.4);
+        var cFC = rawFC.replace(/```json|```/g,'').trim();
+        var fcListG = null;
+        try{ if(cFC.startsWith('[')) fcListG=JSON.parse(cFC); }catch(e){}
+        if(!fcListG){ try{ var mmFC=cFC.match(/\[[\s\S]*\]/); if(mmFC) fcListG=JSON.parse(mmFC[0]); }catch(e){} }
+        if(fcListG){
+          fcListG.forEach(function(fc){
+            var match = topicList.find(function(t){ return t.title===fc.title || t.title.includes(fc.title.substring(0,10)); });
+            if(match && fc.cards) match.cards = fc.cards;
+          });
+        }
+        if(gi2+grupBoyutuFC < topicList.length) await new Promise(function(r){setTimeout(r,1500);});
+      }
+
+    } else {
+      // Kitap yok — AI'dan konu listesi al
+      afLog('AI konu listesi isteniyor...');
+      const bigPrompt = `Türkiye MEB ${gradeText} ${subj.name} dersi için:
+1. Yıllık tüm ana konuları listele (8-12 konu)
+2. Her konu için ${fcCount} flashcard üret
 
 SADECE JSON döndür:
-[
-  {
-    "title": "Konu Adı",
-    "desc": "Kitabı baz alan 1 cümle açıklama",
-    "cards": [{"front":"Kitap içeriğinden soru","back":"Kısa cevap"}]
-  }
-]`;
+[{"title":"Konu Adı","desc":"1 cümle açıklama","cards":[{"front":"Soru","back":"Cevap"}]}]`;
 
-    const raw1 = await groqFetch(bigPrompt, 4000, 0.3);
-    afLog('Yanıt alındı, işleniyor...');
-
-    const c1 = raw1.replace(/\`\`\`json|\`\`\`/g,'').trim();
-    let topicList = null;
-    try{ if(c1.startsWith('[')) topicList=JSON.parse(c1); }catch(e){}
-    if(!topicList){ try{ const m=c1.match(/\[[\s\S]*\]/); if(m) topicList=JSON.parse(m[0]); }catch(e){} }
-    if(!topicList?.length) throw new Error('Konu listesi alınamadı: '+raw1.substring(0,100));
+      const raw1 = await groqFetch(bigPrompt, 4000, 0.3);
+      const c1 = raw1.replace(/```json|```/g,'').trim();
+      try{ if(c1.startsWith('[')) topicList=JSON.parse(c1); }catch(e){}
+      if(!topicList){ try{ const m=c1.match(/\[[\s\S]*\]/); if(m) topicList=JSON.parse(m[0]); }catch(e){} }
+      if(!topicList?.length) throw new Error('Konu listesi alınamadı: '+raw1.substring(0,100));
+    }
 
     afLog(`${topicList.length} konu bulundu ✓`);
     afStatus(`Konular kaydediliyor...`, 50);
@@ -3216,6 +3228,9 @@ SADECE JSON döndür:
     const existing = await dbGet(`topics/${safeKey(classCode)}/${subjectId}`)||{};
     const existingTitles = Object.values(existing).map(t=>t.title.toLowerCase());
     let added=0, skipped=0;
+
+    afStatus(`Konular kaydediliyor...`, 50);
+
 
     for(let i=0; i<topicList.length; i++){
       const topic = topicList[i];
