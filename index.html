@@ -2954,6 +2954,35 @@ window.showTopicContentForm = function(type, topicId, topicTitle, subjectId, cla
 
 // ═══════════ AI OTOMATİK KONU DOLDURMA ═══════════
 // groqFetch → artık claudeFetch kullanıyor
+// ═══════════ DERS KİTABI KONU VERİTABANI ═══════════
+const DERS_KITABI_KONULARI = {
+  "din_kulturu_9": {
+    "ders": "Din Kültürü",
+    "sinif": 9,
+    "kaynak": "MEB 2024",
+    "uniteler": [
+      {"no":1,"baslik":"Allah-İnsan İlişkisi","konular":["İnsan ve İnsanın Yaratılışı","Doğruyu Arayan Bir Varlık Olarak İnsan","İbadet ve Dua Eden Bir Varlık Olarak İnsan","Kur'an'dan Mesajlar"]},
+      {"no":2,"baslik":"İslam'da İnanç Esasları","konular":["İman ve İmanın Mahiyeti","İslam'da İman Esasları","İmanın Bireye ve Topluma Kazandırdıkları","Kur'an'dan Mesajlar"]},
+      {"no":3,"baslik":"İslam'da İbadetler","konular":["İslam'da İbadetin Kapsamı","İslam'da Temel İbadetler","İnsan ve İbadet","Kur'an'dan Mesajlar"]},
+      {"no":4,"baslik":"İslam'da Ahlak İlkeleri","konular":["İslam'da Ahlakın Mahiyeti","Ahlakın Temel Unsurları","Ahlaki Tutum ve Davranışlar","Kur'an'dan Mesajlar"]},
+      {"no":5,"baslik":"Kur'an'a Göre Hz. Muhammed","konular":["Hz. Muhammed'in Beşerî ve Peygamberlik Yönü","Hz. Muhammed'in Örnekliği","Kültürümüzde Hz. Muhammed ve Ehlibeyt Sevgisi","Kur'an'dan Mesajlar"]}
+    ]
+  }
+};
+
+function getKitapKonulari(subjectId, grade){
+  for(const [key, kitap] of Object.entries(DERS_KITABI_KONULARI)){
+    if(kitap.sinif === grade){
+      const d = kitap.ders.toLowerCase().replace(/[^a-z]/g,'');
+      const s = (subjectId||'').toLowerCase().replace(/[^a-z]/g,'');
+      if(s.includes('din') && d.includes('din')) return kitap;
+      if(s.includes('mat') && d.includes('mat')) return kitap;
+      if((s.includes('cog')||s.includes('geo')) && d.includes('cog')) return kitap;
+    }
+  }
+  return null;
+}
+
 async function groqFetch(prompt, maxTokens=1500, temp=0.4){
   return claudeFetch(prompt, maxTokens);
 }
@@ -3034,9 +3063,22 @@ window.runAIAutoFill = async function(subjectId){
     afStatus('AI konulari ve flashcardlari hazirlıyor...', 10);
     afLog(`${gradeText} ${subj.name} için istek gönderiliyor...`);
 
+    // Kitap veritabanından konuları kontrol et
+    const kitap = getKitapKonulari(subjectId, parseInt(grade)||9);
+    let konuListStr = '';
+    if(kitap && kitap.uniteler){
+      konuListStr = '\n\nBU DERSİN KİTAP KONULARI (MEB ' + kitap.kaynak + '):\n';
+      kitap.uniteler.forEach(u => {
+        konuListStr += u.no + '. Ünite: ' + u.baslik + '\n';
+        u.konular.forEach(k => { konuListStr += '  - ' + k + '\n'; });
+      });
+      konuListStr += '\nBU KONULARI KULLAN, FAZLASINI EKLEME.';
+    }
+
     const bigPrompt = `Türkiye MEB ${gradeText} ${subj.name} dersi için:
-1. Yıllık tüm ana konuları listele (8-12 konu)
+1. Konuları listele (ders kitabı varsa onu kullan)
 2. Her konu için ${fcCount} flashcard üret (ön yüz: soru/kavram, arka yüz: kısa cevap)
+${konuListStr}
 
 SADECE JSON döndür:
 [
