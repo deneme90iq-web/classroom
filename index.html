@@ -3163,45 +3163,53 @@ SADECE JSON döndür:
 
     const titles = topicList.filter(t=>!existingTitles.includes(t.title.toLowerCase())).map(t=>t.title);
     if(titles.length > 0){
-    const titles = topicList.filter(t=>!existingTitles.includes(t.title.toLowerCase())).map(t=>t.title);
-    if(titles.length > 0){
-      // Her konu için PDF içeriği varsa ekle
       const anlatimPrompt = gradeText+' '+subj.name+' dersi konularini acikla.\n\n'
-        +titles.map((t,i)=>{
-          const icerik = getKonuIcerik(t);
-          if(icerik) return (i+1)+'. KONU: '+t+'\nKITAP İÇERİĞİ:\n'+icerik.substring(0,800);
+        +titles.map(function(t,i){
+          var icerik = getKonuIcerik(t);
+          if(icerik) return (i+1)+'. KONU: '+t+'\nKITAP ICERIGI:\n'+icerik.substring(0,800);
           return (i+1)+'. KONU: '+t;
         }).join('\n\n---\n\n')
-        +'\n\nHer konu için kitap içeriğini baz alarak öğrenciye yönelik 3-5 cümle detaylı açıklama yaz.'
-        +'\n\nSADECE JSON dondur:\n[{"title":"Konu","anlatim":"Detayli aciklama"}]';
+        +'\n\nHer konu icin 3-5 cumle detayli aciklama yaz. SADECE JSON: [{"title":"Konu","anlatim":"Aciklama"}]';
 
       const raw2 = await groqFetch(anlatimPrompt, 3000, 0.3);
-      const c2 = raw2.replace(/\`\`\`json|\`\`\`/g,'').trim();
+      console.log('[ANLATIM RAW]', raw2.substring(0,200));
+      const c2 = raw2.replace(/```json|```/g,'').trim();
       let anlatimList = null;
       try{ if(c2.startsWith('[')) anlatimList=JSON.parse(c2); }catch(e){}
-      if(!anlatimList){ try{ const m=c2.match(/\[[\s\S]*\]/); if(m) anlatimList=JSON.parse(m[0]); }catch(e){} }
+      if(!anlatimList){ try{ var mm=c2.match(/\[[\s\S]*\]/); if(mm) anlatimList=JSON.parse(mm[0]); }catch(e){} }
 
-      if(anlatimList?.length){
-        // Anlatımları konularla eşleştir
-        const topicsNow = await dbGet(`topics/${safeKey(classCode)}/${subjectId}`)||{};
-        for(const a of anlatimList){
-          const matchedTopic = Object.values(topicsNow).find(t=>t.title===a.title);
+      afLog('Anlatım listesi: '+(anlatimList ? anlatimList.length+' konu' : 'alınamadı'));
+
+      if(anlatimList && anlatimList.length){
+        const topicsNow = await dbGet('topics/'+safeKey(classCode)+'/'+subjectId)||{};
+        for(var ai=0; ai<anlatimList.length; ai++){
+          var a = anlatimList[ai];
+          var matchedTopic = Object.values(topicsNow).find(function(t){ return t.title===a.title; });
+          if(!matchedTopic){
+            // Başlık tam eşleşmiyorsa yakın eşleşme dene
+            matchedTopic = Object.values(topicsNow).find(function(t){
+              return t.title && a.title && t.title.includes(a.title.substring(0,10));
+            });
+          }
           if(matchedTopic && a.anlatim){
-            const noteId = 'note_'+Date.now()+'_'+Math.random().toString(36).slice(2,5);
-            await dbSet(`notes/${noteId}`,{
-              id:noteId, title:a.title+' — Konu Özeti',
-              content:a.anlatim, subjectId, classCode,
+            var noteId = 'note_'+Date.now()+'_'+ai+'_'+Math.random().toString(36).slice(2,4);
+            await dbSet('notes/'+noteId,{
+              id:noteId, title:a.title+' — Konu Anlatımı',
+              content:a.anlatim, subjectId:subjectId, classCode:classCode,
               topicId:matchedTopic.id,
               authorUid:session.uid, authorName:session.name,
               source:'ai', createdAt:Date.now()
             });
-            await dbSet(`topics/${safeKey(classCode)}/${subjectId}/${matchedTopic.id}/noteCount`,1);
+            await dbSet('topics/'+safeKey(classCode)+'/'+subjectId+'/'+matchedTopic.id+'/noteCount',1);
+            afLog('  📝 Not kaydedildi: '+a.title.substring(0,30));
+          } else {
+            afLog('  ⚠️ Eşleşme bulunamadı: '+(a.title||'?').substring(0,30));
           }
         }
-        afLog(`✅ ${anlatimList.length} konu özeti kaydedildi`);
-  }
+        afLog('✅ '+anlatimList.length+' konu anlatımı kaydedildi');
       }
     }
+
 
     afStatus('Tamamlandı! 🎉', 100);
     afLog(`────────────────`);
