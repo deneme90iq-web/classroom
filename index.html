@@ -2967,7 +2967,88 @@ const DERS_KITABI_KONULARI = {
       {"no":4,"baslik":"İslam'da Ahlak İlkeleri","konular":["İslam'da Ahlakın Mahiyeti","Ahlakın Temel Unsurları","Ahlaki Tutum ve Davranışlar","Kur'an'dan Mesajlar"]},
       {"no":5,"baslik":"Kur'an'a Göre Hz. Muhammed","konular":["Hz. Muhammed'in Beşerî ve Peygamberlik Yönü","Hz. Muhammed'in Örnekliği","Kültürümüzde Hz. Muhammed ve Ehlibeyt Sevgisi","Kur'an'dan Mesajlar"]}
     ]
-  }
+  },
+  "biyoloji_9": {
+    "ders": "Biyoloji",
+    "sinif": 9,
+    "kaynak": "MEB 2024",
+    "uniteler": [
+        {
+            "no": 1,
+            "baslik": "Yaşam",
+            "konular": [
+                "Biyolojinin Tanımı ve Önemi",
+                "Biyolojinin Önemi ve Biyolojideki Dönüm Noktalarının İnsan Hayatına Katkıları",
+                "Bilimsel Yöntem",
+                "Bilim ve Bilimin Doğası",
+                "Bilimin Doğasını Öğrenmek Neden Önemlidir",
+                "Bilimsel Yöntem Basamakları",
+                "Bilimsel Araştırmaların Bilim Etiğine Uygunluğu",
+                "Canlıların Ortak Özellikleri",
+                "Hücresel Yapı",
+                "Organizasyon",
+                "Beslenme",
+                "Enerji Üretimi ve Tüketimi",
+                "Metabolizma",
+                "Boşaltım",
+                "Büyüme ve Gelişme",
+                "Üreme",
+                "Uyarılara Tepki",
+                "Homeostazi",
+                "Varyasyon ve Adaptasyon",
+                "Virüsler",
+                "Sınıflandırmada Temel Yaklaşımlar ve Modern Sınıflandırma",
+                "Biyolojik Sınıflandırma Sistemi",
+                "Sınıflandırmada Üç Üst Âlem (Domain) Sistemi",
+                "Bakteriler",
+                "Arkeler",
+                "Ökaryotlar",
+                "Ökaryotik Canlıların Sınıflandırılması",
+                "Protista",
+                "Bitkiler",
+                "Mantarlar",
+                "Hayvanlar",
+                "Omurgasız Hayvanlar",
+                "Omurgalı Hayvanlar",
+                "Canlıların Biyolojik ve Ekonomik Önemi",
+                "Biyoçeşitlilik",
+                "Ulusal Biyolojik Çeşitlilik Veri Tabanı"
+            ]
+        },
+        {
+            "no": 2,
+            "baslik": "Organizasyon",
+            "konular": [
+                "İnorganik Moleküller",
+                "Suyun Yapısı ve Önemi",
+                "Suyun Genel Özellikleri",
+                "Mineraller",
+                "Organik Moleküller",
+                "Karbohidratlar",
+                "Lipitler",
+                "Proteinler",
+                "Enzim Aktivitesini Etkileyen Koşullar",
+                "Nükleik Asitler",
+                "Vitaminler",
+                "Yağda Çözünen Vitaminler",
+                "Suda Çözünen Vitaminler",
+                "Organik Moleküllerin Tayininde Kullanılan Ayıraçlar",
+                "Enzim Aktivitesini Etkileyen Koşullar",
+                "Hücre ve Alt Birimleri",
+                "Prokaryot ve Ökaryot Hücre Yapısı",
+                "Hücrelerin Yapısal Bileşenleri",
+                "Organeller",
+                "Hücre Zarından Madde Geçişleri",
+                "Hücre Zarı ve Madde Geçişleri",
+                "Hücre Zarlarından Madde Geçişleri",
+                "Küçük Moleküllerin Hareketi: Difüzyon ve Ozmoz",
+                "Hücre Doku Organ ve Sistemlerin Organizasyonu",
+                "Canlılık ve Organizasyon",
+                "Organizasyon Düzeyleri"
+            ]
+        }
+    ]
+}
 };
 
 // PDF'den çıkarılan konu içerikleri
@@ -2981,6 +3062,11 @@ function getKitapKonulari(subjectId, grade){
       if(s.includes('din') && d.includes('din')) return kitap;
       if(s.includes('mat') && d.includes('mat')) return kitap;
       if((s.includes('cog')||s.includes('geo')) && d.includes('cog')) return kitap;
+      if((s.includes('biy')||s.includes('bio')) && d.includes('biy')) return kitap;
+      if(s.includes('fiz') && d.includes('fiz')) return kitap;
+      if(s.includes('kim') && d.includes('kim')) return kitap;
+      if(s.includes('tar') && d.includes('tar')) return kitap;
+      if(s.includes('ede') && d.includes('ede')) return kitap;
     }
   }
   return null;
@@ -3163,20 +3249,38 @@ SADECE JSON döndür:
 
     const titles = topicList.filter(t=>!existingTitles.includes(t.title.toLowerCase())).map(t=>t.title);
     if(titles.length > 0){
-      const anlatimPrompt = gradeText+' '+subj.name+' dersi konularini acikla.\n\n'
-        +titles.map(function(t,i){
-          var icerik = getKonuIcerik(t);
-          if(icerik) return (i+1)+'. KONU: '+t+'\nKITAP ICERIGI:\n'+icerik.substring(0,800);
-          return (i+1)+'. KONU: '+t;
-        }).join('\n\n---\n\n')
-        +'\n\nHer konu icin 3-5 cumle detayli aciklama yaz. SADECE JSON: [{"title":"Konu","anlatim":"Aciklama"}]';
+      // Her konu için PDF içeriği varsa prompt'a ekle, yoksa AI bilgisiyle yaz
+      // Konuları gruplar halinde işle — çok fazla konu varsa böl
+      var anlatimSonuclari = [];
+      var grupBoyutu = 5; // her istekte 5 konu
+      for(var gi=0; gi<titles.length; gi+=grupBoyutu){
+        var grup = titles.slice(gi, gi+grupBoyutu);
+        afLog('  📝 Anlatım: '+grup[0].substring(0,25)+'... ('+grup.length+' konu)');
 
-      const raw2 = await groqFetch(anlatimPrompt, 3000, 0.3);
-      console.log('[ANLATIM RAW]', raw2.substring(0,200));
-      const c2 = raw2.replace(/```json|```/g,'').trim();
-      let anlatimList = null;
-      try{ if(c2.startsWith('[')) anlatimList=JSON.parse(c2); }catch(e){}
-      if(!anlatimList){ try{ var mm=c2.match(/\[[\s\S]*\]/); if(mm) anlatimList=JSON.parse(mm[0]); }catch(e){} }
+        var anlatimPrompt = gradeText+' '+subj.name+' dersi. '+
+          'Aşağıdaki her konu için öğrenciye yönelik DETAYLI konu anlatımı yaz.\n'+
+          'Her anlatım: giriş, temel kavramlar, örnekler, önemli noktalar, özet içersin.\n'+
+          'Minimum 300-500 kelime olsun. Türkçe yaz.\n\n';
+
+        grup.forEach(function(t, idx){
+          var icerik = getKonuIcerik(t);
+          anlatimPrompt += (gi+idx+1)+'. KONU: '+t+'\n';
+          if(icerik) anlatimPrompt += 'KİTAP İÇERİĞİ (referans al):\n'+icerik.substring(0,600)+'\n';
+          anlatimPrompt += '---\n';
+        });
+
+        anlatimPrompt += '\nSADECE JSON döndür:\n[{"title":"Konu başlığı","anlatim":"Detaylı anlatım metni"}]';
+
+        var rawG = await groqFetch(anlatimPrompt, 4000, 0.4);
+        var cG = rawG.replace(/```json|```/g,'').trim();
+        var listG = null;
+        try{ if(cG.startsWith('[')) listG=JSON.parse(cG); }catch(e){}
+        if(!listG){ try{ var mmG=cG.match(/\[[\s\S]*\]/); if(mmG) listG=JSON.parse(mmG[0]); }catch(e){} }
+        if(listG) anlatimSonuclari = anlatimSonuclari.concat(listG);
+        if(gi+grupBoyutu < titles.length) await new Promise(function(r){setTimeout(r,2000);});
+      }
+      var anlatimList = anlatimSonuclari;
+      console.log('[ANLATIM] toplam:', anlatimList.length);
 
       afLog('Anlatım listesi: '+(anlatimList ? anlatimList.length+' konu' : 'alınamadı'));
 
