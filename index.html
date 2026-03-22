@@ -2956,127 +2956,101 @@ window.showTopicContentForm = function(type, topicId, topicTitle, subjectId, cla
 // groqFetch → artık claudeFetch kullanıyor
 // ═══════════ DERS KİTABI KONU VERİTABANI ═══════════
 const DERS_KITABI_KONULARI = {
-  "din_kulturu_9": {
-    "ders": "Din Kültürü",
-    "sinif": 9,
-    "kaynak": "MEB 2024",
+
+  // ── DİN KÜLTÜRÜ VE AHLAK BİLGİSİ 9 (MEB 2024) ──
+  "din_9": {
+    "ders": "Din Kültürü", "sinif": 9, "subjectId": "din",
     "uniteler": [
-      {"no":1,"baslik":"Allah-İnsan İlişkisi","konular":["İnsan ve İnsanın Yaratılışı","Doğruyu Arayan Bir Varlık Olarak İnsan","İbadet ve Dua Eden Bir Varlık Olarak İnsan","Kur'an'dan Mesajlar"]},
-      {"no":2,"baslik":"İslam'da İnanç Esasları","konular":["İman ve İmanın Mahiyeti","İslam'da İman Esasları","İmanın Bireye ve Topluma Kazandırdıkları","Kur'an'dan Mesajlar"]},
-      {"no":3,"baslik":"İslam'da İbadetler","konular":["İslam'da İbadetin Kapsamı","İslam'da Temel İbadetler","İnsan ve İbadet","Kur'an'dan Mesajlar"]},
-      {"no":4,"baslik":"İslam'da Ahlak İlkeleri","konular":["İslam'da Ahlakın Mahiyeti","Ahlakın Temel Unsurları","Ahlaki Tutum ve Davranışlar","Kur'an'dan Mesajlar"]},
-      {"no":5,"baslik":"Kur'an'a Göre Hz. Muhammed","konular":["Hz. Muhammed'in Beşerî ve Peygamberlik Yönü","Hz. Muhammed'in Örnekliği","Kültürümüzde Hz. Muhammed ve Ehlibeyt Sevgisi","Kur'an'dan Mesajlar"]}
+      { "no":1, "baslik":"Allah-İnsan İlişkisi", "konular":[
+        "İnsan ve İnsanın Yaratılışı",
+        "Doğruyu Arayan Bir Varlık Olarak İnsan",
+        "İbadet ve Dua Eden Bir Varlık Olarak İnsan",
+        "Kur'an'dan Mesajlar - Allah İnsan İlişkisi"
+      ]},
+      { "no":2, "baslik":"İslam'da İnanç Esasları", "konular":[
+        "İman ve İmanın Mahiyeti",
+        "İslam'da İman Esasları",
+        "İmanın Bireye ve Topluma Kazandırdıkları",
+        "Kur'an'dan Mesajlar - İnanç Esasları"
+      ]},
+      { "no":3, "baslik":"İslam'da İbadetler", "konular":[
+        "İslam'da İbadetin Kapsamı",
+        "İslam'da Temel İbadetler",
+        "İnsan ve İbadet",
+        "Kur'an'dan Mesajlar - İbadetler"
+      ]},
+      { "no":4, "baslik":"İslam'da Ahlak İlkeleri", "konular":[
+        "İslam'da Ahlakın Mahiyeti",
+        "Ahlakın Temel Unsurları",
+        "Ahlaki Tutum ve Davranışlar",
+        "Kur'an'dan Mesajlar - Ahlak İlkeleri"
+      ]},
+      { "no":5, "baslik":"Kur'an'a Göre Hz. Muhammed", "konular":[
+        "Hz. Muhammed'in Beşeri ve Peygamberlik Yönü",
+        "Hz. Muhammed'in Örnekliği",
+        "Kültürümüzde Hz. Muhammed ve Ehlibeyt Sevgisi",
+        "Kur'an'dan Mesajlar - Hz. Muhammed"
+      ]}
     ]
   },
-  "biyoloji_9": {
-    "ders": "Biyoloji",
-    "sinif": 9,
-    "kaynak": "MEB 2024",
+
+  // ── BİYOLOJİ 9 (MEB 2024) ──
+  "bio_9": {
+    "ders": "Biyoloji", "sinif": 9, "subjectId": "bio",
     "uniteler": [
-        {
-            "no": 1,
-            "baslik": "Yaşam",
-            "konular": [
-                "Biyolojinin Tanımı ve Önemi",
-                "Biyolojinin Önemi ve Biyolojideki Dönüm Noktalarının İnsan Hayatına Katkıları",
-                "Bilimsel Yöntem",
-                "Bilim ve Bilimin Doğası",
-                "Bilimin Doğasını Öğrenmek Neden Önemlidir",
-                "Bilimsel Yöntem Basamakları",
-                "Bilimsel Araştırmaların Bilim Etiğine Uygunluğu",
-                "Canlıların Ortak Özellikleri",
-                "Hücresel Yapı",
-                "Organizasyon",
-                "Beslenme",
-                "Enerji Üretimi ve Tüketimi",
-                "Metabolizma",
-                "Boşaltım",
-                "Büyüme ve Gelişme",
-                "Üreme",
-                "Uyarılara Tepki",
-                "Homeostazi",
-                "Varyasyon ve Adaptasyon",
-                "Virüsler",
-                "Sınıflandırmada Temel Yaklaşımlar ve Modern Sınıflandırma",
-                "Biyolojik Sınıflandırma Sistemi",
-                "Sınıflandırmada Üç Üst Âlem (Domain) Sistemi",
-                "Bakteriler",
-                "Arkeler",
-                "Ökaryotlar",
-                "Ökaryotik Canlıların Sınıflandırılması",
-                "Protista",
-                "Bitkiler",
-                "Mantarlar",
-                "Hayvanlar",
-                "Omurgasız Hayvanlar",
-                "Omurgalı Hayvanlar",
-                "Canlıların Biyolojik ve Ekonomik Önemi",
-                "Biyoçeşitlilik",
-                "Ulusal Biyolojik Çeşitlilik Veri Tabanı"
-            ]
-        },
-        {
-            "no": 2,
-            "baslik": "Organizasyon",
-            "konular": [
-                "İnorganik Moleküller",
-                "Suyun Yapısı ve Önemi",
-                "Suyun Genel Özellikleri",
-                "Mineraller",
-                "Organik Moleküller",
-                "Karbohidratlar",
-                "Lipitler",
-                "Proteinler",
-                "Enzim Aktivitesini Etkileyen Koşullar",
-                "Nükleik Asitler",
-                "Vitaminler",
-                "Yağda Çözünen Vitaminler",
-                "Suda Çözünen Vitaminler",
-                "Organik Moleküllerin Tayininde Kullanılan Ayıraçlar",
-                "Enzim Aktivitesini Etkileyen Koşullar",
-                "Hücre ve Alt Birimleri",
-                "Prokaryot ve Ökaryot Hücre Yapısı",
-                "Hücrelerin Yapısal Bileşenleri",
-                "Organeller",
-                "Hücre Zarından Madde Geçişleri",
-                "Hücre Zarı ve Madde Geçişleri",
-                "Hücre Zarlarından Madde Geçişleri",
-                "Küçük Moleküllerin Hareketi: Difüzyon ve Ozmoz",
-                "Hücre Doku Organ ve Sistemlerin Organizasyonu",
-                "Canlılık ve Organizasyon",
-                "Organizasyon Düzeyleri"
-            ]
-        }
+      { "no":1, "baslik":"Yaşam", "konular":[
+        "Biyolojinin Tanımı ve Önemi",
+        "Biyolojideki Dönüm Noktaları ve İnsan Hayatına Katkıları",
+        "Bilimsel Yöntem ve Basamakları",
+        "Bilim ve Bilimin Doğası",
+        "Bilimsel Araştırmaların Etik Boyutu",
+        "Canlıların Ortak Özellikleri",
+        "Beslenme Metabolizma ve Boşaltım",
+        "Büyüme Gelişme ve Üreme",
+        "Uyarılara Tepki ve Homeostazi",
+        "Varyasyon Adaptasyon ve Virüsler",
+        "Biyolojik Sınıflandırmanın Temelleri",
+        "Üç Üst Alem Domain Sistemi",
+        "Bakteriler ve Arkeler",
+        "Ökaryotlar ve Alt Grupları",
+        "Protista Bitkiler ve Mantarlar",
+        "Omurgasız Hayvanlar",
+        "Omurgalı Hayvanlar",
+        "Canlıların Biyolojik ve Ekonomik Önemi",
+        "Biyoçeşitlilik ve Ulusal Veri Tabanı"
+      ]},
+      { "no":2, "baslik":"Organizasyon", "konular":[
+        "İnorganik Moleküller - Su",
+        "Suyun Yapısı Özellikleri ve Önemi",
+        "Mineraller ve Görevleri",
+        "Organik Moleküllere Giriş",
+        "Karbohidratlar",
+        "Lipitler",
+        "Proteinler ve Enzimlerin Çalışma Koşulları",
+        "Nükleik Asitler",
+        "Vitaminler - Yağda ve Suda Çözünenler",
+        "Organik Moleküllerin Ayıraçlarla Tespiti",
+        "Enzim Aktivitesini Etkileyen Faktörler",
+        "Prokaryot ve Ökaryot Hücre Yapısı",
+        "Hücre Organelleri ve Görevleri",
+        "Hücre Zarı ve Madde Geçişleri",
+        "Difüzyon ve Ozmoz",
+        "Hücre Doku Organ ve Sistem Organizasyonu"
+      ]}
     ]
-}
+  }
+
 };
 
-// PDF'den çıkarılan konu içerikleri
-const KITAP_ICERIK = [{"unite_no": 1, "unite": "Allah-İnsan İlişkisi", "konu": "İnsan ve İnsanın Yaratılışı", "icerik": "1.1. İnsan ve İnsanın Yaratılışı\nKonuya Başlarken\n1. Sizce Allah (cc); güneşi, suyu, toprağı, hayvanları ve bitkileri niçin yaratmıştır?\n2. İnsanın yaratılış amacı ne olabilir?\nEtkinlik-1 20 dk.\nAdı İnsanın Yaratılış Amacı\nAmaç İnsanın yaratılışına ve özelliklerine dair sorular sorabilme\nBeceri Sorgulama\nAşağıdaki adımları takip ederek etkinliği tamamlayınız.\n1. Öğretmen rehberliğinde beş kişilik gruplara ayrılınız.\n2. Grup arkadaşlarınızla fikir alışverişinde bulunarak aşağıdaki tabloyu beş dakika içinde tamamlayınız.\nİnsanın yaratılış süreciyle ilgili, cevabını Yaratılmış bir varlık olarak insanın özellikleri\nmerak ettiğiniz soruları yazınız. hakkındaki sorularınızı yazınız.\n........................................................................ ........................................................................\n........................................................................ ........................................................................\n........................................................................ ........................................................................\n........................................................................ ........................................................................\n........................................................................ ........................................................................\n........................................................................ ..........."}, {"unite_no": 1, "unite": "Allah-İnsan İlişkisi", "konu": "Doğruyu Arayan Bir Varlık Olarak İnsan", "icerik": "Doğruyu Arayan Bir Varlık Olarak İnsan\nKonuya Başlarken\n1. Peygamberlerden ve ilahi kitaplardan hangilerini biliyorsunuz?\n2. Yeni bir fotoğraf makinesi aldınız. Güzel fotoğraflar çekmek istiyorsunuz. Öncelikle yapma-\nnız gereken, fotoğraf makinesinin kullanım kılavuzunu incelemek ve ardından temel fotoğ-\nrafçılık ilkelerini öğrenmektir.\nBu örnek ile Allah’ın (cc) insanlara ilahi kitap ve peygamber göndermesi arasında nasıl bir ilişki\nkurulabilir? Tartışınız.\nAdı Güvenilir Bilginin Kaynağı\nAmaç Doğru bilgiye ulaşma yolları hakkında eleştirel düşünebilme\nBeceri Eleştirel düşünme\nAşağıda adımları verilen beyin fırtınası tekniğini uygulayınız.\n1. Aşağıdaki şemayı öğretmeninizin rehberliğinde etkileşimli tahtada açınız. Etkileşimli tahtaya erişiminiz\nyoksa şemayı sınıf tahtasına çiziniz. Şemadaki soruyla ilgili cevaplarınızı boş bırakılan yerlere yazınız. Bu\naşamada sınıfta paylaşılan cevapların doğruluğunu değerlendirmeyiniz. Mümkün olduğunca çok cevap üret-\nmeye çalışınız. Bu aşama için süreniz 10 dakikadır. (Boş bırakılan yerleri çoğaltabilirsiniz.)\nİnsanın bilgiye ulaşma\nyolları neler olabilir?\n2. Tahtaya yazılan cevapların doğruluğunu öğretmen rehberliğinde sınıfça değerlendiriniz. Yanlış olarak değer-\nlendirdiğiniz cevapları tahtadan siliniz. Doğru olarak değerlendirdiğiniz cevapların İslam’la ilgili güvenilir\nbilgilere ulaşmak için uygun olup olmadığını tartışınız.\nDeğerlendirme\nSınıfça doğru olduğuna karar verdiğiniz bilgiye ulaşma yolları İslam’la ilgili doğru bilgilere u"}, {"unite_no": 1, "unite": "Allah-İnsan İlişkisi", "konu": "İbadet ve Dua Eden Bir Varlık Olarak İnsan", "icerik": "Allah-İnsan İlişkisi\n1.3. İbadet ve Dua Eden Bir Varlık Olarak İnsan\nKonuya Başlarken\n1. Sizce insan Yüce Allah ile nasıl bağ kurabilir?\n2. Hangi davranışları sergilediğinizde kendinizi Allah’a (cc) daha yakın hissedersiniz?\nYüce Allah evreni belli bir denge ve ahenkle yaratmıştır. Mülk suresinin üçün-\ncü ayetinde “Yedi göğü birbiriyle tam bir uygunluk içinde yaratan O’dur.\nRahman’ın yaratışında hiçbir uyumsuzluk göremezsin. Gözünü çevir de\nbir bak, bir bozukluk görebiliyor musun?” buyrularak buna dikkat çekilir.\nİnsan bu ahenk ve güzelliği gördüğünde yaratıcıya karşı derin bir hayranlık\nduyar. Bu hayranlık, insanlarda Allah’a (cc) karşı gittikçe artan saygı ve sevgi\ntemelli bir kulluğa dönüşür. İnsan, Rabbine dua ve ibadetle yakınlaşmaya\nYüce Allah, daima bizimledir. Bizim en büyük güven kaynağımızdır. O; se-\nven, esirgeyen, merhamet eden, hidayet ve esenlik verendir. Allah (cc), rah-\nmetiyle yarattığı kullarından kendisiyle bağ kurmalarını ister. Yaratıcımızla\nnasıl yakınlaşacağımızın cevabı ibadet ve duada saklıdır. Allah (cc) ile bağ\nkurmak, dua, ibadet, tövbe ve Kur’an okumak gibi salih amellerle sağlanır.\nAdı Kur’an-ı Kerim’deki Dua Örnekleri\nAmaç Allah (cc) ile iletişimin ibadet ve dua ile sağlandığını yansıtabilme\nBeceri Yansıtma, kendine uyarlama (öz yansıtma)\nMalzemeler Kur’an-ı Kerim meali\nÖn Hazırlık\nKarekodu kullanarak ulaştığınız metni okuyunuz.\nAşağıdaki adımları takip ederek etkinliği tamamlayınız.\n1. Aşağıdaki ayet meallerinde ve hadislerdeki dua örneklerini "}, {"unite_no": 1, "unite": "Allah-İnsan İlişkisi", "konu": "Kur'an'dan Mesajlar", "icerik": "Allah-İnsan İlişkisi\n1.4. Kur’an’dan Mesa lar\nKonuya hazırlık amacıyla Rum suresinin 17-27.\nBu konuda daha fazla\nayetlerini, Diyanet İşleri Başkanlığı tarafından\nbilgiye ulaşmak için\nyayımlanan matbu veya dijital meallerden bularak\nkarekodları kullanabi-\ninceleyiniz.\nKonuya Başlarken\nAşağıdaki görselleri inceleyerek soruları cevaplayınız.\nGörsel 1.10: Yeni doğan bebek Görsel 1.11: Güneş ve Ay tutulmasının farklı evreleri\n1. İnsanın yaratılışında Allah’ın (cc) yüceliğini gösteren işaretler neler olabilir?\n2. Tabiatın yaratılışında Allah’ın (cc) yüceliğini gösteren işaretler neler olabilir?\nAdı Rum Suresinin 17-27. Ayetleri\nAmaç Rum suresi 17-27. ayetlerinde verilen mesajları özetleyebilme\nBeceri İletişim, özetleme\nMalzemeler Kur’an-ı Kerim meali, genel ağ bağlantısı olan cihaz\nAşağıdaki soruları cevaplayınız ve cevaplarınızı sınıfla paylaşarak değerlendiriniz.\n1. Rum suresinin 17-27. ayetlerinin meallerini okuyunuz ve bu ayetlerde bahsedilen konuları yazınız.\n.....................................................................................................................................................................\n.....................................................................................................................................................................\n.....................................................................................................................................................................\n............................."}, {"unite_no": 2, "unite": "İslam'da İnanç Esasları", "konu": "İman ve İmanın Mahiyeti", "icerik": "2.1. İman ve İmanın Mahiyeti\nKonuya Başlarken\nİnanma ihtiyacı, insan için neden önemlidir? Arkadaşlarınızla tartışınız.\nİnsanın yeme, içme, uyuma gibi ihtiyaçlarının yanında güven duyma, inan-\nma, sığınma, mutlu olma gibi ihtiyaçları da vardır. Allah (cc), insanı O’nun var\nve bir olduğunu kavrayıp O’na iman edecek kabiliyette yaratmıştır. Dolayısıy-\nla inanma duygusu fıtri bir ihtiyaçtır. Bu durum, Kur’an-ı Kerim’de “Resulüm!\nGeçmiş toplumların Sen yüzünü hanif olarak dine, Allah insanları hangi fıtrat üzere yaratmış\nyaşam alanlarıyla ilgili ise ona, çevir. Allah’ın yaratışında değişme yoktur. İşte dosdoğru din\naraştırma yaparak budur; fakat insanların çoğu bilmezler.”1 ayetiyle ifade edilir.\nulaştığınız bilgileri\narkadaşlarınızla Din olgusu, Hz. Âdem’le başlayarak günümüze kadar yaşamış bütün top-\npaylaşınız.\nluluklarda var olmuştur. Geçmiş toplumlara ait bulgular, insanın inanma ve\nyüce bir varlığa sığınma ihtiyacı içinde olduğunu gösterir (Görsel 2.2).\nİnsan, Allah’a (cc) iman edecek kabiliyette yaratılmış olsa da bazı etkenler\nonu bu yaratılıştan uzaklaştırabilir. Bu sebeple Allah (cc), insanı sadece ken-\ndisine kulluk etmeye ve inanç esaslarına tabi olmaya çağırmıştır. Bunun için\npeygamberleri görevlendirmiştir. İlk peygamber Hz. Âdem’den son peygam-\nber Hz. Muhammed’e (sav) kadar Allah’ın (cc) tüm elçilerinin tevhit inancını\ntebliğ ettiği “Senden önce gönderdiğimiz bütün peygamberlere, ‘Şüphe-\nsiz, benden başka hiçbir ilah yoktur. Öyleyse bana ibadet edin.’ diye\nvahyett"}, {"unite_no": 2, "unite": "İslam'da İnanç Esasları", "konu": "İslam'da İman Esasları", "icerik": "İslam’da İnanç Esasları\n2.2. İslam’da İman Esasları\nKonuya Başlarken\n1. İslam iman esaslarından hangilerini biliyorsunuz?\n2. Allah’a imanın inanç esasları arasındaki yeri ile ilgili düşünceleriniz nelerdir? Arkadaş-\nlarınızla paylaşınız.\nİslam inancının esasları, Kur’an-ı Kerim’in temel konularındandır. Bu esaslar\nAllah’ın (cc) peygamberleri tarafından insanlara tebliğ edilmiştir. İman esas-\nlarının neler olduğu ayet ve hadislerde bildirilir. Kur’an’da Yüce Allah’ın (cc)\nvarlığı ve birliği yanında, meleklerine, kitaplarına, peygamberlerine ve ahirete\niman etmenin hak olduğu beyan edilir. İman esasları bazı ayetlerde bir arada\nzikredilirken bazı ayetlerde tek tek zikredilir. Kur’an’da inanç esaslarına bir\nbütün olarak iman edilmesi istenir. Bu esaslardan herhangi birini kabul etme-\nyen iman etmiş olmaz.\nAdı İman Esasları\nAmaç Ayet ve hadislerden hareketle İslam’ın iman esaslarını çözümleyebilme\nBeceri Özetleme, bilgi okuryazarlığı\n1. Aşağıdaki ayetleri ve hadisi okuyarak soruları cevaplayınız.\n• “Ey iman edenler! Allah’a, Peygamberine, Peygamberine indirdiği kitaba ve daha önce indirdiği kitaba iman\nedin. Kim Allah’ı, meleklerini, kitaplarını, peygamberlerini ve ahiret gününü inkâr ederse derin bir sapkınlığa\ndüşmüş olur.” (Nisa 4/136)\n• “Yine onlar, sana indirilene ve senden önce indirilene iman ederler; ahiret gününe de kesinkes inanırlar.”\n(Bakara 2/4)\n• “Hz. Ömer şöyle rivayet etti. Bir gün Resulullah’ın yanında bulunduğumuz sırada yanımıza elbisesi bembeyaz,\nsaçı simsiyah"}, {"unite_no": 2, "unite": "İslam'da İnanç Esasları", "konu": "İmanın Bireye ve Topluma Kazandırdıkları", "icerik": "İslam’da İnanç Esasları\nKontrol Noktası\nÇIKIŞ KARTI\nBu dersten önce Bu dersin konusu ile ilgili merak Bu derste\nbildiklerim ettiklerim öğrendiklerim\n........................................ ........................................ ........................................\n........................................ ........................................ ........................................\n........................................ ........................................ ........................................\n........................................ ........................................ ........................................\n........................................ ........................................ ........................................\n........................................ ........................................ ........................................\n........................................ ........................................ ........................................\n........................................ ........................................ ........................................\n........................................ ........................................ ........................................\nİmanın Bireye ve Topluma Kazandırdıkları\nKonuya Başlarken\nİman etmek bireye ve topluma neler kazandırır? Bu konuyla ilgili izlenim ve deneyimlerinizi\narkadaşlarınızla paylaşınız.\nİman insanda ahlaki erdemlere kaynaklık eden ve onları geliştiren"}, {"unite_no": 2, "unite": "İslam'da İnanç Esasları", "konu": "Kur'an'dan Mesajlar (İnanç)", "icerik": "2.4. Kur’an’dan Mesajlar\nKonuya Başlarken\nHangi davranışları iyilik olarak tanımlarsınız?\nEtkinlik-12\nAdı Ayetteki Mesajlar\nAmaç Bakara suresinin 177. ayetindeki mesajları özetleyebilme\nBeceri Özetleme, dijital okuryazarlık\nMalzeme Kur’an-ı Kerim meali, genel ağ bağlantısı olan cihaz\nBakara suresi 177. ayetinin mealini Kur’an-ı Kerim mealinden veya karekodla verilen genel ağ bağ-\nlantısından okuyunuz.\n1. Ayette yer alan konular nelerdir? Tespit edip sınıflandırınız.\n.....................................................................................................................................................................\n.....................................................................................................................................................................\n.....................................................................................................................................................................\n2. Ayette verilen mesajlar nelerdir? Listeleyiniz.\n.....................................................................................................................................................................\n.....................................................................................................................................................................\n...................................................................................................................................................."}, {"unite_no": 3, "unite": "İslam'da İbadetler", "konu": "İslam'da İbadetin Kapsamı", "icerik": "3.1. İslam’da İbadetin Kapsamı\nKonuya Başlarken\nİslam’da ibadetlerle İslam’da ibadetlerle\nilgili bildiklerim ilgili merak ettiklerim\n.............................................................. ..............................................................\n.............................................................. ..............................................................\n.............................................................. ..............................................................\nAdı Kaynak Bulalım\nAmaç İslam’da ibadet ve ibadetin temel ilkeleri hakkında bilgiye ulaşmak için kullanacağı kaynakları araştırabilme\nBeceri Bilgi toplama\n1. İslam’da ibadet ve ibadetin temel ilkeleri hakkında bilgi toplamak isteyen biri güvenilir bilgiye\nhangi kaynaklardan ulaşabilir? Araştırınız.\n2. Elde ettiğiniz bilgileri kaynaklarını da belirterek not ediniz.\n1. Araştırma notlarınızı sınıf arkadaşlarınızla paylaşınız.\n2. Paylaştığınız kaynakları tahtaya not ediniz.\n3. Tahtaya yazılan kaynakların İslam’da ibadet ve ibadetin temel ilkeleri hakkında bilgi toplamak için uygun olup\nolmadığını öğretmen rehberliğinde değerlendiriniz.\n4. Değerlendirme sonucu İslam’da ibadet ve ibadetin temel ilkeleri hakkında bilgi toplamak için uygun olan kay-\nnakları tanımlayınız.\nDeğerlendirme\nİslam’da ibadet ve ibadetin temel ilkeleri hakkında bilgi toplayacağınız kaynakların hangi özellikleri taşıması\ngerekir? Yazınız.\n......................................................................."}, {"unite_no": 3, "unite": "İslam'da İbadetler", "konu": "İslam'da Temel İbadetler", "icerik": "İslam’da İbadetler\n3.2. İslam’da Temel İbadetler\nKonuya Başlarken\nİslam’ın temel ibadetleri denilince aklınıza neler geliyor? Yazınız.\n...........................................................................................................................................................\n...........................................................................................................................................................\n...........................................................................................................................................................\nİbadet denilince akla ilk olarak namaz, oruç, hac, zekât ve kurban gibi İslam’ın\ntemel ibadetleri gelir. Bu ibadetlerin yerine getirilmesi Kur’an’da emredilmiştir.\nNasıl yapıldıklarıyla ilgili ayrıntılar ise Hz. Muhammed (sav) tarafından öğ-\nretilmiştir. Şekli, miktarı, zamanı belli ve yapılması zorunlu olan bu ibadetler,\nhükümleri bakımından farz ve vacip olarak nitelendirilir.\nNamaz, tekbir ile başlayıp selam ile son bulan, Hz. Peygamber’in yapıp öğ-\nrettiği belirli fiil, söz ve dualarla yerine getirilen ibadettir.\nİslam’ın beş temel şartından biri olarak sorumluluk çağına gelmiş olan Müs-\nlümanların ibadet niyetiyle imsak vaktinden itibaren, güneşin batışına kadar\nyemeden, içmeden ve cinsel ilişkiden uzak durmalarıdır.\nZekât, dinen zengin sayılan Müslümanların her yıl mallarının ve paralarının\nbelli bir miktarını ibadet niyetiyle Kur’an-ı Kerim’de belirtilen kişilere verme-\nHac, im"}, {"unite_no": 3, "unite": "İslam'da İbadetler", "konu": "İnsan ve İbadet", "icerik": "İslam’da İbadetler\n3.3. İnsan ve İbadet\nKonuya Başlarken\nİbadet etmek insanı nasıl etkiler? Düşüncelerinizi arkadaşlarınızla paylaşınız.\nİslam’da ibadetler, insanın varoluş amacına uygun şekilde yaşamasına im-\nkân sağlar. İbadetlerin her biri insanı farklı açılardan eğitir ve olgunlaştırır. Bu\nbakımdan insanların Allah’a (cc) ibadet etmeye ihtiyacı vardır.\nİbadet, insanın kendisini Allah’a (cc) çok yakın hissettiği özel bir tecrübedir.\nKişinin inancı, bu inanca bağlı değerleri ve ibadetleri hayatına bir amaç ve\nanlam kazandırır. İbadet insanın yaratıcıyla ve insanlarla ilişkisini düzene\nkoyar, zihinsel ve ruhsal sağlığını korur, iç dünyası ve çevresiyle denge ve\nuyum sağlamasına yardımcı olur.\nSınırlı ve eksik bir varlık olan insan; içinde daima bir huzursuzluk hisseder\nve tamamlanma, daha güçlü bir varlıkla iletişim kurma arzusu taşır. Kur’an-ı\nKerim’de bu arzunun ancak Allah’a (cc) bağlanıp O’na kulluk ederek gerçek-\nleşeceği “... Şunu iyi bilin ki kalpler ancak Allah’ı anmakla huzur bulur.”\nmealindeki ayetle ifade edilir. Allah’a (cc) kulluk, insanın fıtratından gelen asli\nbir ihtiyaçtır. Varoluşundaki bu gerçeği unutan veya buna ilgisiz kalan pek\nçok insan, çaresizliğe ve ruhsal bunalımlara düşebilir.\nAdı İnsan ve İbadet\nAmaç İnsan ve ibadet ilişkisini inceleyebilme\nBeceri Yorumlama\nAşağıdaki ayet meallerini okuyunuz ve soruları cevaplayınız.\n• “Ey iman edenler, rükû edin, secde edin, Rabbinize kulluk edin ve hayır işleyin ki kurtuluşa eresiniz.” (Hac\n• “(Ey Muhammed!) Ki"}, {"unite_no": 3, "unite": "İslam'da İbadetler", "konu": "Kur'an'dan Mesajlar (İbadet)", "icerik": "3.4. Kur’an’dan Mesajlar\nKonuya Başlarken\nİnsanın Allah’a (cc) karşı sorumlulukları nelerdir? Düşüncelerinizi arkadaşlarınızla paylaşınız.\nEtkinlik-13\nAdı Ayetleri Bulalım\nAmaç Bakara suresi 21, Zariyat suresi 56 ve Hicr suresi 99. ayetlerin mesajlarını özetleyebilme\nBeceri Özetleme, iletişim, dijital okuryazarlık\nMalzemeler Kur’an-ı Kerim meali, genel ağ bağlantısı olan cihaz\nAşağıda adımları verilen grup çalışmasını öğretmen rehberliğinde tamamlayınız.\n1. Öğretmen rehberliğinde gruplara ayrılınız.\n2. Bakara suresi 21, Zariyat suresi 56 ve Hicr suresi 99. ayetlerin meallerini Kur’an-ı Kerim’den veya\nkarekodla verilen bağlantıdan bulunuz ve yazınız.\n.....................................................................................................................................................................\n.....................................................................................................................................................................\n.....................................................................................................................................................................\n3. Ayetleri grubunuzla inceleyerek ayetlerde bahsedilen konuları belirleyiniz ve sınıflandırınız.\n.....................................................................................................................................................................\n................................................................................"}, {"unite_no": 4, "unite": "İslam'da Ahlak İlkeleri", "konu": "İslam'da Ahlakın Mahiyeti", "icerik": "4.1. İslam’da Ahlakın Mahiyeti\nKonuya Başlarken\n1. Ahlak denince ne anlıyorsunuz?\n2. Sizce ahlakın kaynağı neler olabilir?\n3. Sizce bir davranışın iyi ya da kötü olduğuna hangi ölçütlere göre karar verilir?\n4. İslam ahlakı denince aklınıza neler geliyor?\nAdı Merak Ediyorum\nAmaç İslam’da ahlakın mahiyetini sorgulayabilme\nBeceri Sorgulama, iletişim\nAşağıdaki adımları takip ederek etkinliği tamamlayınız.\n1. Öğretmen rehberliğinde bir soru kutusu hazırlayınız.\n2. İslam’da ahlakın mahiyetine yönelik merak ettiklerinizle ilgili soruları uygun kağıtlara yazınız ve soru kağıtla-\nrını kutuya atınız.\n3. Süreç esnasında merak ettiğiniz başka sorular olursa onları da kutuya atmaya devam ediniz.\n4. Kutudaki sorular sınıfça değerlendirileceği için soru kutusunu muhafaza ediniz.\nDeğerlendirme\nİslam ahlakının mahiyetine yönelik soru kutusuna attığınız soruları yazınız.\n.....................................................................................................................................................................\n.....................................................................................................................................................................\n.....................................................................................................................................................................\nAdı Not Tutuyorum\nAmaç İslam’da ahlakın mahiyeti hakkında topladığı bilgilerden çıkarım yapabilme\nBeceri Sorgulama, bilgi okuryazarlığı\n"}, {"unite_no": 4, "unite": "İslam'da Ahlak İlkeleri", "konu": "Ahlakın Temel Unsurları", "icerik": "İslam’da Ahlak İlkeleri\n4.2. Ahlakın Temel Unsurları\nKonuya Başlarken\nİslam’ı benimsemiş bir kimsede sizce bulunması gereken temel ahlaki nitelikler nelerdir?\nAdı İslam Ahlakının Temel Unsurları\nAmaç Ahlakın temel unsurlarının neler olduğunu belirleyebilme\nBeceri Sentezleme\nAşağıdaki adımları takip ederek etkinliği tamamlayınız.\n1. Aşağıdaki metni okuyunuz. Metinden hareketle İslam ahlakının temel unsurlarının neler olabileceğini tartışınız.\nTartışmanın sonunda belirlediğiniz unsurları aşağıdaki şemaya yazınız.\nİslam ahlakının yapısını oluşturan çeşitli unsurlar vardır. Bu unsurlar İslam’ın itikatta, ibadetlerde ve sosyal\nilişkilerde belirlediği temel ilkelerle bir bütünlük arz eder. Yüce Allah’ın varlığına ve birliğine iman etmek\nkişinin hayatını bu inanç çerçevesinde düzenlemesini sağlar. Bu durum beraberinde O’nun emir ve yasaklarına\nuymayı, kulluk vazifelerini yerine getirmeyi ve sorumluluk bilinciyle güzel ahlaka uygun davranmayı gerekti-\nrir. İslam’daki adalet, ilim, olumsuzluklara karşı mücadele, iyiliği yayma, kötülüğü engelleme ve takva anlayışı\nİslam’ın ahlak anlayışına da yansımıştır. Tüm bunlar İslam ahlakının temel erdemlerini belirlemiş ve İslam\nahlakını oluşturan unsurlar olmuştur.\nAhlakın Temel\n2. Tartışmanın sonucunda belirlediğiniz unsurlara uygun ahlaki tutum ve davranış örnekleri yazınız.\n.....................................................................................................................................................................\n...."}, {"unite_no": 4, "unite": "İslam'da Ahlak İlkeleri", "konu": "Ahlaki Tutum ve Davranışlar", "icerik": "4.3. Ahlaki Tutum ve Davranışlar\nKonuya Başlarken\n1. Sizce ahlaki tutum ve davranışlar neler olabilir?\n2. Ahlaki tutum ve davranışların önemsenmediği bir toplumda yaşamak ister miydiniz?\nDüşüncelerinizi gerekçesiyle birlikte sınıf arkadaşlarınızla paylaşınız.\nİslam, insanın hem kendi iç dünyasına hem de toplumsal hayatın her alanına\nhâkim kılması için pek çok ahlaki tutum ve davranış belirlemiştir. Bu ahla-\nki tutum ve davranışlar temel erdemler olarak insanların hayatına yön verir.\nDürüstlük, yardımseverlik ve sabır İslam’ın bireysel ve toplumsal hayatta ger-\nçekleşmesini istediği temel ahlaki niteliklerden bazılarıdır.\nDürüstlük; insanın özünde, sözünde ve davranışlarında dosdoğru olmasıdır.\nSıdk, sadakat gibi kavramlarla da ifade edilen dürüstlük; yalan söylememek,\naldatmamak, verilen sözde durmak, yapılan anlaşmalara uymak, güvenilir ol-\nmak ve emanetleri korumak gibi pek çok yüksek ahlaki niteliği içerir. Yüce\nAllah, Kur’an-ı Kerim’de müminlerin özelliklerini sıralarken “Yine onlar (mü-\nminler) ki, emanetlerine ve verdikleri sözlere riayet ederler.”19 buyurarak\ndürüstlüğün müminlerin temel bir vasfı olduğunu bildirir. Hz. Muhammed de\n(sav) bir hadisinde dürüstlüğün önemini şöyle açıklar: “Doğruluktan ayrılma-\n“Müslüman, dilinden\nyın. Çünkü doğruluk insanı iyiliğe, iyilik de cennete götürür. Kişi devamlı doğru\nve elinden insanların\nsöyler ve doğruluktan ayrılmazsa Allah katında doğru/sıddık olarak tescillenir.\nselamette olduğu kişidir.\nMümin ise insanların Yalandan sakını"}, {"unite_no": 4, "unite": "İslam'da Ahlak İlkeleri", "konu": "Kur'an'dan Mesajlar (Ahlak)", "icerik": "İslam’da Ahlak İlkeleri\n4.4. Kur’an’dan Mesajlar\nKonuya Başlarken\nKişinin Rabbine, kendisine, ebeveynlerine, akrabalarına ve arkadaşlarına karşı ahlaki vazifeleri\nneler olabilir?\nEtkinlik-15\nAdı Ayetlerden Anladıklarım\nAmaç İsra suresi 23-29. ayetlerin mesajlarını özetleyebilme\nBeceri Özetleme, dijital okuryazarlık\nMalzemeler Kur’an-ı Kerim meali, genel ağ bağlantısı olan cihaz\nAşağıda adımları verilen grup çalışmasını tamamlayınız.\n1. Öğretmen rehberliğinde gruplara ayrılınız.\n2. İsra suresi 23-29. ayetlerin meallerini Kur’an-ı Kerim mealinden veya karekodla verilen bağ-\nlantıdan bulunuz ve yazınız.\n.....................................................................................................................................................................\n.....................................................................................................................................................................\n.....................................................................................................................................................................\n.....................................................................................................................................................................\n.....................................................................................................................................................................\n3. Ayetleri grubunuzla inceleyerek ayetlerde bahsedilen konula"}, {"unite_no": 5, "unite": "Kur'an'a Göre Hz. Muhammed", "konu": "Hz. Muhammed'in Beşerî ve Peygamberlik Yönü", "icerik": "5.1. Hz. Muhammed’in Beşerî ve Peygamberlik\nKonuya Başlarken\nHz. Muhammed (sav) hakkında Hz. Muhammed’in (sav) örnek\nneler biliyorsunuz? aldığınız özellikleri nelerdir?\n.............................................................. ..............................................................\n.............................................................. ..............................................................\nbeşerî Hz. Muhammed’i (sav) her yönüyle tanımak için onun yaşadığı dönem hak-\nkadın ve erkek türü kında bilgi sahibi olmak gerekir. Ayrıca onun beşerî özelliklerini ve peygam-\nolarak insan, yaratılmış berlikle ilgili görevlerini bilmek onu anlamak açısından önemlidir. Hz. Pey-\ngamber’in Allah’tan (cc) aldığı vahyi insanlara ulaştırması ve açıklaması onun\npeygamberlik görevleri arasındadır. Bu vazifeyi yerine getirirken bir yandan\n(bk. Ebü’l-Fazl\ndinin nasıl yaşanacağını davranışlarıyla göstermiş diğer yandan sosyal haya-\nMuhammed b Mükerrem b\nAli el-Ensârî İbn Manzur, tı düzenleyen hükümler ortaya koymuştur.\nLisanü’l-Arab 3 (Beyrut: Hz. Muhammed’in Yaşadığı Çevre\nDâru Sadır, 2020), 2/286.)\nHz. Muhammed’in (sav) yaşadığı Arap Yarımadası, Asya ve Afrika’nın ke-\nsiştiği önemli bir konumdadır. Necid, Hicaz ve Yemen bölgelerinden oluşan\nYarımada’nın doğusunda Basra ve Umman körfezleri, batısında Kızıldeniz,\ngüneyinde Hint Okyanusu, kuzeyinde ise Suriye ve Irak bölgeleri bulunur.\nYarımada’nın en önemli şehri Hz. Peygamber’in dünyaya geldiği Mekke’dir.1\nKâbe’nin bu şehi"}, {"unite_no": 5, "unite": "Kur'an'a Göre Hz. Muhammed", "konu": "Hz. Muhammed'in Örnekliği", "icerik": "Kur’an’a Göre Hz. Muhammed\n5.2. Hz. Muhammed’in Örnekliği\nKonuya Başlarken\nÜsveihasene ifadesiyle ilgili Sizce Hz. Muhammed’in (sav)\nneler söyleyebilirsiniz? örnek alınması neden önemlidir?\n.............................................................. ..............................................................\n.............................................................. ..............................................................\n.............................................................. ..............................................................\nAdı Rol modelim: Hz. Muhammed (sav)\nAmaç Hz. Muhammed’in (sav) örnekliğini esas alarak kendi bakış açısını yapılandırabilme\nBeceri Yapılandırma\nAşağıdaki ayeti ve hadisleri okuyunuz.\n• “Ant olsun, Allah’ın Resulünde sizin için, Allah’a ve ahiret gününe kavuşmayı uman, Allah’ı çok zikreden\nkimseler için, güzel bir örnek vardır.” (Ahzab 33/21)\n• Medine’de ensarın hurmalarını taşlayan bir çocuğa Hz. Muhammed (sav) “Çocuğum, hurmaları neden taşlı-\nyorsun?” diye sormuş, o da “Yemek için.” diye karşılık vermişti. Bunun üzerine Hz. Peygamber “Hurmaları\ntaşlama da altına düşenlerden ye!” buyurarak ona doğruyu öğretmiş, başını okşamış ve “Allah’ım, onun\nkarnını doyur!” diyerek dua etmişti. (Ebu Davud, “Cihat”, 85)\n• Küçük yaşlardan itibaren Hz. Peygamber’in hizmetinde bulunan Hz. Enes’in, “Resulullah’a on sene hizmet\nettim. Vallahi bana bir kez olsun ‘Öf!’ bile demedi. Herhangi bir şeyden dolayı ‘Niçin böyle yaptın?’ deme-\ndiği"}, {"unite_no": 5, "unite": "Kur'an'a Göre Hz. Muhammed", "konu": "Kültürümüzde Hz. Muhammed ve Ehlibeyt Sevgisi", "icerik": "5.3. Kültürümüzde Hz. Muhammed ve Ehlibeyt\nKonuya Başlarken\nÜlkemizde Muhammed, Ahmet, Ali, Ayşe, Fatma, Hasan, Hüseyin ve Zeynep isimlerinin çokça\ntercih edilmesinin sebebi ne olabilir?\n...........................................................................................................................................................\n...........................................................................................................................................................\n...........................................................................................................................................................\nArif Nihat Asya’nın\nNaat isimli şiirini\nkarekodla verilen\ngenel ağ adresinden\ndinleyerek düşüncele-\nrinizi yazınız.\nKarekodla verilen sala-\nvatı şerifeyi dinleyiniz.\nGörsel 5.13: Türk ordusu, peygamber ocağı olarak nitelendirilir.\nİslam kültüründe, Hz. Peygamber’i ve onun sevdiklerini sevmek büyük bir\nönem taşır. Peygamber sevgisi imanın gereğidir. Hz. Peygamber’i sevmenin\nönemi “De ki: Eğer Allah’ı seviyorsanız bana uyun ki Allah da sizi sevsin\nSalavat getirmek ve günahlarınızı bağışlasın. Allah çok bağışlayıcı, çok esirgeyicidir.”43\nnedir? Araştırınız\nayetiyle ifade edilir. Hz. Peygamber’in ismi anıldığında ona salavat getirmek,\nve arkadaşlarınızla\npeygamber sevgisinin ve ona duyulan saygının tezahürüdür. Toplumumuzda\npaylaşınız.\nerkek çocuklara sıklıkla verilen Ahmet, Mahmut, Muhammet ve Mustafa gibi\nisimler de peygamber sevgisini"}, {"unite_no": 5, "unite": "Kur'an'a Göre Hz. Muhammed", "konu": "Kur'an'dan Mesajlar (Hz. Muhammed)", "icerik": "Kur’an’a Göre Hz. Muhammed\nKontrol Noktası\nAşağıda verilen ifadelerin doğru (D) veya yanlışlığına (Y) göre yönlendirici okları takip ederek ulaştığınız çıkışı\nişaretleyiniz.\nD ç) Hz. Muhammed’in\n(sav) vahyi insanlara\neksiksiz bir şekilde\nulaştırma görevine\ntebliğ denir. Y 2. çıkış\nb) Hz. Muhammed\nD (sav) sadece mümin-\nlere karşı adaletle\ndavranmıştır.\nd) Hz. Muhammed’in\n(sav) Kur’an’ı Kerim’i\naçıklamasına temsil\ndenir. Y 4. çıkış\na) Hz. Peygamber’e\ngüvenirliği nede-\nniyle “Muhammed\nMustafa” denmiştir. e) Çocuklara Ahmet,\nD Mehmet ve Mus- D 5. çıkış\ntafa gibi isimlerin\nverilmesi peygamber\nsevgisinin kültürü-\nmüzdeki bir yansı-\nc) Teşri, Hz. Muham-\nY med’in (sav) hüküm\nkoyma yetkisidir.\nf) Hz. Muhammed\n(sav) insanlar için en\nY güzel örnektir.\n5.4. Kur’an’dan Mesajlar\nKonuya Başlarken\nHz. Peygamber’in Allah’a (cc) çağıran bir davetçi olarak gönderilmesinden ne anlıyorsunuz?\n.....................................................................................................................................................................\n.....................................................................................................................................................................\n.....................................................................................................................................................................\n......................................................................................................................"}];
-
 function getKitapKonulari(subjectId, grade){
-  // subjectId → kitap eşleştirme tablosu
-  const eslestirme = {
-    'bio': 'biyoloji', 'biyoloji': 'biyoloji',
-    'din': 'din', 'dinak': 'din', 'siyer': 'din',
-    'math': 'matematik', 'matematik': 'matematik',
-    'geo': 'cografya', 'cog': 'cografya', 'cografya': 'cografya',
-    'physics': 'fizik', 'fiz': 'fizik',
-    'chem': 'kimya', 'kim': 'kimya',
-    'hist': 'tarih', 'tar': 'tarih',
-    'tr': 'edebiyat', 'tur': 'edebiyat', 'ede': 'edebiyat',
-  };
-  const hedef = eslestirme[subjectId] || subjectId;
   for(const [key, kitap] of Object.entries(DERS_KITABI_KONULARI)){
-    if(kitap.sinif === grade){
-      const d = kitap.ders.toLowerCase().replace(/[ışğüöç]/g, c => ({'ı':'i','ş':'s','ğ':'g','ü':'u','ö':'o','ç':'c'}[c]||c)).replace(/[^a-z]/g,'');
-      if(d.includes(hedef) || hedef.includes(d.substring(0,5))) return kitap;
-    }
+    if(kitap.sinif === grade && kitap.subjectId === subjectId) return kitap;
   }
   return null;
 }
 
 function getKonuIcerik(konuAdi){
+  if(typeof KITAP_ICERIK === 'undefined') return null;
   const item = KITAP_ICERIK.find(k => k.konu === konuAdi);
   return item ? item.icerik : null;
 }
@@ -3228,8 +3202,6 @@ SADECE JSON döndür:
     const existing = await dbGet(`topics/${safeKey(classCode)}/${subjectId}`)||{};
     const existingTitles = Object.values(existing).map(t=>t.title.toLowerCase());
     let added=0, skipped=0;
-
-    afStatus(`Konular kaydediliyor...`, 50);
 
 
     for(let i=0; i<topicList.length; i++){
