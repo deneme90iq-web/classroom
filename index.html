@@ -2584,7 +2584,7 @@ window.dersDetay = async function(subjectId){
 }
 
 window.dersTab = async function(tab, subjectId){
-  document.querySelectorAll('[id^="dtab-"]').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('[id^="dtab-"]').forEach(_el=>_el.classList.remove('active'));
   document.getElementById('dtab-'+tab)?.classList.add('active');
   const subj = getSubject(subjectId);
   const cont = document.getElementById('ders-detay-content');
