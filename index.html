@@ -3243,6 +3243,51 @@ const DERS_KITABI_KONULARI = {
         ]
       }
     ]
+  },
+  "tr_9": {
+    "ders": "Türk Dili ve Edebiyatı",
+    "sinif": 9,
+    "subjectId": "tr",
+    "uniteler": [
+      {
+        "no": 1,
+        "baslik": "Sözün İnceliği",
+        "konular": [
+          "Okuma: Şiir",
+          "Okuma Öncesi",
+          "Okuma Sırası: San'at",
+          "Okuma Sonrası",
+          "Okuma: Deneme",
+          "Okuma Sırası: Picasso'nun Hatları",
+          "Edebiyat Atölyesi: Yazma",
+          "Yazma Sırası: Duygularımı Betimliyorum",
+          "Dinleme/İzleme: Mülakat",
+          "Dinleme Sırası: Selim İleri'yle Mülakat",
+          "Edebiyat Atölyesi: Konuşma",
+          "Konuşma Sırası: Düşüncelerimi Sunuyorum",
+          "Tema Ölçme ve Değerlendirme"
+        ]
+      },
+      {
+        "no": 2,
+        "baslik": "Anlam Arayışı",
+        "konular": [
+          "Okuma: Hikâye",
+          "Okuma Öncesi",
+          "Okuma Sırası: Bir Kavak ve İnsanlar",
+          "Okuma Sonrası",
+          "Okuma: Anı",
+          "Okuma Sırası: Nihayet Beklediğimiz Büyük Gün",
+          "Edebiyat Atölyesi: Konuşma",
+          "Konuşma Sırası: Karakterimin Yolculuğu",
+          "Dinleme/İzleme: Şiir",
+          "Dinleme Sırası: Mihriban (Aşk)",
+          "Edebiyat Atölyesi: Yazma",
+          "Yazma Sırası: Genç Şairlerden Mısralar",
+          "Tema Ölçme ve Değerlendirme"
+        ]
+      }
+    ]
   }
 };
 
@@ -9242,7 +9287,8 @@ window.doTestLogin=async function(){
     });
     toast(`📤 Sınıfa başvuru gönderildi! Öğretmen onayını bekle.`,'i');
   }
-  session={uid:testUid,role:testRole,name,classCode:profile.classCode,email:profile.email};
+  session={uid:testUid,role:testRole,name,classCode:profile.classCode,email:profile.email
+};
   // Test session'ını localStorage'a kaydet — sayfa yenilenince geri yüklensin
   try{localStorage.setItem('test_session',JSON.stringify(session));}catch(e){} sessionStorage.setItem('test_session',JSON.stringify(session));
   document.getElementById('test-expanded').style.display='none';
