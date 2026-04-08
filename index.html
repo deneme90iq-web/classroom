@@ -2058,8 +2058,12 @@ window.restoreHomework=async function(hwId,title){
 // ═══════════ DERSLER ═══════════
 async function renderDersler(){
   const mc=document.getElementById('main-content');
+  const isT=session.role==='teacher';
   mc.innerHTML=`
-  <div style="font-family:'Syne',sans-serif;font-size:1.3rem;font-weight:700;margin-bottom:6px">📚 Dersler</div>
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;flex-wrap:wrap;gap:8px">
+    <div style="font-family:'Syne',sans-serif;font-size:1.3rem;font-weight:700">📚 Dersler</div>
+    ${isT?`<button class="btn btn-accent" onclick="openFillKonuModal()" style="font-size:.78rem">🤖 Konu Anlatımlarını Doldur</button>`:''}
+  </div>
   <div style="font-size:.82rem;color:var(--dim);margin-bottom:20px">Tüm ders ve kategoriler</div>
   <div id="dersler-content"></div>`;
 
@@ -3797,6 +3801,121 @@ SADECE JSON döndür:
 }
 
 window.closeAndLoad=function(){document.querySelector('.modal-overlay#ai-autofill-modal')?.remove();loadTopics(window._lastSubjectId,window._lastClassCode);}
+
+// ═══════════ TOPLU KONU ANLATIMI DOLDURMA ═══════════
+window.openFillKonuModal = async function(){
+  const classes = await getMyClasses();
+  if(!classes.length){toast('Önce sınıf oluştur!','w');return;}
+
+  const modal = document.createElement('div');
+  modal.className = 'modal-overlay';
+  modal.id = 'fill-konu-modal';
+  modal.innerHTML = `<div class="modal" style="max-width:500px">
+    <div class="modal-title">🤖 Konu Anlatımlarını Doldur</div>
+    <div style="font-size:.82rem;color:var(--dim);margin-bottom:16px;line-height:1.5">
+      Konu anlatımı olmayan (noteCount=0) tüm konular taranır ve veritabanındaki hazır anlatımlar Firebase'e kaydedilir.
+    </div>
+    <div class="form-group"><label class="label">SINIF (boş = tümü)</label>
+      <select class="input" id="fk-class">
+        <option value="">— Tüm Sınıflar —</option>
+        ${classes.map(c=>`<option value="${c.code}">${c.name}</option>`).join('')}
+      </select>
+    </div>
+    <div id="fk-progress" style="display:none;margin-bottom:14px">
+      <div id="fk-status" style="font-size:.82rem;color:var(--dim);margin-bottom:6px;text-align:center">Taranıyor...</div>
+      <div style="background:var(--bg2);border-radius:6px;height:8px;overflow:hidden">
+        <div id="fk-bar" style="height:8px;background:linear-gradient(90deg,var(--primary),var(--accent));width:0%;border-radius:6px;transition:width .5s"></div>
+      </div>
+      <div id="fk-log" style="margin-top:10px;max-height:160px;overflow-y:auto;font-size:.72rem;color:var(--dim2)"></div>
+    </div>
+    <div id="fk-actions" style="display:flex;gap:8px">
+      <button class="btn btn-primary" style="flex:1;padding:12px" onclick="runFillKonu()">🚀 Başlat</button>
+      <button class="btn btn-ghost" onclick="this.closest('.modal-overlay').remove()">İptal</button>
+    </div>
+  </div>`;
+  modal.onclick = e=>{if(e.target===modal)modal.remove();};
+  document.body.appendChild(modal);
+}
+
+window.runFillKonu = async function(){
+  const selCode = document.getElementById('fk-class')?.value;
+  document.getElementById('fk-progress').style.display='block';
+  document.getElementById('fk-actions').innerHTML='';
+
+  function fkLog(msg){
+    const el=document.getElementById('fk-log');
+    if(el){el.innerHTML+=`<div>• ${msg}</div>`;el.scrollTop=el.scrollHeight;}
+  }
+  function fkStatus(msg,pct){
+    const s=document.getElementById('fk-status');if(s)s.textContent=msg;
+    const b=document.getElementById('fk-bar');if(b)b.style.width=pct+'%';
+  }
+
+  try{
+    // Taranacak sınıf kodlarını belirle
+    const allClasses = await getMyClasses();
+    const targetCodes = selCode ? [selCode] : allClasses.map(c=>c.code);
+
+    fkStatus('Konular taranıyor...', 10);
+    let totalAdded=0, totalSkipped=0, totalNoMatch=0;
+    let processed=0;
+
+    // Her sınıf için tüm dersleri tara
+    for(const code of targetCodes){
+      const allTopics = await dbGet(`topics/${safeKey(code)}`)||{};
+      for(const [subjectId, topicsObj] of Object.entries(allTopics)){
+        const topicArr = Object.values(topicsObj||{});
+        for(const topic of topicArr){
+          processed++;
+          const pct = Math.min(10 + Math.round((processed/(processed+1))*80), 90);
+          fkStatus(`Kontrol ediliyor: ${topic.title?.substring(0,25)}...`, pct);
+
+          // Not var mı kontrol et
+          if((topic.noteCount||0) > 0){
+            totalSkipped++;
+            continue;
+          }
+
+          // Sabit veritabanından al
+          const anlatim = getKonuAnlatim(topic.title||'');
+          if(!anlatim){
+            totalNoMatch++;
+            continue;
+          }
+
+          // Notu kaydet
+          const uid = Date.now()+'_'+Math.random().toString(36).slice(2,6);
+          const noteId = 'note_'+uid;
+          await dbSet('notes/'+noteId,{
+            id:noteId, title:(topic.title||'Konu')+' — Konu Anlatımı',
+            content:anlatim, subjectId:subjectId, classCode:code, topicId:topic.id,
+            authorUid:session.uid, authorName:session.name,
+            source:'static', createdAt:Date.now()
+          });
+          await dbSet(`topics/${safeKey(code)}/${subjectId}/${topic.id}/noteCount`, 1);
+          fkLog(`✅ "${(topic.title||'').substring(0,30)}" → anlatım eklendi`);
+          totalAdded++;
+          await new Promise(r=>setTimeout(r,150)); // rate-limit önlemi
+        }
+      }
+    }
+
+    fkStatus('Tamamlandı! 🎉', 100);
+    fkLog('─────────────────');
+    fkLog(`✅ ${totalAdded} anlatım eklendi`);
+    fkLog(`⏭️ ${totalSkipped} konu zaten anlatımlıydı`);
+    fkLog(`❓ ${totalNoMatch} konu için veritabanında eşleşme bulunamadı`);
+
+    document.getElementById('fk-actions').innerHTML=
+      `<button class="btn btn-primary" style="flex:1" onclick="this.closest('.modal-overlay').remove();renderDersler()">✅ Kapat</button>`;
+    toast(`✅ ${totalAdded} konu anlatımı eklendi!`, 's');
+
+  } catch(err){
+    document.getElementById('fk-status').textContent='❌ Hata: '+err.message;
+    document.getElementById('fk-actions').innerHTML=
+      `<button class="btn btn-ghost" onclick="this.closest('.modal-overlay').remove()">Kapat</button>`;
+  }
+}
 
 // ═══════════ AI İÇERİK OLUŞTURMA ═══════════
 // (eski Groq key kaldırıldı)
