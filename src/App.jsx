@@ -6,6 +6,7 @@ const App = () => {
   const [screen, setScreen] = useState('login'); // login | dashboard
   const [userName, setUserName] = useState('');
   const [role, setRole] = useState('student');
+  const [testMode, setTestMode] = useState(false);
 
   // Classroom
   const [classrooms, setClassrooms] = useState(() => {
@@ -155,7 +156,40 @@ const App = () => {
     { name: 'Elif S.', xp: 1200, r: 'Geliştirici' },
   ].sort((a, b) => b.xp - a.xp).map((u, i) => ({ ...u, rank: i + 1 }));
 
-  const logout = () => { setScreen('login'); setCurrentClass(null); setUserName(''); };
+  const logout = () => {
+    if (testMode) {
+      localStorage.removeItem('classrooms');
+      localStorage.removeItem('announcements');
+      localStorage.removeItem('pendingStudents');
+      setClassrooms([]);
+      setAnnouncements([]);
+      setPendingStudents([]);
+      setTotalXp(0);
+      setSpendableXp(0);
+      setInventory([]);
+      setTestMode(false);
+    }
+    setScreen('login');
+    setCurrentClass(null);
+    setUserName('');
+  };
+
+  const startTestMode = () => {
+    localStorage.removeItem('classrooms');
+    localStorage.removeItem('announcements');
+    localStorage.removeItem('pendingStudents');
+    setClassrooms([]);
+    setAnnouncements([]);
+    setPendingStudents([]);
+    setTotalXp(350);
+    setSpendableXp(350);
+    setInventory([]);
+    setTestMode(true);
+    setUserName('Test Kullanıcı');
+    setRole('teacher');
+    setActiveTab('Analitik');
+    setScreen('dashboard');
+  };
   const isPurple = inventory.includes(1);
 
   // ======================== LOGIN SCREEN ========================
@@ -181,6 +215,7 @@ const App = () => {
           </div>
 
           <button className="login-btn" onClick={handleLogin}>Giriş Yap</button>
+          <button className="test-btn" onClick={startTestMode}>🧪 Test Modunda Dene</button>
           <p style={{color:'#6c757d', fontSize:'12px', marginTop:'20px'}}>%100 Ücretsiz • Açık Kaynak • PWA Desteği</p>
         </div>
       </div>
@@ -193,6 +228,14 @@ const App = () => {
 
   return (
     <div className={`app-container ${isPurple ? 'theme-purple' : ''}`}>
+      {testMode && (
+        <div className="test-banner">
+          🧪 TEST MODU — Çıkış yapınca tüm veriler silinecek.
+          <button onClick={() => { setRole(role === 'teacher' ? 'student' : 'teacher'); setActiveTab(role === 'teacher' ? 'Ödevler' : 'Analitik'); setCurrentClass(currentClass); }} className="switch-role-btn">
+            Rol Değiştir ({role === 'teacher' ? '→ Öğrenci' : '→ Öğretmen'})
+          </button>
+        </div>
+      )}
       <nav className="glass-panel sidebar">
         <div className="logo-area">
           <MonitorPlay className="logo-icon" size={28} />
