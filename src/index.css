@@ -18,7 +18,7 @@ body { background: radial-gradient(circle at top left, #1a1a2e, #16213e, #0f3460
 .login-btn:hover { transform: translateY(-3px); box-shadow: 0 10px 25px rgba(252,163,17,0.4); }
 .test-btn { width: 100%; padding: 16px; border: 2px solid rgba(255,255,255,0.15); border-radius: 12px; background: transparent; color: #adb5bd; font-size: 16px; font-weight: 600; cursor: pointer; transition: 0.3s; margin-top: 10px; }
 .test-btn:hover { border-color: #70e000; color: #70e000; background: rgba(112,224,0,0.08); box-shadow: 0 0 15px rgba(112,224,0,0.2); }
-.test-banner { position: fixed; top: 0; left: 0; right: 0; z-index: 999; background: linear-gradient(90deg, #38b000, #008000); color: #fff; text-align: center; padding: 10px 20px; font-weight: 600; font-size: 14px; display: flex; justify-content: center; align-items: center; gap: 20px; }
+.test-banner { position: fixed; bottom: 20px; right: 20px; z-index: 999; background: rgba(0,128,0,0.9); backdrop-filter: blur(10px); color: #fff; padding: 12px 20px; font-weight: 600; font-size: 13px; display: flex; flex-direction: column; align-items: center; gap: 10px; border-radius: 14px; box-shadow: 0 8px 25px rgba(0,0,0,0.4); }
 .switch-role-btn { padding: 6px 18px; border: 2px solid #fff; border-radius: 8px; background: transparent; color: #fff; font-weight: bold; cursor: pointer; transition: 0.3s; font-size: 13px; }
 .switch-role-btn:hover { background: #fff; color: #008000; }
 
