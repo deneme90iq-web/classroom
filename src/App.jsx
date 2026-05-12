@@ -89,12 +89,27 @@ const App = () => {
   // Student: Join Class
   const handleJoinClass = () => {
     const cleanInput = joinCode.trim().toUpperCase().replace('#', '');
-    const found = classrooms.find(c => c.code.toUpperCase().replace('#', '') === cleanInput);
-    if (!found) return alert('Geçersiz sınıf kodu!');
+    if (!cleanInput) return alert('Lütfen bir sınıf kodu girin.');
+    
+    // Hem state hem localStorage'dan ara
+    let allClassrooms = [...classrooms];
+    const saved = localStorage.getItem('classrooms');
+    if (saved) {
+      const fromStorage = JSON.parse(saved);
+      fromStorage.forEach(sc => {
+        if (!allClassrooms.find(c => c.id === sc.id)) {
+          allClassrooms.push(sc);
+        }
+      });
+      setClassrooms(allClassrooms);
+    }
+    
+    const found = allClassrooms.find(c => c.code.toUpperCase().replace('#', '') === cleanInput);
+    if (!found) return alert('Geçersiz sınıf kodu! Kodun doğru olduğundan emin olun.');
     setPendingStudents(prev => [...prev, { id: Date.now(), name: userName, classId: found.id }]);
     setCurrentClass(found);
     setJoinCode('');
-    alert(`"${found.name}" sınıfına başvurunuz gönderildi! Öğretmenin onayını bekleyin.`);
+    alert(`"${found.name}" sınıfına başarıyla katıldın!`);
   };
 
   // Teacher: Create Assignment (goes to current class)
